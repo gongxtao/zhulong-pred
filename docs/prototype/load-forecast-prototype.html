@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PJM 负荷预测 · Load Forecast</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+  :root{
+    --ink:#0f172a; --sub:#64748b; --faint:#94a3b8;
+    --bg:#f4f6f9; --card:#ffffff; --line:#e5e9f0;
+    --actual:#1d4ed8; --fc:#ea580c; --temp:#94a3b8;
+    --ok:#059669; --warn:#d97706;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg); color:var(--ink); font-size:14px; line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1320px;margin:0 auto;padding:28px 28px 60px}
+
+  /* ---------- header ---------- */
+  header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap}
+  .title h1{font-size:21px;font-weight:700;letter-spacing:-.2px}
+  .title h1 .en{color:var(--faint);font-weight:500;font-size:13px;margin-left:10px;letter-spacing:.4px}
+  .title p{color:var(--sub);font-size:12.5px;margin-top:3px}
+  .meta{text-align:right;font-size:12px;color:var(--sub)}
+  .meta .chip{
+    display:inline-flex;align-items:center;gap:6px;background:#eef2ff;color:#3730a3;
+    border:1px solid #dfe4ff;border-radius:999px;padding:3px 11px;font-weight:600;font-size:12px;
+  }
+  .meta .chip .dot{width:6px;height:6px;border-radius:50%;background:#4f46e5;animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .meta .upd{margin-top:6px}
+
+  /* ---------- controls ---------- */
+  .controls{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+  .seg{display:inline-flex;background:#e8ecf2;border-radius:10px;padding:3px;gap:2px}
+  .seg button{
+    border:0;background:transparent;color:var(--sub);font-size:13px;font-weight:600;
+    padding:6px 16px;border-radius:8px;cursor:pointer;transition:all .15s;font-family:inherit;
+  }
+  .seg button:hover{color:var(--ink)}
+  .seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(15,23,42,.12)}
+  .ranges{display:inline-flex;gap:6px}
+  .ranges button{
+    border:1px solid var(--line);background:#fff;color:var(--sub);font-size:12.5px;font-weight:600;
+    padding:6px 13px;border-radius:8px;cursor:pointer;transition:all .15s;font-family:inherit;
+  }
+  .ranges button:hover{border-color:#c7d0dc;color:var(--ink)}
+  .ranges button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+  .zone-cap{font-size:12px;color:var(--faint);margin-left:2px}
+
+  /* ---------- KPI cards ---------- */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+  @media(max-width:1080px){.kpis{grid-template-columns:repeat(2,1fr)}}
+  .kpi{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px 18px 12px;display:flex;flex-direction:column;justify-content:space-between;
+    box-shadow:0 1px 2px rgba(15,23,42,.04);
+  }
+  .kpi .label{font-size:12.5px;color:var(--sub);font-weight:600;display:flex;align-items:center;gap:7px}
+  .kpi .value{font-size:27px;font-weight:750;letter-spacing:-.5px;margin:6px 0 2px;font-variant-numeric:tabular-nums}
+  .kpi .value small{font-size:13px;font-weight:600;color:var(--faint);margin-left:4px;letter-spacing:0}
+  .kpi .sub{font-size:12px;color:var(--sub);min-height:18px}
+  .kpi .sub .up{color:#dc2626;font-weight:700}
+  .kpi .sub .down{color:#059669;font-weight:700}
+  .kpi .spark{height:34px;margin:8px -6px -4px}
+  .badge{font-size:10.5px;font-weight:700;border-radius:5px;padding:1.5px 7px;letter-spacing:.2px}
+  .badge.ok{background:#d1fae5;color:#065f46}
+  .badge.warn{background:#fef3c7;color:#92400e}
+  .trend-pill{font-size:11px;font-weight:700;border-radius:6px;padding:2px 8px}
+  .trend-pill.up{background:#fee2e2;color:#b91c1c}
+  .trend-pill.down{background:#d1fae5;color:#047857}
+  .trend-pill.flat{background:#e2e8f0;color:#475569}
+
+  /* ---------- cards & grid ---------- */
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:18px 20px;box-shadow:0 1px 2px rgba(15,23,42,.04);margin-bottom:16px;
+  }
+  .card-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px;flex-wrap:wrap}
+  .card-h h2{font-size:15px;font-weight:700;letter-spacing:-.1px}
+  .card-h .hint{font-size:11.5px;color:var(--faint)}
+  #main{height:400px;margin-top:6px}
+  .freq-note{
+    margin-top:10px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--sub);
+    background:#fff7ed;border:1px solid #ffedd5;border-radius:9px;padding:8px 13px;
+  }
+  .freq-note b{color:#9a3412}
+  .freq-note .swatches{display:inline-flex;gap:4px;align-items:center}
+  .sw{width:14px;height:9px;border-radius:2.5px;display:inline-block}
+
+  /* ---------- small multiples ---------- */
+  .sm-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:10px}
+  @media(max-width:1080px){.sm-grid{grid-template-columns:1fr}}
+  .sm{border:1px solid var(--line);border-radius:11px;padding:10px 8px 4px}
+  .sm .sm-h{display:flex;justify-content:space-between;align-items:baseline;padding:0 8px 6px}
+  .sm .sm-h b{font-size:13px}
+  .sm .sm-h span{font-size:11.5px;color:var(--faint);font-variant-numeric:tabular-nums}
+  .sm .chart{height:128px}
+
+  /* ---------- backtest ---------- */
+  .bt-grid{display:grid;grid-template-columns:1fr 292px;gap:18px;margin-top:8px}
+  @media(max-width:1080px){.bt-grid{grid-template-columns:1fr}}
+  #backtest{height:270px}
+  .stats{display:flex;flex-direction:column;gap:10px}
+  .stat{
+    border:1px solid var(--line);border-radius:11px;padding:12px 14px;
+    display:flex;justify-content:space-between;align-items:center;gap:10px;
+  }
+  .stat .l{font-size:12.5px;color:var(--sub);font-weight:600}
+  .stat .l small{display:block;font-weight:500;color:var(--faint);font-size:11px;margin-top:1px}
+  .stat .r{font-size:19px;font-weight:750;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .stat .r small{font-size:11px;color:var(--faint);font-weight:600}
+
+  /* ---------- footer / design notes ---------- */
+  .caliber{font-size:12px;color:var(--sub);line-height:1.8}
+  .caliber b{color:var(--ink)}
+  details{border:1px solid var(--line);border-radius:var(--radius);background:var(--card);padding:0 20px;margin-bottom:16px}
+  details summary{
+    cursor:pointer;padding:15px 0;font-size:14px;font-weight:700;list-style:none;
+    display:flex;align-items:center;gap:8px;user-select:none;
+  }
+  details summary::-webkit-details-marker{display:none}
+  details summary::after{content:"▾";color:var(--faint);margin-left:auto;transition:transform .2s}
+  details[open] summary::after{transform:rotate(180deg)}
+  .dnotes{padding:0 0 18px;display:grid;grid-template-columns:1fr 1fr;gap:10px 24px}
+  @media(max-width:1080px){.dnotes{grid-template-columns:1fr}}
+  .dnote{font-size:12.5px;color:var(--sub);border-left:3px solid #e2e8f0;padding-left:12px}
+  .dnote b{color:var(--ink);display:block;margin-bottom:2px}
+  .dnote i{font-style:normal;color:var(--faint);font-size:11.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============ header ============ -->
+  <header>
+    <div class="title">
+      <h1>PJM 负荷预测<span class="en">LOAD FORECAST · HOURLY</span></h1>
+      <p>小时级负荷预测 · AEP / DAYTON / DOM 三负荷区 · 数据截至 <span id="hdrNow"></span></p>
+    </div>
+    <div class="meta">
+      <span class="chip"><span class="dot"></span>实时数据流正常</span>
+      <div class="upd" id="hdrUpd"></div>
+    </div>
+  </header>
+
+  <!-- ============ controls ============ -->
+  <div class="controls">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div class="seg" id="zoneSeg">
+        <button data-zone="AEP" class="on">AEP</button>
+        <button data-zone="DAYTON">DAYTON</button>
+        <button data-zone="DOM">DOM</button>
+      </div>
+      <span class="zone-cap" id="zoneCap"></span>
+    </div>
+    <div class="ranges" id="rangeBtns">
+      <button data-r="24h">24 小时</button>
+      <button data-r="3d">3 天</button>
+      <button data-r="7d" class="on">7 天</button>
+      <button data-r="all">全部</button>
+    </div>
+  </div>
+
+  <!-- ============ KPI row ============ -->
+  <div class="kpis">
+    <div class="kpi">
+      <div class="label">当前实际负荷</div>
+      <div class="value" id="kNow">—<small>MW</small></div>
+      <div class="sub" id="kNowSub">—</div>
+      <div class="spark" id="spNow"></div>
+    </div>
+    <div class="kpi">
+      <div class="label">今日预测峰值 <span style="font-weight:500;color:var(--faint)">P50</span></div>
+      <div class="value" id="kPeak">—<small>MW</small></div>
+      <div class="sub" id="kPeakSub">—</div>
+      <div class="spark" id="spPeak"></div>
+    </div>
+    <div class="kpi">
+      <div class="label">日前预测 MAPE（近 7 日）</div>
+      <div class="value" id="kMape">—<small>%</small></div>
+      <div class="sub" id="kMapeSub">—</div>
+      <div class="spark" id="spMape"></div>
+    </div>
+    <div class="kpi">
+      <div class="label">P90 区间覆盖率自检</div>
+      <div class="value" id="kCov">—<small>%</small></div>
+      <div class="sub" id="kCovSub">—</div>
+      <div class="spark" id="spCov"></div>
+    </div>
+  </div>
+
+  <!-- ============ main chart ============ -->
+  <div class="card">
+    <div class="card-h">
+      <h2>负荷：实际 vs 预测（含不确定性区间）</h2>
+      <span class="hint">悬停查看 P50 与区间上下界 · 滚轮/拖拽缩放 · 图例可点击显隐</span>
+    </div>
+    <div id="main"></div>
+    <div class="freq-note">
+      <span class="swatches">
+        <span class="sw" style="background:rgba(234,88,12,.10)"></span>
+        <span class="sw" style="background:rgba(234,88,12,.22)"></span>
+      </span>
+      <span><b>如何读这张图：</b>历史负荷为蓝色实线；NOW 右侧为预测。橙色为不确定性区间——
+      <b>在相同天气与日历条件下重复 100 次，负荷约有 90 次落入浅色带（P10–P90）、50 次落入深色带（P25–P75）内</b>。
+      区间随时间变宽表示预测逐渐不确定。点预测（P50 虚线）仅供参考，不建议作为唯一决策依据。</span>
+    </div>
+  </div>
+
+  <!-- ============ small multiples ============ -->
+  <div class="card">
+    <div class="card-h">
+      <h2>三区域对比</h2>
+      <span class="hint">近 72 小时实际 + 未来 24 小时预测 · 悬停联动 · 注意 DAYTON 与 AEP/DOM 量级差异</span>
+    </div>
+    <div class="sm-grid">
+      <div class="sm"><div class="sm-h"><b>AEP</b><span id="smA"></span></div><div class="chart" id="smA_c"></div></div>
+      <div class="sm"><div class="sm-h"><b>DAYTON</b><span id="smD"></span></div><div class="chart" id="smD_c"></div></div>
+      <div class="sm"><div class="sm-h"><b>DOM</b><span id="smM"></span></div><div class="chart" id="smM_c"></div></div>
+    </div>
+  </div>
+
+  <!-- ============ backtest ============ -->
+  <div class="card">
+    <div class="card-h">
+      <h2>预测回放：过去 7 天「日前预测 vs 实际」</h2>
+      <div class="seg" id="daySeg" style="transform:scale(.92);transform-origin:right center"></div>
+    </div>
+    <div class="bt-grid">
+      <div id="backtest"></div>
+      <div class="stats">
+        <div class="stat">
+          <div class="l">当日 MAPE<small>日前 24h 预测平均绝对百分比误差</small></div>
+          <div class="r" id="btMape">—</div>
+        </div>
+        <div class="stat">
+          <div class="l">当日峰值误差<small>预测峰值 − 实际峰值</small></div>
+          <div class="r" id="btPeak">—</div>
+        </div>
+        <div class="stat">
+          <div class="l">P50 覆盖率<small>实际落入 P25–P75 的比例（标称 50%）</small></div>
+          <div class="r" id="btC50">—</div>
+        </div>
+        <div class="stat">
+          <div class="l">P90 覆盖率<small>实际落入 P10–P90 的比例（标称 90%）</small></div>
+          <div class="r" id="btC90">—</div>
+        </div>
+        <div class="stat">
+          <div class="l">最差时段<small>按小时误差排序</small></div>
+          <div class="r" id="btWorst" style="font-size:14px">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ caliber ============ -->
+  <div class="card">
+    <div class="card-h"><h2>数据口径</h2><span class="hint">专业可信感的底线：每个数字都标明来源与口径</span></div>
+    <div class="caliber">
+      <b>负荷（load_mw）</b>：PJM 负荷区小时级<b>估算平均功率</b>，小时区间内数值上近似 MWh；非直接抄表值。
+      <b>气象特征</b>：ERA5 再分析数据的区域加权聚合（Open-Meteo Historical API），非单站实测。
+      <b>时间</b>：interval_end_utc，按小时区间结束时刻右对齐，已统一转换为 UTC（显示为本地时间）。
+      <b>预测</b>：日前（Day-Ahead）小时级分位数预测；区间为建模误差的样本外估计，覆盖率自检见上卡片。
+      <b>区域</b>：AEP / DAYTON / DOM 为 PJM 负荷区（load zone），不代表单一城市或变电站。
+    </div>
+  </div>
+
+  <!-- ============ design notes ============ -->
+  <details>
+    <summary>设计决策说明（每处设计对应的调研依据）</summary>
+    <div class="dnotes">
+      <div class="dnote"><b>① 历史实线 / 预测虚线 + NOW 分界竖线</b>ERCOT System-Wide Demand 与 AEMO 的行业惯例：用线型 + 颜色双重编码区分实况与预测。<i>来源：ercot.com/gridinfo/load</i></div>
+      <div class="dnote"><b>② 弱化 P50 中心线（细虚线，不做大号数字）</b>飓风锥与 CHI 2016 研究证明：突出的点预测会让用户系统性忽视不确定性、产生过度自信。<i>BAMS 2007; CHI 2016</i></div>
+      <div class="dnote"><b>③ 嵌套双层区间（P90 浅 + P50 深）而非单层</b>单层区间会制造「等可能性」错觉；多层分位带是 fan chart 的标准形态。<i>BoE 1998 fan chart 方法学</i></div>
+      <div class="dnote"><b>④ 区间不画满、透明度内深外浅</b>色深编码概率密度是英国央行 fan chart 的原始设计；不覆盖 100% 以避免「伪造有界」。<i>Britton, Fisher &amp; Whitley 1998</i></div>
+      <div class="dnote"><b>⑤ 频率句图注（「100 次约 90 次」）</b>裸百分比与概率词会被系统性误读（IPCC 研究、Gigerenzer 2005）；频率框架是实证最稳的表达。<i>Budescu 2009</i></div>
+      <div class="dnote"><b>⑥ 覆盖率自检作为一等公民指标</b>区间不报实际命中率就无法验证可信度——这是专业预测产品与普通 demo 的分水岭。<i>Correll &amp; Gleicher, IEEE TVCG 2014</i></div>
+      <div class="dnote"><b>⑦ 峰值给区间而非单值；误差卡用红涨绿跌语义</b>峰值是调度决策的核心关切（Amperon 范式）；峰值误差若仅给单点数字会复制「点预测过度信任」问题。<i>amperon.co</i></div>
+      <div class="dnote"><b>⑧ 区域对比用 small multiples 而非同图叠加</b>三区量级差 ~7 倍，叠加会压扁 DAYTON；共享视觉语言的小多图是量级悬殊多序列的标准解。<i>Cleveland 1985; Datawrapper 指南</i></div>
+      <div class="dnote"><b>⑨ 温度副轴低饱和度、图例可关</b>温度仅作情境解释（空调负荷），必须视觉上从属于负荷；双轴不做斜率对比。<i>Grafana 双轴警示</i></div>
+      <div class="dnote"><b>⑩ 预测回放视图</b>让用户亲自回看「当时预测 vs 实际」来建立对模型的信任，比展示一个准确率数字更有说服力。<i>Amperon 96h 回放；预测信任研究</i></div>
+    </div>
+  </details>
+
+</div>
+
+<script>
+/* ================================================================
+   数据模拟：复刻 PJM 三负荷区的真实形态
+   双峰日内曲线 + 周末效应 + 温度冷却效应 + 噪声
+================================================================ */
+function lcg(seed){ let s=seed>>>0; return ()=>{ s=(1664525*s+1013904223)>>>0; return s/4294967296; }; }
+const rnd = lcg(20260828);
+function gauss(x,mu,sig){ return Math.exp(-Math.pow(x-mu,2)/(2*sig*sig)); }
+
+const ZONES = {
+  AEP:    { base:13600, amp:4300, cool:58, wknd:0.90, label:'AEP（美国电力服务区）' },
+  DAYTON: { base:2120,  amp:660,  cool:9,  wknd:0.88, label:'DAYTON（代顿地区）' },
+  DOM:    { base:12200, amp:3800, cool:44, wknd:0.92, label:'DOM（Dominion 弗吉尼亚）' },
+};
+
+const NOW = new Date(2026, 7, 28, 14, 0, 0);          // 2026-08-28 14:00（周五）
+const H_HIST = 168, H_FC = 48;
+const HOUR = 3600*1000;
+
+function tempAt(d, jitter){
+  const h = d.getHours() + d.getMinutes()/60;
+  const t = 23.5 + 6.8*Math.sin((h-9.5)/24*Math.PI*2) + 1.6*gauss(h,15,3) - 1.2;
+  return t + (jitter? (rnd()-0.5)*1.6 : 0);
+}
+function shapeLoad(cfg, d, t){
+  const h = d.getHours();
+  const day = (d.getDay()===0||d.getDay()===6) ? cfg.wknd : 1;
+  let L = cfg.base + cfg.amp*(0.50*gauss(h,9,2.6) + 0.86*gauss(h,19,3.0)) * day;
+  L += cfg.cool * Math.pow(Math.max(0, t-24), 1.35);          // 冷负荷
+  return L;
+}
+
+function genZone(name){
+  const cfg = ZONES[name];
+  const hist = [], temps = [];
+  for(let i=H_HIST-1;i>=0;i--){
+    const d = new Date(NOW - i*HOUR);
+    const t = tempAt(d, true);
+    hist.push([+d, shapeLoad(cfg,d,t)*(1+(rnd()-0.5)*0.030)]);
+    temps.push([+d, t]);
+  }
+  // 预测：P50 与分位带（带宽随时效增大）
+  const fc = [], tNext = [];
+  for(let i=1;i<=H_FC;i++){
+    const d = new Date(+NOW + i*HOUR);
+    const t = tempAt(d, false) + 0.8*(i/H_FC);                 // 预报温度略偏暖
+    tNext.push([+d, t]);
+    const p50 = shapeLoad(cfg,d,t)*(1+(rnd()-0.5)*0.004);
+    const sig = p50*(0.006 + 0.011*Math.sqrt(i/6));
+    fc.push({ ts:+d, p50, p10:p50-1.2816*sig, p25:p50-0.6745*sig,
+              p75:p50+0.6745*sig, p90:p50+1.2816*sig });
+  }
+  return { name, hist, temps, fc, tNext };
+}
+const DATA = { AEP:genZone('AEP'), DAYTON:genZone('DAYTON'), DOM:genZone('DOM') };
+
+/* ---- 回测：过去 7 天「日前预测 vs 实际」 ---- */
+const BT_DAYS = [];
+for(let k=7;k>=1;k--){
+  const dayStart = new Date(NOW - k*24*HOUR); dayStart.setHours(0,0,0,0);
+  const pts = [];
+  for(let h=0; h<24; h++){
+    const ts = +new Date(+dayStart + h*HOUR);
+    // 在历史序列里找实际值
+    let actual = null;
+    for(const z of Object.values(DATA)){
+      const hit = z.hist.find(p=>p[0]===ts);
+      if(hit){ actual = hit[1]; break; }
+    }
+    const err = (rnd()-0.5)*0.052 + (rnd()-0.5)*0.018 + (h>=16&&h<=21? (rnd()-0.3)*0.02 : 0);
+    const pred = actual*(1+err);
+    const sig = actual*0.017;
+    pts.push({ ts, actual, pred, p10:pred-1.2816*sig, p90:pred+1.2816*sig,
+               p25:pred-0.6745*sig, p75:pred+0.6745*sig });
+  }
+  const mape = pts.reduce((s,p)=>s+Math.abs(p.pred-p.actual)/p.actual,0)/24*100;
+  const c90 = pts.filter(p=>p.actual>=p.p10&&p.actual<=p.p90).length/24*100;
+  const c50 = pts.filter(p=>p.actual>=p.p25&&p.actual<=p.p75).length/24*100;
+  const pkA = Math.max(...pts.map(p=>p.actual)), pkP = Math.max(...pts.map(p=>p.pred));
+  const worst = pts.reduce((a,b)=>Math.abs(b.pred-b.actual)/b.actual>Math.abs(a.pred-a.actual)/a.actual?b:a);
+  BT_DAYS.push({ dayStart, pts, mape, c90, c50, peakErr:(pkP-pkA)/pkA*100,
+                 worstH:new Date(worst.ts).getHours(), worstE:Math.abs(worst.pred-worst.actual)/worst.actual*100 });
+}
+
+/* ================================================================
+   工具
+================================================================ */
+const fmt = n => Math.round(n).toLocaleString('en-US');
+const fmtT = ts => { const d=new Date(ts); const p=n=>String(n).padStart(2,'0');
+  return `${d.getMonth()+1}/${d.getDate()} ${p(d.getHours())}:00`; };
+const axisTime = { axisLabel:{ formatter:v=>fmtT(v), color:'#64748b', fontSize:11 },
+  axisLine:{lineStyle:{color:'#e5e9f0'}}, axisTick:{show:false}, splitLine:{lineStyle:{color:'#eef2f6'}} };
+
+/* ================================================================
+   主图
+================================================================ */
+const mainC = echarts.init(document.getElementById('main'));
+function bandSeries(z, loKey, hiKey, stack, opacity, dispName){
+  const lo = [], hi = [];
+  z.fc.forEach(p=>{ lo.push([p.ts, p[loKey]]); hi.push([p.ts, p[hiKey]-p[loKey]]); });
+  return [
+    { name:'_'+stack, type:'line', stack, data:lo, lineStyle:{opacity:0}, symbol:'none',
+      silent:true, tooltip:{show:false}, emphasis:{disabled:true}, z:1 },
+    { name:dispName, type:'line', stack, data:hi, lineStyle:{opacity:0}, symbol:'none',
+      silent:true, tooltip:{show:false}, emphasis:{disabled:true}, z:1,
+      areaStyle:{ color:'rgba(234,88,12,'+opacity+')' } },
+  ];
+}
+
+let curZone = 'AEP';
+function renderMain(){
+  const z = DATA[curZone];
+  const hist = z.hist, fc = z.fc;
+  const fcStart = +NOW;
+
+  // 今日峰值（P50 与区间）
+  const today = fc.filter(p=>new Date(p.ts).getDate()===NOW.getDate());
+  const peak = today.length ? today.reduce((a,b)=>b.p50>a.p50?b:a) : fc[0];
+  const peakTs = new Date(peak.ts);
+
+  const series = [
+    { name:'实际负荷', type:'line', data:hist, showSymbol:false,
+      lineStyle:{ color:'#1d4ed8', width:2.6 }, itemStyle:{color:'#1d4ed8'},
+      emphasis:{focus:'series'}, z:5,
+      markLine:{ symbol:'none', silent:true,
+        lineStyle:{ color:'#64748b', type:'dashed', width:1.4 },
+        label:{ formatter:'NOW', color:'#475569', fontSize:11, fontWeight:700, position:'insideEndTop' },
+        data:[{ xAxis:fcStart }] },
+      markPoint:{ symbol:'circle', symbolSize:7, silent:true,
+        itemStyle:{ color:'#ea580c', borderColor:'#fff', borderWidth:2 },
+        label:{ show:true, position:'top', distance:8, color:'#9a3412', fontSize:11, fontWeight:700,
+                formatter:`预测峰值 ${fmt(peak.p50)} MW · ${String(peakTs.getHours()).padStart(2,'0')}:00` },
+        data:[{ coord:[peak.ts, peak.p50] }] } },
+    ...bandSeries(z,'p10','p90','b90',0.10,'P10–P90 区间'),
+    ...bandSeries(z,'p25','p75','b50',0.22,'P25–P75 区间'),
+    { name:'预测 P50', type:'line', data:fc.map(p=>[p.ts,p.p50]), showSymbol:false,
+      lineStyle:{ color:'#ea580c', width:1.6, type:'dashed' }, itemStyle:{color:'#ea580c'},
+      emphasis:{focus:'series'}, z:4 },
+    { name:'温度（右轴）', type:'line', yAxisIndex:1, data:z.temps.concat(z.tNext),
+      showSymbol:false, lineStyle:{ color:'#b6c2d1', width:1.2 }, itemStyle:{color:'#b6c2d1'},
+      opacity:0.9, z:0, tooltip:{ valueFormatter:v=>v.toFixed(1)+' °C' } },
+  ];
+
+  mainC.setOption({
+    animationDuration:600,
+    grid:{ left:64, right:56, top:44, bottom:56 },
+    legend:{
+      top:6, left:4, icon:'roundRect', itemWidth:16, itemHeight:8,
+      textStyle:{ color:'#475569', fontSize:12 },
+      data:['实际负荷','预测 P50','P10–P90 区间','P25–P75 区间','温度（右轴）'],
+      selected:{ 'P10–P90 区间':true, 'P25–P75 区间':true },
+      formatter:name=>({ '实际负荷':'● 实际负荷','预测 P50':'╌ 预测 P50',
+        'P10–P90 区间':'▤ P10–P90 区间','P25–P75 区间':'▤ P25–P75 区间','温度（右轴）':'－ 温度（右轴）'} )[name]||name
+    },
+    tooltip:{
+      trigger:'axis', axisPointer:{ type:'cross', label:{backgroundColor:'#334155'} },
+      backgroundColor:'rgba(255,255,255,.98)', borderColor:'#e2e8f0',
+      textStyle:{color:'#0f172a', fontSize:12}, padding:[10,14],
+      formatter(params){
+        let html = `<b style="font-size:12.5px">${fmtT(params[0].axisValue)}</b>`;
+        const by = {}; params.forEach(p=>by[p.seriesName]=p);
+        if(by['实际负荷']) html += `<br/>实际负荷　<b>${fmt(by['实际负荷'].value[1])}</b> MW`;
+        if(by['预测 P50']){
+          const ts = by['预测 P50'].value[0]; const pt = fc.find(p=>p.ts===ts);
+          html += `<br/>预测 P50　<b>${fmt(pt.p50)}</b> MW`;
+          html += `<br/><span style="color:#ea580c">P10–P90</span>　${fmt(pt.p10)} – ${fmt(pt.p90)} MW`;
+          html += `<br/><span style="color:#ea580c">P25–P75</span>　${fmt(pt.p25)} – ${fmt(pt.p75)} MW`;
+        }
+        if(by['温度（右轴）']) html += `<br/><span style="color:#94a3b8">温度</span>　${by['温度（右轴）'].value[1].toFixed(1)} °C`;
+        return html;
+      }
+    },
+    xAxis:{ type:'time', ...axisTime, min:+new Date(NOW-7*24*HOUR), max:fc[fc.length-1].ts },
+    yAxis:[
+      { type:'value', name:'MW', nameTextStyle:{color:'#94a3b8',fontSize:11},
+        scale:true, axisLabel:{formatter:v=>(v/1000).toFixed(0)+'k', color:'#64748b', fontSize:11},
+        splitLine:{lineStyle:{color:'#eef2f6'}} },
+      { type:'value', name:'°C', nameTextStyle:{color:'#b6c2d1',fontSize:11},
+        min:12, max:40, axisLabel:{formatter:'{value}°', color:'#b6c2d1', fontSize:11},
+        splitLine:{show:false} },
+    ],
+    dataZoom:[
+      { type:'inside', filterMode:'none' },
+      { type:'slider', height:22, bottom:12, borderColor:'#e5e9f0', fillerColor:'rgba(29,78,216,.08)',
+        handleStyle:{color:'#fff',borderColor:'#94a3b8'}, textStyle:{color:'#94a3b8',fontSize:10},
+        labelFormatter:v=>fmtT(v) },
+    ],
+    series
+  }, {notMerge:true});
+  applyRange();
+}
+
+/* ---- 时间范围切换 ---- */
+function applyRange(){
+  const total = (H_HIST+H_FC)*HOUR;
+  const spans = { '24h':[0.86,1], '3d':[0.76,1], '7d':[0,1], 'all':[0,1] };
+  const [s,e] = spans[curRange];
+  mainC.dispatchAction({ type:'dataZoom', start:s*100, end:e*100 });
+}
+let curRange = '7d';
+document.getElementById('rangeBtns').addEventListener('click', ev=>{
+  const b = ev.target.closest('button'); if(!b) return;
+  curRange = b.dataset.r;
+  document.querySelectorAll('#rangeBtns button').forEach(x=>x.classList.toggle('on', x===b));
+  applyRange();
+});
+
+/* ---- 区域切换 ---- */
+document.getElementById('zoneSeg').addEventListener('click', ev=>{
+  const b = ev.target.closest('button'); if(!b) return;
+  curZone = b.dataset.zone;
+  document.querySelectorAll('#zoneSeg button').forEach(x=>x.classList.toggle('on', x===b));
+  renderAll();
+});
+
+/* ================================================================
+   KPI 卡
+================================================================ */
+function sparkline(id, data, color, baseline){
+  const el = document.getElementById(id);
+  echarts.init(el).setOption({
+    grid:{left:0,right:0,top:2,bottom:0},
+    xAxis:{type:'category', show:false, data:data.map((_,i)=>i)},
+    yAxis:{type:'value', show:false, min:Math.min(...data)*0.97, max:Math.max(...data)*1.03},
+    series:[{ type:'line', data, showSymbol:false,
+      lineStyle:{ color, width:1.6 }, areaStyle:{ color, opacity:0.09 },
+      markLine: baseline!=null ? { symbol:'none', silent:true,
+        lineStyle:{ color:'#cbd5e1', type:'dashed', width:1 },
+        label:{show:false}, data:[{yAxis:baseline}] } : undefined }]
+  });
+}
+
+function renderKPIs(){
+  const z = DATA[curZone];
+  const nowV = z.hist[z.hist.length-1][1];
+  const yV  = z.hist[z.hist.length-25][1];
+  const dPct = (nowV-yV)/yV*100;
+  const last24 = z.hist.slice(-24).map(p=>p[1]);
+
+  const today = z.fc.filter(p=>new Date(p.ts).getDate()===NOW.getDate());
+  const peak = today.length ? today.reduce((a,b)=>b.p50>a.p50?b:a) : z.fc[0];
+  const pkH = String(new Date(peak.ts).getHours()).padStart(2,'0');
+  const peakHist = []; // 近7日同时刻峰值走势（用每日最大近似）
+  for(let k=7;k>=0;k--){
+    const d0 = +new Date(NOW - k*24*HOUR);
+    const seg = z.hist.filter(p=>p[0]>d0-24*HOUR && p[0]<=d0);
+    if(seg.length) peakHist.push(Math.max(...seg.map(p=>p[1])));
+  }
+
+  const mape7 = BT_DAYS.reduce((s,d)=>s+d.mape,0)/7;
+  const mapeTrend = BT_DAYS.map(d=>d.mape);
+  const cov90 = BT_DAYS.reduce((s,d)=>s+d.c90,0)/7;
+  const covTrend = BT_DAYS.map(d=>d.c90);
+  const covOk = Math.abs(cov90-90)<=6;
+
+  document.getElementById('kNow').innerHTML = `${fmt(nowV)}<small>MW</small>`;
+  document.getElementById('kNowSub').innerHTML =
+    `较昨日同时 <span class="${dPct>=0?'up':'down'}">${dPct>=0?'▲ +':'▼ '}${dPct.toFixed(1)}%</span> · 周五午间爬坡段`;
+  document.getElementById('kPeak').innerHTML = `${fmt(peak.p50)}<small>MW</small>`;
+  document.getElementById('kPeakSub').innerHTML =
+    `预计 <b>${pkH}:00</b> 出现 · P90 带 ${fmt(peak.p10)}–${fmt(peak.p90)} MW`;
+  document.getElementById('kMape').innerHTML = `${mape7.toFixed(1)}<small>%</small>`;
+  document.getElementById('kMapeSub').innerHTML =
+    `<span class="trend-pill ${mape7<3?'down':'up'}">${mape7<3?'达标':'关注'}</span> 目标 &lt; 3%`;
+  document.getElementById('kCov').innerHTML = `${cov90.toFixed(1)}<small>%</small>`;
+  document.getElementById('kCovSub').innerHTML =
+    `标称 90% <span class="badge ${covOk?'ok':'warn'}">${covOk?'自检通过':'轻微偏离'}</span>`;
+  document.getElementById('zoneCap').textContent = ZONES[curZone].label + ' · 量级参考：' + fmt(ZONES[curZone].base*1.5) + ' MW 峰';
+
+  sparkline('spNow', last24, '#1d4ed8');
+  sparkline('spPeak', peakHist, '#ea580c');
+  sparkline('spMape', mapeTrend, '#0f172a', 3);
+  sparkline('spCov', covTrend, '#059669', 90);
+}
+
+/* ================================================================
+   Small multiples（三区域，悬停联动）
+================================================================ */
+const smCharts = [];
+['smA','smD','smM'].forEach(id=>{
+  const c = echarts.init(document.getElementById(id+'_c'));
+  c.group = 'sm';
+  smCharts.push(c);
+});
+echarts.connect(smCharts);
+
+function renderSM(){
+  const conf = [['AEP','smA'],['DAYTON','smD'],['DOM','smM']];
+  conf.forEach(([zone,id])=>{
+    const z = DATA[zone];
+    const hist = z.hist.slice(-72);
+    const c = smCharts.find(x=>x.getDom().id===id+'_c');
+    c.setOption({
+      grid:{left:46,right:8,top:10,bottom:20},
+      tooltip:{ trigger:'axis', backgroundColor:'rgba(255,255,255,.98)', borderColor:'#e2e8f0',
+        textStyle:{color:'#0f172a',fontSize:11}, padding:[7,10],
+        formatter(ps){
+          let h = `<b>${fmtT(ps[0].axisValue)}</b>`;
+          ps.forEach(p=>h+=`<br/>${p.seriesName} <b>${fmt(p.value[1])}</b>`);
+          return h;
+        } },
+      xAxis:{ type:'time', ...axisTime, axisLabel:{...axisTime.axisLabel, fontSize:10} },
+      yAxis:{ type:'value', scale:true, axisLabel:{formatter:v=>(v/1000).toFixed(1)+'k',
+        color:'#94a3b8', fontSize:10}, splitLine:{show:false} },
+      series:[
+        { name:'实际', type:'line', data:hist, showSymbol:false,
+          lineStyle:{ color:'#1d4ed8', width:1.8 }, itemStyle:{color:'#1d4ed8'} },
+        { name:'预测', type:'line', data:z.fc.slice(0,24).map(p=>[p.ts,p.p50]), showSymbol:false,
+          lineStyle:{ color:'#ea580c', width:1.4, type:'dashed' }, itemStyle:{color:'#ea580c'} },
+      ]
+    }, {notMerge:true});
+    const cur = z.hist[z.hist.length-1][1];
+    document.getElementById(id).textContent = `当前 ${fmt(cur)} MW`;
+  });
+}
+
+/* ================================================================
+   回测图 + 日切换
+================================================================ */
+const btC = echarts.init(document.getElementById('backtest'));
+let btDay = BT_DAYS[BT_DAYS.length-1];
+const daySeg = document.getElementById('daySeg');
+BT_DAYS.forEach((d,i)=>{
+  const b = document.createElement('button');
+  b.textContent = (i===BT_DAYS.length-1?'昨日':`${d.dayStart.getMonth()+1}/${d.dayStart.getDate()}`);
+  if(i===BT_DAYS.length-1) b.classList.add('on');
+  b.onclick = ()=>{ btDay=d;
+    [...daySeg.children].forEach(x=>x.classList.toggle('on',x===b));
+    renderBT(); };
+  daySeg.appendChild(b);
+});
+
+function renderBT(){
+  const pts = btDay.pts;
+  const lo = pts.map(p=>[p.ts, p.p10]);
+  const hi = pts.map(p=>[p.ts, p.p90-p.p10]);
+  const pe = Math.abs(btDay.peakErr);
+  const cls = v=>v<3?'down':'up';
+  document.getElementById('btMape').innerHTML = `${btDay.mape.toFixed(2)}<small>%</small>`;
+  document.getElementById('btPeak').innerHTML =
+    `<span style="color:${btDay.peakErr>=0?'#dc2626':'#059669'}">${btDay.peakErr>=0?'+':''}${btDay.peakErr.toFixed(2)}<small>%</small></span>`;
+  document.getElementById('btC50').innerHTML = `${btDay.c50.toFixed(0)}<small>%</small>`;
+  document.getElementById('btC90').innerHTML = `${btDay.c90.toFixed(0)}<small>%</small>`;
+  document.getElementById('btWorst').textContent = `${String(btDay.worstH).padStart(2,'0')}:00 · 误差 ${btDay.worstE.toFixed(1)}%`;
+
+  btC.setOption({
+    animationDuration:500,
+    grid:{ left:64, right:20, top:40, bottom:34 },
+    legend:{ top:4, left:4, icon:'roundRect', itemWidth:14, itemHeight:8,
+      textStyle:{color:'#475569',fontSize:12},
+      data:['实际负荷','日前预测 P50','P10–P90 区间'] },
+    tooltip:{ trigger:'axis', axisPointer:{type:'cross', label:{backgroundColor:'#334155'}},
+      backgroundColor:'rgba(255,255,255,.98)', borderColor:'#e2e8f0', textStyle:{color:'#0f172a',fontSize:12},
+      padding:[10,14],
+      formatter(ps){
+        const by={}; ps.forEach(p=>by[p.seriesName]=p);
+        let h = `<b>${fmtT(ps[0].axisValue)}</b>`;
+        if(by['实际负荷']) h += `<br/>实际　<b>${fmt(by['实际负荷'].value[1])}</b> MW`;
+        if(by['日前预测 P50']){
+          const ts=by['日前预测 P50'].value[0]; const pt=pts.find(p=>p.ts===ts);
+          h += `<br/>预测　<b>${fmt(pt.pred)}</b> MW`;
+          h += `<br/>误差　<b>${(((pt.pred-pt.actual)/pt.actual)*100).toFixed(2)}%</b>`;
+        }
+        return h;
+      } },
+    xAxis:{ type:'time', ...axisTime },
+    yAxis:{ type:'value', scale:true, name:'MW', nameTextStyle:{color:'#94a3b8',fontSize:11},
+      axisLabel:{formatter:v=>(v/1000).toFixed(1)+'k', color:'#64748b', fontSize:11},
+      splitLine:{lineStyle:{color:'#eef2f6'}} },
+    series:[
+      { name:'_lo', type:'line', stack:'bt', data:lo, lineStyle:{opacity:0}, symbol:'none',
+        silent:true, tooltip:{show:false}, emphasis:{disabled:true} },
+      { name:'_hi', type:'line', stack:'bt', data:hi, lineStyle:{opacity:0}, symbol:'none',
+        silent:true, tooltip:{show:false}, emphasis:{disabled:true},
+        areaStyle:{ color:'rgba(234,88,12,.12)' } },
+      { name:'实际负荷', type:'line', data:pts.map(p=>[p.ts,p.actual]), showSymbol:false,
+        lineStyle:{ color:'#1d4ed8', width:2.4 }, itemStyle:{color:'#1d4ed8'} },
+      { name:'日前预测 P50', type:'line', data:pts.map(p=>[p.ts,p.pred]), showSymbol:false,
+        lineStyle:{ color:'#ea580c', width:1.6, type:'dashed' }, itemStyle:{color:'#ea580c'} },
+    ]
+  }, {notMerge:true});
+}
+
+/* ================================================================
+   header & init
+================================================================ */
+const p2 = n=>String(n).padStart(2,'0');
+document.getElementById('hdrNow').textContent =
+  `${NOW.getFullYear()}-${p2(NOW.getMonth()+1)}-${p2(NOW.getDate())} ${p2(NOW.getHours())}:00`;
+document.getElementById('hdrUpd').textContent = `模型: D-A Quantile GBM · 最后训练 05:00 UTC · 每 15 分钟刷新`;
+
+function renderAll(){ renderMain(); renderKPIs(); }
+renderSM(); renderBT(); renderAll();
+
+window.addEventListener('resize', ()=>{
+  mainC.resize(); btC.resize(); smCharts.forEach(c=>c.resize());
+  ['spNow','spPeak','spMape','spCov'].forEach(id=>{
+    const inst = echarts.getInstanceByDom(document.getElementById(id)); if(inst) inst.resize();
+  });
+});
+</script>
+</body>
+</html>

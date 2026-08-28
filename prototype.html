@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电力负荷预测仪表盘 (Energy Load Forecasting)</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Apache ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; } /* slate-900 */
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7); /* slate-800 w/ opacity */
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.75rem;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-6 font-sans">
+
+    <!-- Header -->
+    <header class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
+                PJM 区域负荷预测调度台
+            </h1>
+            <p class="text-slate-400 text-sm mt-1">实时追踪与日前预测监控 (Zone: AEP)</p>
+        </div>
+        <div class="flex space-x-3">
+            <select class="bg-slate-800 border border-slate-600 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2">
+                <option value="AEP">Zone: AEP</option>
+                <option value="DAYTON">Zone: DAYTON</option>
+                <option value="DOM">Zone: DOM</option>
+            </select>
+            <button class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm font-medium transition">
+                更新预测模型
+            </button>
+        </div>
+    </header>
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="glass-panel p-4">
+            <div class="text-slate-400 text-xs font-semibold mb-1">当前实际负荷 (MW)</div>
+            <div class="text-2xl font-bold text-blue-400">14,235</div>
+            <div class="text-xs text-emerald-400 mt-2 flex items-center">
+                <span>▲ 2.4% 环比昨日</span>
+            </div>
+        </div>
+        <div class="glass-panel p-4">
+            <div class="text-slate-400 text-xs font-semibold mb-1">预测峰值负荷 (MW)</div>
+            <div class="text-2xl font-bold text-emerald-400">16,890</div>
+            <div class="text-xs text-slate-400 mt-2">
+                预计发生于: 今日 18:00 UTC
+            </div>
+        </div>
+        <div class="glass-panel p-4">
+            <div class="text-slate-400 text-xs font-semibold mb-1">平均绝对百分比误差 (MAPE)</div>
+            <div class="text-2xl font-bold text-white">1.85%</div>
+            <div class="text-xs text-emerald-400 mt-2">
+                <span>▼ 0.2% 优于基准</span>
+            </div>
+        </div>
+        <div class="glass-panel p-4">
+            <div class="text-slate-400 text-xs font-semibold mb-1">当前气温 (°C)</div>
+            <div class="text-2xl font-bold text-orange-400">28.4</div>
+            <div class="text-xs text-slate-400 mt-2">
+                湿度: 65% | 风速: 12 km/h
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Chart -->
+    <div class="glass-panel p-4 mb-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-semibold">负荷预测趋势 (包含 95% 置信区间)</h2>
+            <div class="flex space-x-2">
+                <span class="px-2 py-1 bg-slate-700 text-xs rounded cursor-pointer hover:bg-slate-600">24小时</span>
+                <span class="px-2 py-1 bg-blue-600 text-xs rounded cursor-pointer">3天</span>
+                <span class="px-2 py-1 bg-slate-700 text-xs rounded cursor-pointer hover:bg-slate-600">7天</span>
+            </div>
+        </div>
+        <div id="mainChart" class="w-full h-[500px]"></div>
+    </div>
+
+    <script>
+        // 1. 初始化 ECharts 实例
+        const chartDom = document.getElementById('mainChart');
+        const myChart = echarts.init(chartDom);
+
+        // 2. 模拟数据生成逻辑
+        let baseTime = new Date('2026-08-26T00:00:00Z').getTime();
+        let timeData = [];
+        let actualLoad = [];
+        let predictLoad = [];
+        let lowerBand = [];
+        let bandWidth = [];
+        let temperature = [];
+
+        // 生成 72 小时的数据 (过去48小时 + 未来24小时)
+        for (let i = 0; i < 72; i++) {
+            let t = new Date(baseTime + i * 3600000);
+            let timeStr = t.toISOString().substring(5, 16).replace('T', ' '); // MM-DD HH:mm
+            timeData.push(timeStr);
+
+            // 模拟温度日周期波动
+            let temp = 22 + Math.sin((i - 6) / 24 * Math.PI * 2) * 8 + Math.random() * 1.5;
+            temperature.push(temp.toFixed(1));
+
+            // 模拟负荷 (基础值 + 温度相关增量 + 日周期)
+            let baseLoad = 12000 + (temp > 25 ? (temp - 25) * 400 : 0) - Math.cos((i - 4) / 24 * Math.PI * 2) * 2000;
+
+            if (i < 48) {
+                // 过去 48 小时：只有实际负荷
+                actualLoad.push((baseLoad + Math.random() * 300).toFixed(0));
+                predictLoad.push('-');
+                lowerBand.push('-');
+                bandWidth.push('-');
+            } else if (i === 48) {
+                // 当前时刻：实线与虚线的连接点
+                let currentLoad = (baseLoad + Math.random() * 300).toFixed(0);
+                actualLoad.push(currentLoad);
+                predictLoad.push(currentLoad);
+                lowerBand.push(currentLoad);
+                bandWidth.push(0);
+            } else {
+                // 未来 24 小时：只有预测负荷和置信区间
+                actualLoad.push('-');
+                let pred = baseLoad + Math.random() * 150;
+                predictLoad.push(pred.toFixed(0));
+                
+                // 误差随时间增加 (置信区间变宽)
+                let error = (i - 48) * 35; 
+                lowerBand.push((pred - error).toFixed(0));
+                bandWidth.push((error * 2).toFixed(0)); // 宽度是 error 的两倍
+            }
+        }
+
+        // 3. ECharts 配置项
+        const option = {
+            backgroundColor: 'transparent',
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: { type: 'cross', label: { backgroundColor: '#334155' } },
+                formatter: function (params) {
+                    let html = `<div style="font-weight:bold;margin-bottom:4px;">${params[0].name}</div>`;
+                    params.forEach(p => {
+                        // 忽略用于画图的辅助序列
+                        if (p.seriesName === 'LBand') return;
+                        if (p.seriesName === '置信区间带宽') return;
+                        
+                        let unit = p.seriesName === '温度' ? '°C' : 'MW';
+                        let marker = p.marker;
+                        let value = p.value;
+                        html += `<div>${marker} ${p.seriesName}: <span style="font-weight:bold">${value}</span> ${unit}</div>`;
+                    });
+                    return html;
+                }
+            },
+            legend: {
+                data: ['实际负荷', '预测负荷', '置信区间', '温度'],
+                textStyle: { color: '#94a3b8' },
+                top: 0
+            },
+            grid: {
+                left: '3%', right: '4%', bottom: '12%', containLabel: true
+            },
+            dataZoom: [
+                {
+                    type: 'slider',
+                    show: true,
+                    bottom: 10,
+                    textStyle: { color: '#94a3b8' },
+                    borderColor: '#334155',
+                    fillerColor: 'rgba(59, 130, 246, 0.2)',
+                    start: 30, // 默认显示后 70% 的数据
+                    end: 100
+                },
+                {
+                    type: 'inside'
+                }
+            ],
+            xAxis: {
+                type: 'category',
+                boundaryGap: false,
+                data: timeData,
+                axisLabel: { color: '#94a3b8' },
+                axisLine: { lineStyle: { color: '#475569' } }
+            },
+            yAxis: [
+                {
+                    type: 'value',
+                    name: '负荷 (MW)',
+                    nameTextStyle: { color: '#94a3b8', align: 'right' },
+                    axisLabel: { color: '#94a3b8' },
+                    splitLine: { lineStyle: { color: '#334155', type: 'dashed' } }
+                },
+                {
+                    type: 'value',
+                    name: '温度 (°C)',
+                    nameTextStyle: { color: '#94a3b8', align: 'left' },
+                    position: 'right',
+                    axisLabel: { color: '#94a3b8' },
+                    splitLine: { show: false }
+                }
+            ],
+            series: [
+                {
+                    name: '实际负荷',
+                    type: 'line',
+                    data: actualLoad,
+                    itemStyle: { color: '#3b82f6' }, // blue-500
+                    lineStyle: { width: 3 },
+                    symbol: 'circle',
+                    symbolSize: 6,
+                    showSymbol: false
+                },
+                {
+                    name: '预测负荷',
+                    type: 'line',
+                    data: predictLoad,
+                    itemStyle: { color: '#10b981' }, // emerald-500
+                    lineStyle: { width: 3, type: 'dashed' },
+                    symbol: 'circle',
+                    symbolSize: 6,
+                    showSymbol: false
+                },
+                // 置信区间下界 (透明)
+                {
+                    name: 'LBand',
+                    type: 'line',
+                    data: lowerBand,
+                    stack: 'confidence-band',
+                    lineStyle: { opacity: 0 },
+                    symbol: 'none',
+                    tooltip: { show: false }
+                },
+                // 置信区间带宽 (填充面积)
+                {
+                    name: '置信区间',
+                    type: 'line',
+                    data: bandWidth,
+                    stack: 'confidence-band',
+                    lineStyle: { opacity: 0 },
+                    areaStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: 'rgba(16, 185, 129, 0.4)' },
+                            { offset: 1, color: 'rgba(16, 185, 129, 0.05)' }
+                        ])
+                    },
+                    symbol: 'none'
+                },
+                {
+                    name: '温度',
+                    type: 'line',
+                    yAxisIndex: 1,
+                    data: temperature,
+                    itemStyle: { color: '#f59e0b' }, // amber-500
+                    lineStyle: { width: 2, opacity: 0.8 },
+                    smooth: true,
+                    symbol: 'none'
+                },
+                // 标记当前时间线
+                {
+                    name: '当前时刻',
+                    type: 'line',
+                    markLine: {
+                        symbol: ['none', 'none'],
+                        label: { show: true, position: 'start', formatter: 'Now', color: '#cbd5e1' },
+                        lineStyle: { color: '#cbd5e1', type: 'dashed', width: 2 },
+                        data: [ { xAxis: 48 } ] // 对应 i=48 的时刻
+                    }
+                }
+            ]
+        };
+
+        myChart.setOption(option);
+
+        // 响应式自适应
+        window.addEventListener('resize', function() {
+            myChart.resize();
+        });
+    </script>
+</body>
+</html>
