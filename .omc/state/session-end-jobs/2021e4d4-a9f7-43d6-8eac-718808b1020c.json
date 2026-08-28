@@ -1,0 +1,322 @@
+{
+  "version": 1,
+  "jobId": "f68a8c2a-32a4-421d-ae7f-a7f4807891e9",
+  "sessionId": "2021e4d4-a9f7-43d6-8eac-718808b1020c",
+  "scopeKey": "5ab6e6d0951e5206262c0658cc85a0615e96861bb2be9e572c6a6e4058b21c05",
+  "revision": 89,
+  "createdAt": "2026-08-28T18:18:50.967Z",
+  "updatedAt": "2026-08-28T18:18:58.819Z",
+  "producerGraceExpiresAt": "2026-08-28T18:19:20.968Z",
+  "bestEffortDeadlineAt": "2026-08-28T18:20:11.968Z",
+  "producers": {
+    "core": {
+      "state": "sealed",
+      "intentKey": "8ac1b8384aafc2bbf69bfdbd0343a9cc1a58af672a93271bc4e2e167b3e1fc17",
+      "payloadDigest": "8ac1b8384aafc2bbf69bfdbd0343a9cc1a58af672a93271bc4e2e167b3e1fc17",
+      "sealedAt": "2026-08-28T18:18:51.011Z",
+      "sealedBy": "foreground"
+    },
+    "wiki": {
+      "state": "no-op",
+      "sealedAt": "2026-08-28T18:18:50.967Z",
+      "sealedBy": "wiki-producer"
+    }
+  },
+  "actions": {
+    "foreground-cleanup": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "completed",
+      "attempts": 0,
+      "idempotencyKey": "febf6dba2f2536433960a07f7cedce72e946b43ced0896570df80f017b8914d2",
+      "payload": {
+        "transcriptPath": "/Users/mac/.claude/projects/-Users-mac-Develop-project-guikesong/2021e4d4-a9f7-43d6-8eac-718808b1020c.jsonl",
+        "cwd": "/Users/mac/Develop/project/guikesong",
+        "reason": "prompt_input_exit",
+        "input": {
+          "session_id": "2021e4d4-a9f7-43d6-8eac-718808b1020c",
+          "transcript_path": "/Users/mac/.claude/projects/-Users-mac-Develop-project-guikesong/2021e4d4-a9f7-43d6-8eac-718808b1020c.jsonl",
+          "cwd": "/Users/mac/Develop/project/guikesong",
+          "prompt_id": "44d95c70-00f3-48e0-8cb3-6f3531d7a305",
+          "hook_event_name": "SessionEnd",
+          "reason": "prompt_input_exit"
+        },
+        "metrics": {
+          "session_id": "2021e4d4-a9f7-43d6-8eac-718808b1020c",
+          "ended_at": "2026-08-28T18:18:50.966Z",
+          "reason": "prompt_input_exit",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {},
+        "foregroundResult": {
+          "removedTransientFiles": 2,
+          "completedAt": "2026-08-28T18:18:51.011Z"
+        }
+      },
+      "budgetMs": 9000,
+      "completedAt": "2026-08-28T18:18:51.011Z",
+      "lastOutcomeCode": "completed"
+    },
+    "wiki-capture": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "completed",
+      "attempts": 0,
+      "idempotencyKey": "1719cd1ef5b51e0269b78c4cb8c9308c9c1f7b82fd1c067fc034c060f23863f5",
+      "payload": {},
+      "budgetMs": 9000,
+      "completedAt": "2026-08-28T18:18:50.967Z"
+    },
+    "team-cleanup": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "expired",
+      "attempts": 3,
+      "idempotencyKey": "cee6ac31df545408e1e822247ac249b3f8182a98a5fe8e448ae3b251e55bdee1",
+      "payload": {
+        "transcriptPath": "/Users/mac/.claude/projects/-Users-mac-Develop-project-guikesong/2021e4d4-a9f7-43d6-8eac-718808b1020c.jsonl",
+        "cwd": "/Users/mac/Develop/project/guikesong",
+        "reason": "prompt_input_exit",
+        "input": {
+          "session_id": "2021e4d4-a9f7-43d6-8eac-718808b1020c",
+          "transcript_path": "/Users/mac/.claude/projects/-Users-mac-Develop-project-guikesong/2021e4d4-a9f7-43d6-8eac-718808b1020c.jsonl",
+          "cwd": "/Users/mac/Develop/project/guikesong",
+          "prompt_id": "44d95c70-00f3-48e0-8cb3-6f3531d7a305",
+          "hook_event_name": "SessionEnd",
+          "reason": "prompt_input_exit"
+        },
+        "metrics": {
+          "session_id": "2021e4d4-a9f7-43d6-8eac-718808b1020c",
+          "ended_at": "2026-08-28T18:18:50.966Z",
+          "reason": "prompt_input_exit",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {}
+      },
+      "budgetMs": 9000,
+      "claimedAt": "2026-08-28T18:18:55.711Z",
+      "runner": {
+        "attempt": 3,
+        "runnerNonce": "780fa6f4-d888-4ecd-a543-cd99abc793a0",
+        "phase": "terminal",
+        "deadlineAt": "2026-08-28T18:19:05.687Z"
+      },
+      "lastOutcomeCode": "required-attempt-limit"
+    },
+    "python-cleanup": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "expired",
+      "attempts": 3,
+      "idempotencyKey": "1f1370c4ac056606059d517e2f106b602d8cbcb04587b3fcc5f3b9f89e649cd0",
+      "payload": {
+        "transcriptPath": "/Users/mac/.claude/projects/-Users-mac-Develop-project-guikesong/2021e4d4-a9f7-43d6-8eac-718808b1020c.jsonl",
+        "cwd": "/Users/mac/Develop/project/guikesong",
+        "reason": "prompt_input_exit",
+        "input": {
+          "session_id": "2021e4d4-a9f7-43d6-8eac-718808b1020c",
+          "transcript_path": "/Users/mac/.claude/projects/-Users-mac-Develop-project-guikesong/2021e4d4-a9f7-43d6-8eac-718808b1020c.jsonl",
+          "cwd": "/Users/mac/Develop/project/guikesong",
+          "prompt_id": "44d95c70-00f3-48e0-8cb3-6f3531d7a305",
+          "hook_event_name": "SessionEnd",
+          "reason": "prompt_input_exit"
+        },
+        "metrics": {
+          "session_id": "2021e4d4-a9f7-43d6-8eac-718808b1020c",
+          "ended_at": "2026-08-28T18:18:50.966Z",
+          "reason": "prompt_input_exit",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {}
+      },
+      "budgetMs": 9000,
+      "claimedAt": "2026-08-28T18:18:56.049Z",
+      "runner": {
+        "attempt": 3,
+        "runnerNonce": "191e2e10-a148-424f-bd2f-f716a87f725e",
+        "phase": "terminal",
+        "deadlineAt": "2026-08-28T18:19:05.687Z"
+      },
+      "lastOutcomeCode": "required-attempt-limit"
+    },
+    "reply-cleanup": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "expired",
+      "attempts": 3,
+      "idempotencyKey": "0b3a8b47c28b26d56aca004d4f572b96c118f16819c0d35162418816f9a5420a",
+      "payload": {
+        "transcriptPath": "/Users/mac/.claude/projects/-Users-mac-Develop-project-guikesong/2021e4d4-a9f7-43d6-8eac-718808b1020c.jsonl",
+        "cwd": "/Users/mac/Develop/project/guikesong",
+        "reason": "prompt_input_exit",
+        "input": {
+          "session_id": "2021e4d4-a9f7-43d6-8eac-718808b1020c",
+          "transcript_path": "/Users/mac/.claude/projects/-Users-mac-Develop-project-guikesong/2021e4d4-a9f7-43d6-8eac-718808b1020c.jsonl",
+          "cwd": "/Users/mac/Develop/project/guikesong",
+          "prompt_id": "44d95c70-00f3-48e0-8cb3-6f3531d7a305",
+          "hook_event_name": "SessionEnd",
+          "reason": "prompt_input_exit"
+        },
+        "metrics": {
+          "session_id": "2021e4d4-a9f7-43d6-8eac-718808b1020c",
+          "ended_at": "2026-08-28T18:18:50.966Z",
+          "reason": "prompt_input_exit",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {}
+      },
+      "budgetMs": 9000,
+      "claimedAt": "2026-08-28T18:18:56.378Z",
+      "runner": {
+        "attempt": 3,
+        "runnerNonce": "572d81a1-5219-442d-b478-fcd2d28aa0d8",
+        "phase": "terminal",
+        "deadlineAt": "2026-08-28T18:19:05.687Z"
+      },
+      "lastOutcomeCode": "required-attempt-limit"
+    },
+    "callback": {
+      "class": "best-effort",
+      "phase": "deferred-best-effort",
+      "status": "expired",
+      "attempts": 1,
+      "idempotencyKey": "d068ede2655bf89e0c0950e087d0603d7dcf45538e94f20a654d08c6f4841895",
+      "payload": {
+        "transcriptPath": "/Users/mac/.claude/projects/-Users-mac-Develop-project-guikesong/2021e4d4-a9f7-43d6-8eac-718808b1020c.jsonl",
+        "cwd": "/Users/mac/Develop/project/guikesong",
+        "reason": "prompt_input_exit",
+        "input": {
+          "session_id": "2021e4d4-a9f7-43d6-8eac-718808b1020c",
+          "transcript_path": "/Users/mac/.claude/projects/-Users-mac-Develop-project-guikesong/2021e4d4-a9f7-43d6-8eac-718808b1020c.jsonl",
+          "cwd": "/Users/mac/Develop/project/guikesong",
+          "prompt_id": "44d95c70-00f3-48e0-8cb3-6f3531d7a305",
+          "hook_event_name": "SessionEnd",
+          "reason": "prompt_input_exit"
+        },
+        "metrics": {
+          "session_id": "2021e4d4-a9f7-43d6-8eac-718808b1020c",
+          "ended_at": "2026-08-28T18:18:50.966Z",
+          "reason": "prompt_input_exit",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {}
+      },
+      "budgetMs": 2000,
+      "claimedAt": "2026-08-28T18:18:52.147Z",
+      "runner": {
+        "attempt": 1,
+        "runnerNonce": "9f7b3a2b-a372-4c2b-b5e8-733f85db6129",
+        "phase": "terminal",
+        "deadlineAt": "2026-08-28T18:19:01.129Z"
+      },
+      "lastOutcomeCode": "runner-identity-unavailable"
+    },
+    "notification": {
+      "class": "best-effort",
+      "phase": "deferred-best-effort",
+      "status": "expired",
+      "attempts": 1,
+      "idempotencyKey": "89c0438ff63097ce04beb60efb87292ff68a7af350a0ee331f3de9dbf42d62fc",
+      "payload": {
+        "transcriptPath": "/Users/mac/.claude/projects/-Users-mac-Develop-project-guikesong/2021e4d4-a9f7-43d6-8eac-718808b1020c.jsonl",
+        "cwd": "/Users/mac/Develop/project/guikesong",
+        "reason": "prompt_input_exit",
+        "input": {
+          "session_id": "2021e4d4-a9f7-43d6-8eac-718808b1020c",
+          "transcript_path": "/Users/mac/.claude/projects/-Users-mac-Develop-project-guikesong/2021e4d4-a9f7-43d6-8eac-718808b1020c.jsonl",
+          "cwd": "/Users/mac/Develop/project/guikesong",
+          "prompt_id": "44d95c70-00f3-48e0-8cb3-6f3531d7a305",
+          "hook_event_name": "SessionEnd",
+          "reason": "prompt_input_exit"
+        },
+        "metrics": {
+          "session_id": "2021e4d4-a9f7-43d6-8eac-718808b1020c",
+          "ended_at": "2026-08-28T18:18:50.966Z",
+          "reason": "prompt_input_exit",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {}
+      },
+      "budgetMs": 2000,
+      "claimedAt": "2026-08-28T18:18:52.486Z",
+      "runner": {
+        "attempt": 1,
+        "runnerNonce": "7c53f4a6-f36f-4de8-9d17-41b82010dbe1",
+        "phase": "terminal",
+        "deadlineAt": "2026-08-28T18:19:01.129Z"
+      },
+      "lastOutcomeCode": "runner-identity-unavailable"
+    },
+    "openclaw": {
+      "class": "best-effort",
+      "phase": "deferred-best-effort",
+      "status": "expired",
+      "attempts": 1,
+      "idempotencyKey": "31fe8f6e1cf204e27006de511df257326fdd98655122ca437013e8779ffc735b",
+      "payload": {
+        "transcriptPath": "/Users/mac/.claude/projects/-Users-mac-Develop-project-guikesong/2021e4d4-a9f7-43d6-8eac-718808b1020c.jsonl",
+        "cwd": "/Users/mac/Develop/project/guikesong",
+        "reason": "prompt_input_exit",
+        "input": {
+          "session_id": "2021e4d4-a9f7-43d6-8eac-718808b1020c",
+          "transcript_path": "/Users/mac/.claude/projects/-Users-mac-Develop-project-guikesong/2021e4d4-a9f7-43d6-8eac-718808b1020c.jsonl",
+          "cwd": "/Users/mac/Develop/project/guikesong",
+          "prompt_id": "44d95c70-00f3-48e0-8cb3-6f3531d7a305",
+          "hook_event_name": "SessionEnd",
+          "reason": "prompt_input_exit"
+        },
+        "metrics": {
+          "session_id": "2021e4d4-a9f7-43d6-8eac-718808b1020c",
+          "ended_at": "2026-08-28T18:18:50.966Z",
+          "reason": "prompt_input_exit",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {}
+      },
+      "budgetMs": 2000,
+      "claimedAt": "2026-08-28T18:18:52.824Z",
+      "runner": {
+        "attempt": 1,
+        "runnerNonce": "5438c7a1-3dd2-46a5-ad48-091c1086a6a1",
+        "phase": "terminal",
+        "deadlineAt": "2026-08-28T18:19:01.129Z"
+      },
+      "lastOutcomeCode": "runner-identity-unavailable"
+    }
+  },
+  "owner": null,
+  "phase": "complete",
+  "completion": {
+    "completedAt": "2026-08-28T18:18:58.798Z",
+    "terminalDigest": "c0ba2c27f674a372673215aa8d4f456eb16634d7e3ea83c6ae30ba7674e77c31",
+    "terminalRevision": 88
+  }
+}
