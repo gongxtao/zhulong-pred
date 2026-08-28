@@ -306,7 +306,7 @@ const ZONES = {
 };
 
 const NOW = new Date(2026, 7, 28, 14, 0, 0);          // 2026-08-28 14:00（周五）
-const H_HIST = 168, H_FC = 48;
+const H_HIST = 192, H_FC = 48;
 const HOUR = 3600*1000;
 
 function tempAt(d, jitter){
@@ -353,21 +353,23 @@ for(let k=7;k>=1;k--){
   const pts = [];
   for(let h=0; h<24; h++){
     const ts = +new Date(+dayStart + h*HOUR);
-    // 在历史序列里找实际值
+    // 在历史序列里找实际值（找不到则跳过该小时，防止 NaN）
     let actual = null;
     for(const z of Object.values(DATA)){
       const hit = z.hist.find(p=>p[0]===ts);
       if(hit){ actual = hit[1]; break; }
     }
+    if(actual == null || !isFinite(actual)) continue;
     const err = (rnd()-0.5)*0.052 + (rnd()-0.5)*0.018 + (h>=16&&h<=21? (rnd()-0.3)*0.02 : 0);
     const pred = actual*(1+err);
     const sig = actual*0.017;
     pts.push({ ts, actual, pred, p10:pred-1.2816*sig, p90:pred+1.2816*sig,
                p25:pred-0.6745*sig, p75:pred+0.6745*sig });
   }
-  const mape = pts.reduce((s,p)=>s+Math.abs(p.pred-p.actual)/p.actual,0)/24*100;
-  const c90 = pts.filter(p=>p.actual>=p.p10&&p.actual<=p.p90).length/24*100;
-  const c50 = pts.filter(p=>p.actual>=p.p25&&p.actual<=p.p75).length/24*100;
+  const n = pts.length || 1;
+  const mape = pts.reduce((s,p)=>s+Math.abs(p.pred-p.actual)/p.actual,0)/n*100;
+  const c90 = pts.filter(p=>p.actual>=p.p10&&p.actual<=p.p90).length/n*100;
+  const c50 = pts.filter(p=>p.actual>=p.p25&&p.actual<=p.p75).length/n*100;
   const pkA = Math.max(...pts.map(p=>p.actual)), pkP = Math.max(...pts.map(p=>p.pred));
   const worst = pts.reduce((a,b)=>Math.abs(b.pred-b.actual)/b.actual>Math.abs(a.pred-a.actual)/a.actual?b:a);
   BT_DAYS.push({ dayStart, pts, mape, c90, c50, peakErr:(pkP-pkA)/pkA*100,
