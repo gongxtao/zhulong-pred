@@ -71,9 +71,14 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--actual);outline-off
 .db-in{padding:11px 18px 10px}
 .db-eyebrow{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;color:var(--ink2);letter-spacing:.03em}
 .db-eyebrow .sevTag{margin-left:auto}
-.db-action{font-size:26px;font-weight:800;line-height:1.4;margin-top:3px;letter-spacing:.01em}
-.db-action .num{color:var(--fc-hi)}
-.db-action .win{font-weight:750}
+/* 主角化：预备窗一行预告，关键数字 46px 压场，其余退小 */
+.db-pre{font-size:15px;font-weight:650;color:var(--ink2);margin-top:5px;letter-spacing:.01em}
+.db-pre .win{font-family:var(--mono);font-weight:700;font-size:16.5px;color:var(--ink)}
+.db-hero{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 10px;margin-top:2px}
+.db-hero .lead,.db-hero .tail{font-size:19px;font-weight:700;letter-spacing:.02em}
+.db-hero .num{font-size:46px;font-weight:800;color:var(--fc-hi);letter-spacing:-.015em;line-height:1.08}
+.db-hero .unit{font-size:15px;font-weight:700;color:var(--fc-hi);letter-spacing:.04em}
+.db-replay{font-size:20px;font-weight:750;line-height:1.5;margin-top:3px}
 .db-basis{font-size:12px;color:var(--ink2);margin-top:5px;line-height:1.75}
 .db-basis b{color:var(--ink)}
 .db-basis .num{color:var(--ink);font-weight:650}
@@ -152,12 +157,11 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--actual);outline-off
 .lg .sw.thin{border-top-width:1.5px;border-top-color:var(--neutral)}
 .lg .sw.rec{border-top:1.5px dashed var(--neutral)}
 .lg .sw.band{height:9px;border:0;background:linear-gradient(180deg,var(--b50c) 0 50%,var(--b90c) 50% 100%);border-radius:2px}
-.lg .desc{color:var(--ink3);font-size:10px}
-/* 频率句 */
-#freqSentence{font-family:var(--serif);font-size:13px;color:var(--ink2);padding:6px 14px 8px;
+/* 频率句（脚注级：讲区间语义的叙事声，不再与主图争位） */
+#freqSentence{font-family:var(--serif);font-size:11px;color:var(--ink3);padding:4px 14px 7px;
   border-top:1px solid var(--line);flex-shrink:0;letter-spacing:.01em}
 #freqSentence b{color:var(--fc-hi);font-weight:700}
-#freqSentence i{font-style:normal;color:var(--ink);font-family:var(--mono);font-size:12px}
+#freqSentence i{font-style:normal;color:var(--ink2);font-family:var(--mono);font-size:10.5px}
 
 /* ============ 证据层卡片 ============ */
 .rc-body{padding:9px 13px}
@@ -202,9 +206,10 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--actual);outline-off
 #mapeNote{font-size:10.5px;color:var(--ink3);line-height:1.5}
 .okBadge{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;color:var(--ok)}
 
-/* ============ 时光机 ============ */
-#filmCard{height:116px;flex-shrink:0;margin:10px 12px 0}
-#filmHead{gap:12px;flex-wrap:wrap}
+/* ============ 时光机（dock 在主图卡底部：屏 + 擦洗器一体的时间机器） ============ */
+#filmDock{border-top:1px solid var(--line);flex-shrink:0;display:flex;flex-direction:column}
+#filmHead{display:flex;align-items:center;gap:10px;padding:6px 12px 0;flex-wrap:nowrap;min-width:0}
+#filmHead .filmLabel{font-size:10.5px;font-weight:800;letter-spacing:.16em;color:var(--ink3);white-space:nowrap}
 #filmHead .hint{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .modeChip{font-size:10.5px;font-weight:700;letter-spacing:.08em;padding:2px 9px;border-radius:5px;
   background:var(--chipOkBg);color:var(--okInk);border:1px solid var(--chipOkBd);white-space:nowrap}
@@ -220,7 +225,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--actual);outline-off
   border-radius:6px;padding:3px 10px;white-space:nowrap}
 .extChips button:hover{color:var(--ink);border-color:var(--line2)}
 .extChips button.cur{color:var(--actual-hi);border-color:rgba(8,145,178,.45);background:var(--chipCurBg)}
-#filmWrap{flex:1;position:relative;margin:2px 8px 6px;cursor:ew-resize;overflow:hidden}
+#filmWrap{height:78px;position:relative;margin:2px 6px 8px;cursor:ew-resize;overflow:hidden}
 #filmChart{position:absolute;inset:0}
 #filmEvents{position:absolute;inset:0;pointer-events:none}
 .filmEvt{position:absolute;top:1px;transform:translateX(-50%);font-size:9px;color:var(--ink3);
@@ -283,6 +288,11 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--actual);outline-off
 #optPopover label{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink2);padding:6px 8px;border-radius:6px;cursor:pointer}
 #optPopover label:hover{background:var(--bg2)}
 #optPopover input{accent-color:var(--actual)}
+#basisPopover{position:fixed;z-index:60;width:332px;background:var(--bg1);border:1px solid var(--line2);border-radius:10px;
+  padding:12px 15px;font-size:11.5px;color:var(--ink2);line-height:1.85;display:none;box-shadow:0 12px 40px rgba(15,23,42,.14)}
+#basisPopover h3{font-size:12px;color:var(--ink);margin-bottom:4px}
+#basisPopover b{color:var(--ink)}
+#basisPopover .num{color:var(--ink)}
 
 /* ============ 演示模式 ============ */
 #demoLayer{position:fixed;inset:0;z-index:50;pointer-events:none;display:none}
@@ -374,6 +384,25 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--actual);outline-off
     </div>
     <div id="legendTable" aria-hidden="true"></div>
     <div id="freqSentence">在相似的天气与日历条件下重复 <i>100</i> 次，约 <i>90</i> 次的实际负荷会落入浅色带（P10–P90），<i>50</i> 次落入深色带（P25–P75）。<b>区间随时间张开——越远，越不确定。</b></div>
+    <!-- 时光机 dock：主图是画面，胶片是进度条——同一台时间机器 -->
+    <div id="filmDock">
+      <div id="filmHead">
+        <span class="filmLabel">时 光 机</span>
+        <span class="modeChip" id="modeChip">实时</span>
+        <div id="dateCapsule">
+          <button class="stepBtn" id="stepPrev" title="前移一天（起点）" aria-label="前移一天">‹</button>
+          <span class="zd" id="originDate"></span>
+          <button class="stepBtn" id="stepNext" title="后移一天（起点）" aria-label="后移一天">›</button>
+        </div>
+        <span class="hint">拖动 NOW · 回看任一天的「当时预测 vs 真实后续」</span>
+        <div class="extChips" id="extChips"></div>
+      </div>
+      <div id="filmWrap">
+        <div id="filmChart"></div>
+        <div id="filmEvents"></div>
+        <div id="filmHandle" aria-hidden="true"><div class="bar"></div><div class="grip">NOW</div></div>
+      </div>
+    </div>
   </div>
 
   <!-- ③ 证据层：归因 / 审计（建议在顶部决策层，口径见主图 ⓘ 弹层） -->
@@ -412,26 +441,6 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--actual);outline-off
 
   </div>
 
-  <!-- 探索层：时光机 -->
-  <div class="card" id="filmCard">
-    <div class="card-h" id="filmHead">
-      <h2>时光机</h2>
-      <span class="modeChip" id="modeChip">实时</span>
-      <div id="dateCapsule">
-        <button class="stepBtn" id="stepPrev" title="前移一天（起点）" aria-label="前移一天">‹</button>
-        <span class="zd" id="originDate"></span>
-        <button class="stepBtn" id="stepNext" title="后移一天（起点）" aria-label="后移一天">›</button>
-      </div>
-      <span class="hint">拖动 NOW · 回看任一天的「当时预测 vs 真实后续」</span>
-      <div class="extChips" id="extChips"></div>
-    </div>
-    <div id="filmWrap">
-      <div id="filmChart"></div>
-      <div id="filmEvents"></div>
-      <div id="filmHandle" aria-hidden="true"><div class="bar"></div><div class="grip">NOW</div></div>
-    </div>
-  </div>
-
   <!-- 底部抽屉 -->
   <div id="drawer">
     <div id="drawerTabs">
@@ -466,6 +475,8 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--actual);outline-off
   <label><input type="checkbox" id="optGod" checked>上帝视角（真实后续）</label>
   <label><input type="checkbox" id="optPeak" checked>峰值与预备窗</label>
 </div>
+<!-- 弹层：建议依据（决策层按需展开，不常驻屏上） -->
+<div id="basisPopover" role="dialog" aria-label="建议依据"></div>
 
 <!-- 演示模式 -->
 <div id="demoLayer">
@@ -932,15 +943,15 @@ function renderStatusQuad(){
       <div class="sq-s">${live?`<span class="${dPct>=0?'up':'down'}">${dPct>=0?'+':''}${dPct.toFixed(1)}%</span> · ${WD_ZH[etP(org).wd]} ${fmtHM(org)}`
         :`${WD_ZH[etP(org).wd]} ${fmtHM(org)} · 拖动胶片回放`}</div>
     </div>
-    <div class="sq">
+    <div class="sq" title="实际 − 昨日起点预测 · 近 6 小时加权平均（越近越重）· ±1.5% 内为正常">
       <div class="sq-l">偏差<span class="ref">实际−预测 · 近 6h</span></div>
       <div class="sq-v num" style="color:${dev==null?C.ink3:devOk?C.ink:C.warn}">${dev==null?'—':(dev>=0?'+':'')+dev.toFixed(2)+'%'}</div>
       <div class="sq-s">${dev==null?'重演模式无昨日预测':`<span class="badge ${devOk?'ok':'warn'}">${devOk?'正常':'关注'}</span>±1.5% 内为正常`}</div>
     </div>
-    <div class="sq">
+    <div class="sq" title="最坏 P90 距历史纪录 ${recGap>=0?'+':''}${recGap.toFixed(1)}% · 预备窗 ${fmtHM(peak.ts-3*HOUR)}–${peakEt}（决策层见建议容量）">
       <div class="sq-l">今日峰<span class="ref">未来 24h</span></div>
       <div class="sq-v num" style="color:${C.fcHi}">${fmt(peak.p50)}<small>MW</small></div>
-      <div class="sq-s">@${peakEt} · 最坏 P90 <b class="num">${fmt(peak90.p90)}</b> · P90 距纪录 ${recGap>=0?'+':''}${recGap.toFixed(1)}%</div>
+      <div class="sq-s">@${peakEt} · 最坏 P90 <b class="num">${fmt(peak90.p90)}</b></div>
     </div>
     <div class="sq">
       <div class="sq-l">可信<span class="ref">${live?'近 28 起点回测':'本段重演'}</span></div>
@@ -1007,7 +1018,7 @@ function renderDecision(){
     bn.innerHTML=`
       <div class="db-in">
         <div class="db-eyebrow">时光机 · 重演<span class="sevTag" style="margin-left:auto;background:#E0F2FE;color:#0E7490">上帝视角 ${state.opts.god?'开':'关'}</span></div>
-        <div class="db-action" style="font-size:21px">起点 <span class="num">${fmtFull(org)}</span>——此刻之后的预测，正与真实历史对质</div>
+        <div class="db-replay">起点 <span class="num">${fmtFull(org)}</span>——此刻之后的预测，正与真实历史对质</div>
         <div class="db-basis">拖动下方胶片上的 NOW 手柄任意回放 · 点<span class="dim">「回到当前」</span>返回实时</div>
       </div>`;
     return;
@@ -1033,15 +1044,25 @@ function renderDecision(){
     <div class="db-in">
       <div class="db-eyebrow">⚡ 建议动作 · 未来 24 小时
         <span class="sevTag sev-${sev}-bg">${sev==='high'?'⚠ 高风险':sev==='mid'?'⚠ 关注':'✓ 平稳'}</span></div>
-      <div class="db-action">「预备窗 <span class="win">${winFrom}–${peakEt}</span> 内，预备 <span class="num">${fmt(prepMW)}</span> MW 调峰资源」</div>
+      <div class="db-pre">预备窗 <span class="win">${winFrom}–${peakEt}</span> 内</div>
+      <div class="db-hero"><span class="lead">预备</span><span class="num">${fmt(prepMW)}</span><span class="unit">MW</span><span class="tail">调峰资源</span></div>
       <div class="db-basis">
         依据：${WD_ZH[etP(peak.ts).wd]} ${peakEt} 日峰 P50 <b class="num">${fmt(peak.p50)}</b><span class="dim">（最可能）</span> → P90 <b class="num">${fmt(peak90.p90)}</b><span class="dim">（最坏情形）</span> MW
-        （距纪录 ${recGap>=0?'+':''}${recGap.toFixed(1)}% · 较 30 日均值 ${anom>=0?'+':''}${anom.toFixed(1)}%）<br>
-        爬坡需求 <b class="num">${fmt(rampNeed)}</b> MW/h · 预备窗见主图琥珀底色段 ·
+        · 距纪录 ${recGap>=0?'+':''}${recGap.toFixed(1)}% ·
         区间校准 <b style="color:${calOk?'var(--ok)':'var(--warn)'}">${calOk?'✓ 通过':'⚠ 偏离'}</b>
+        <span class="db-link" id="dbBasisLink">依据⋯</span>
         <span class="db-link" id="dbAuditLink">查看审计 ↗</span>
       </div>
     </div>`;
+  $('basisPopover').innerHTML=`<h3>建议依据 · 全量</h3>
+    <div>较 30 日均值 <b class="num">${anom>=0?'+':''}${anom.toFixed(1)}%</b>（本日日峰 P50 vs 前 30 日日峰均值，判断今日是否异常）</div>
+    <div>爬坡需求 <b class="num">${fmt(rampNeed)}</b> MW/h（未来 24h 最大逐时升幅，机组爬坡能力参照）</div>
+    <div>建议容量 = P90 上界 − 97%×P50，向上取整至 50 MW；预备窗 = 峰前 3 小时，见主图琥珀底色段</div>
+    <div style="color:var(--ink3)">完整口径见主图右上 ⓘ 弹层</div>`;
+  $('dbBasisLink').onclick=e=>{e.stopPropagation();
+    $('calPopover').style.display='none';$('optPopover').style.display='none';
+    const p=$('basisPopover');
+    p.style.display==='none'?togglePop(p,$('dbBasisLink')):p.style.display='none'};
   $('dbAuditLink').onclick=()=>{
     const c=$('railCred');
     c.scrollIntoView({behavior:'smooth',block:'center'});
@@ -1291,13 +1312,14 @@ function togglePop(pop,btn){
   pop.style.left=Math.min(r.right-pop.offsetWidth-8,window.innerWidth-pop.offsetWidth-10)+'px';
   pop.style.top=(r.bottom+8)+'px';
 }
-$('calBtn').onclick=e=>{e.stopPropagation();$('optPopover').style.display='none';const p=$('calPopover');
+$('calBtn').onclick=e=>{e.stopPropagation();$('optPopover').style.display='none';$('basisPopover').style.display='none';const p=$('calPopover');
   p.style.display==='none'?togglePop(p,$('calBtn')):p.style.display='none'};
-$('optBtn').onclick=e=>{e.stopPropagation();$('calPopover').style.display='none';const p=$('optPopover');
+$('optBtn').onclick=e=>{e.stopPropagation();$('calPopover').style.display='none';$('basisPopover').style.display='none';const p=$('optPopover');
   p.style.display==='none'?togglePop(p,$('optBtn')):p.style.display='none'};
 document.addEventListener('click',e=>{
-  if(!e.target.closest('#calPopover'))$('calPopover').style.display='none';
+  if(!e.target.closest('#calPopover')&&!e.target.closest('#calBtn'))$('calPopover').style.display='none';
   if(!e.target.closest('#optPopover')&&!e.target.closest('#optBtn'))$('optPopover').style.display='none';
+  if(!e.target.closest('#basisPopover')&&!e.target.closest('#dbBasisLink'))$('basisPopover').style.display='none';
 });
 /* CSV 导出 */
 $('csvBtn').onclick=()=>{
@@ -1445,7 +1467,7 @@ function renderLegendTable(){
     ['<span class="sw dot"></span>','实际 · 后续','上帝视角'],
     ['<span class="sw thin"></span>','昨日同时刻','参照'],
     ['<span class="sw rec"></span>','历史峰值','14 年纪录'],
-  ].map(([sw,nm,d])=>`<span class="lg">${sw}<span>${nm}</span><span class="desc">${d}</span></span>`).join('');
+  ].map(([sw,nm,d])=>`<span class="lg" title="${nm} · ${d}">${sw}<span>${nm}</span></span>`).join('');
 }
 </script>
 </body>
