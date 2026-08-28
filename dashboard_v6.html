@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PJM NexusGrid | 区域级负荷预测独立控制台 v6</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ink: '#0B0F19', surface: '#11151C', panel: '#1A1F2C', line: '#2A3140',
+                        main: '#3B82F6', glow: 'rgba(59, 130, 246, 0.5)',
+                        warn: '#F59E0B', danger: '#EF4444', ok: '#10B981',
+                        dim: '#8B949E', bright: '#F1F5F9',
+                        zones: {
+                            aep: '#3B82F6', dayton: '#10B981', dom: '#8B5CF6'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'SF Pro Display', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Menlo', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        body { background: #0B0F19; color: #F1F5F9; font-family: 'Inter', sans-serif; }
+        .glass { background: rgba(26, 31, 44, 0.7); border: 1px solid #2A3140; backdrop-filter: blur(8px); border-radius: 6px; }
+        .section-title { font-weight: 600; font-size: 14px; color: #F1F5F9; display: flex; align-items: center; }
+        .sub-info { font-size: 11px; color: #8B949E; }
+        
+        /* Tab Styles */
+        .nav-tab {
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #8B949E;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid transparent;
+        }
+        .nav-tab:hover { color: #F1F5F9; background: #1A1F2C; }
+        .nav-tab.active { 
+            background: #252D3D; 
+            color: #F1F5F9; 
+            border: 1px solid #3B82F6;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .nav-tab .dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-thumb { background: #374151; border-radius: 2px; }
+    </style>
+</head>
+<body class="h-screen overflow-hidden flex flex-col selection:bg-blue-600/30">
+
+    <!-- 1. 顶部全局状态栏 -->
+    <header class="h-14 border-b border-line bg-surface/90 flex items-center justify-between px-5 shrink-0 z-20">
+        <!-- 左侧：Logo + Tab 导航 (核心新增) -->
+        <div class="flex items-center gap-8 h-full">
+            <div class="font-bold tracking-wide text-base flex items-center gap-2 border-r border-line pr-6 h-full">
+                <i class="ph-fill ph-lightning text-main"></i> 
+                <span class="text-bright">NexusGrid</span>
+                <span class="text-xs font-normal text-dim px-2 py-0.5 bg-line rounded">Ops v6</span>
+            </div>
+            
+            <!-- 导航核心：区域切换 -->
+            <div class="flex items-center gap-2" id="zoneNavigation">
+                <div class="nav-tab active" data-zone="ALL">
+                    <i class="ph ph-squares-four"></i> 全网概览
+                </div>
+                <div class="nav-tab" data-zone="AEP">
+                    <span class="dot bg-zones-aep"></span> 专区: AEP
+                </div>
+                <div class="nav-tab" data-zone="DAYTON">
+                    <span class="dot bg-zones-dayton"></span> 专区: DAYTON
+                </div>
+                <div class="nav-tab" data-zone="DOM">
+                    <span class="dot bg-zones-dom"></span> 专区: DOM
+                </div>
+            </div>
+        </div>
+        
+        <!-- 右侧：行动呼吁与时钟 -->
+        <div class="flex items-center gap-3 text-xs">
+            <!-- 动态提示：内容会根据选中的区域变化 -->
+            <div id="actionBanner" class="px-3 py-1.5 bg-warn/10 border border-warn/40 rounded text-warn font-medium flex items-center gap-2 shadow-[0_0_15px_rgba(245,158,11,0.1)]">
+                <i class="ph-fill ph-warning-circle animate-pulse"></i>
+                <span id="actionText">AEP 区建议：15:00 前启动备用机组。</span>
+            </div>
+            <div class="text-dim font-mono" id="sysClock">2026-08-28 14:00 UTC</div>
+        </div>
+    </header>
+
+    <main class="flex-1 flex overflow-hidden">
+        
+        <!-- 左侧：业务态势视图 (占 70%) -->
+        <div class="flex-1 p-4 space-y-4 overflow-y-auto">
+            
+            <!-- Layer 1: 态势感知卡片 (数值随 Tab 联动) -->
+            <div class="grid grid-cols-4 gap-4">
+                <div class="glass p-4 flex flex-col justify-between h-28">
+                    <div class="sub-info uppercase tracking-wider font-semibold" id="kpiTitle1">实时网供负荷 (AEP)</div>
+                    <div class="flex items-end justify-between mt-1">
+                        <div class="text-3xl font-bold font-mono text-bright" id="kpiVal1">14,235</div>
+                        <span class="text-xs text-danger font-bold bg-danger/10 px-2 py-1 rounded border border-danger/20" id="kpiDelta1">+4.2%</span>
+                    </div>
+                    <div class="sub-text mt-2 text-[11px] text-dim" id="kpiSub1">较日前预测高出 1,102 MW (异常)</div>
+                </div>
+
+                <div class="glass p-4 flex flex-col justify-between h-28">
+                    <div class="sub-info uppercase tracking-wider font-semibold">今日晚高峰预测 P50</div>
+                    <div class="flex items-end justify-between mt-1">
+                        <div class="text-3xl font-bold font-mono text-warn" id="kpiVal2">17,890</div>
+                        <span class="text-xs text-dim bg-line px-2 py-1 rounded" id="kpiPeakTime">18:00</span>
+                    </div>
+                    <div class="sub-text mt-2 text-[11px] text-danger font-mono">
+                        <i class="ph ph-caret-up"></i> P90 风险极值: <span id="kpiP90">18,450</span> MW
+                    </div>
+                </div>
+
+                <div class="glass p-4 flex flex-col justify-between h-28">
+                    <div class="sub-info uppercase tracking-wider font-semibold">最大爬坡速率 (Ramp Rate)</div>
+                    <div class="flex items-end justify-between mt-1">
+                        <div class="text-3xl font-bold font-mono text-warn" id="kpiVal3">1,250</div>
+                        <span class="text-[11px] text-dim">MW/h</span>
+                    </div>
+                    <div class="sub-text mt-2 text-[11px] text-dim">发生区间: <span id="kpiRampTime">16:00 - 17:00</span></div>
+                </div>
+
+                <div class="glass p-4 flex flex-col justify-between h-28">
+                    <div class="sub-info uppercase tracking-wider font-semibold">模型运行状态 (MAPE)</div>
+                    <div class="flex items-end justify-between mt-1">
+                        <div class="text-3xl font-bold font-mono text-ok" id="kpiVal4">1.85</div>
+                        <span class="text-xs text-dim bg-line px-2 py-1 rounded flex items-center gap-1"><span class="w-1 h-1 bg-ok rounded-full"></span> STEADY</span>
+                    </div>
+                    <div id="spark_mape" class="h-8 -mx-2 -mb-1"></div>
+                </div>
+            </div>
+
+            <!-- Layer 2: 预测主图 -->
+            <div class="glass overflow-hidden flex flex-col h-[420px]">
+                <div class="h-11 border-b border-line flex items-center justify-between px-5 shrink-0">
+                    <div class="section-title">
+                        <i class="ph ph-trend-up mr-2 text-main"></i>
+                        <span id="mainTitle">AEP 负荷超短期推演</span>
+                        <span class="ml-3 text-[10px] text-dim bg-panel px-2 py-0.5 border border-line rounded">T-24H ~ T+48H</span>
+                    </div>
+                    <div class="text-[11px] text-dim">悬停查看 P10/P90 带 · 滚轮缩放</div>
+                </div>
+                <div id="chart_main" class="flex-1 p-2"></div>
+                <div class="border-t border-line bg-black/20 px-5 py-2.5 flex items-start gap-3 shrink-0">
+                    <i class="ph-fill ph-info text-main mt-0.5"></i>
+                    <p class="text-[11px] text-dim leading-relaxed">
+                        <b class="text-bright">不确定性说明：</b> 
+                        <span class="text-warn font-semibold">约 90% 的实际负荷会落入浅色带（P10–P90）</span>。
+                        调度安全裕度核算应以 P90 上界为准。
+                    </p>
+                </div>
+            </div>
+
+            <!-- Layer 3: 概览模式 vs 区域模式 -->
+            <!-- 概览模式显示：区域对比条形图 -->
+            <!-- 单区域模式显示：负荷-温度散点归因 -->
+            <div class="glass overflow-hidden flex flex-col h-[280px]">
+                <div class="h-11 border-b border-line flex items-center justify-between px-5 shrink-0">
+                    <div class="section-title" id="subTitle">
+                        <i class="ph ph-map-pin-area mr-2 text-main"></i> 子区域负荷结构对比
+                    </div>
+                    <div class="text-[11px] text-dim" id="subSubtitle">全网概览模式：直观的量级差异</div>
+                </div>
+                <div id="chart_sub" class="flex-1 p-2"></div>
+            </div>
+        </div>
+
+        <!-- 右侧：模型可信度实验室 (占 30%) -->
+        <aside class="w-[420px] border-l border-line bg-surface/50 flex flex-col shrink-0 overflow-y-auto p-4 gap-4">
+            
+            <div class="glass overflow-hidden flex flex-col">
+                <div class="h-11 border-b border-line flex items-center justify-between px-4 shrink-0 bg-black/20">
+                    <div class="section-title text-sm"><i class="ph-fill ph-shield-check mr-2 text-ok"></i>模型准确率自检 (该区域)</div>
+                </div>
+                <div class="p-4 space-y-4">
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-xs text-dim">P90 区间命中率 (目标 90%)</span>
+                            <span class="text-xs font-bold font-mono text-ok">92.4%</span>
+                        </div>
+                        <div class="h-1.5 bg-line rounded overflow-hidden">
+                            <div class="h-full bg-ok w-[92%] relative"><div class="absolute right-[8%] h-4 w-0.5 bg-warn top-1/2 -translate-y-1/2"></div></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-xs text-dim">P50 区间命中率 (目标 50%)</span>
+                            <span class="text-xs font-bold font-mono text-bright">51.1%</span>
+                        </div>
+                        <div class="h-1.5 bg-line rounded overflow-hidden"><div class="h-full bg-main w-[51%]"></div></div>
+                    </div>
+                    <div class="pt-2 border-t border-line">
+                        <div class="text-xs text-dim mb-2">过去 7 日 MAPE 误差走势</div>
+                        <div id="chart_backtest" class="h-28 w-full"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass overflow-hidden flex flex-col flex-1">
+                <div class="h-11 border-b border-line flex items-center justify-between px-4 shrink-0 bg-black/20">
+                    <div class="section-title text-sm"><i class="ph-fill ph-microscope mr-2 text-warn"></i>AI 特征贡献度 (SHAP)</div>
+                </div>
+                <div class="p-4 flex flex-col gap-4">
+                    <div id="chart_shap" class="h-48 w-full"></div>
+                    
+                    <div class="p-3 bg-danger/5 border border-danger/20 rounded flex gap-3 items-start">
+                        <i class="ph-fill ph-lightbulb text-danger text-lg mt-0.5 shrink-0"></i>
+                        <div class="text-[11px] text-dim leading-relaxed">
+                            <b class="text-danger">AI 洞察：</b>
+                            <span id="shapText">检测到温度异常对 AEP 贡献权重 68%。</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-4 gap-2 pt-2 border-t border-line">
+                        <div class="text-center"><i class="ph ph-thermometer-hot text-warn text-xl"></i><div class="text-[10px] text-dim mt-1">温度</div><div class="text-xs font-mono text-bright">32.4°C</div></div>
+                        <div class="text-center"><i class="ph ph-drop text-main text-xl"></i><div class="text-[10px] text-dim mt-1">湿度</div><div class="text-xs font-mono text-bright">78%</div></div>
+                        <div class="text-center"><i class="ph ph-wind text-dim text-xl"></i><div class="text-[10px] text-dim mt-1">风速</div><div class="text-xs font-mono text-bright">14km/h</div></div>
+                        <div class="text-center"><i class="ph ph-calendar-blank text-ok text-xl"></i><div class="text-[10px] text-dim mt-1">类型</div><div class="text-xs font-mono text-bright">周五</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <details class="glass group">
+                <summary class="h-9 border-b border-line flex items-center justify-between px-4 cursor-pointer list-none text-xs text-dim hover:text-bright bg-black/20 rounded-t">
+                    <span class="flex items-center gap-2"><i class="ph ph-database"></i> 数据采集与建模口径</span>
+                    <span class="transition group-open:rotate-180">▾</span>
+                </summary>
+                <div class="p-4 text-[10px] text-dim leading-relaxed space-y-2">
+                    <div><b class="text-bright">数据源</b>：PJM / Kaggle Hourly Energy Consumption.</div>
+                    <div><b class="text-bright">算法</b>：LightGBM Quantile Regression.</div>
+                    <div class="pt-2 border-t border-line italic text-dim/70">注：`interval_end_utc` 规范化为 UTC，无夏令时歧义。</div>
+                </div>
+            </details>
+
+        </aside>
+    </main>
+
+<script>
+/* =========================================
+   1. 数据工厂：模拟三个区域完全独立的业务数据
+========================================= */
+const N = 72; const NOW = 24;
+let times = [];
+let t = new Date(); t.setHours(t.getHours() - 24);
+for(let i=0; i<N; i++){ times.push(('0'+t.getHours()).slice(-2)+':00'); t.setHours(t.getHours()+1); }
+
+function generateZoneData(baseVol, amp, coolFactor, name){
+    let actual=[], p50=[], p10=[], p90=[], temp=[], peak=0, peakH=18;
+    t = new Date(); t.setHours(t.getHours() - 24);
+    for(let i=0; i<N; i++){
+        let h = t.getHours();
+        let temp_v = 22 + 8 * Math.sin((i-6)/24*Math.PI*2) + Math.random();
+        temp.push(temp_v);
+        let load = baseVol + (temp_v>24 ? (temp_v-24)*coolFactor : 0) - Math.cos((h-4)/24*Math.PI*2)*amp;
+        
+        actual.push(i<=NOW ? load + (Math.random()*(baseVol*0.02)-baseVol*0.01) : null);
+        if(i>=NOW){
+            p50.push(load); 
+            let risk = load + (i-NOW)*(baseVol*0.003);
+            p90.push(risk); 
+            p10.push(load - (i-NOW)*(baseVol*0.003));
+            if(risk > peak){ peak = risk; peakH = h; }
+        } else {
+            p50.push(null); p90.push(null); p10.push(null);
+        }
+        t.setHours(t.getHours()+1);
+    }
+    return { name, actual, p50, p10, p90, temp, peakH, peakV: peak };
+}
+
+const DATASET = {
+    AEP: generateZoneData(13600, 4000, 450, 'AEP'),
+    DAYTON: generateZoneData(2100, 600, 80, 'DAYTON'), // 量级小很多
+    DOM: generateZoneData(12200, 3500, 400, 'DOM')
+};
+
+/* =========================================
+   2. 图表实例初始化
+========================================= */
+const instMain = echarts.init(document.getElementById('chart_main'));
+const instSub = echarts.init(document.getElementById('chart_sub'));
+const instBack = echarts.init(document.getElementById('chart_backtest'));
+const instShap = echarts.init(document.getElementById('chart_shap'));
+const instSpark = echarts.init(document.getElementById('spark_mape'));
+
+/* =========================================
+   3. 核心渲染逻辑控制器：RenderEngine
+========================================= */
+function RenderEngine(zoneKey){
+    // --- 1. 更新文本与顶部 Banner ---
+    if(zoneKey === 'ALL'){
+        document.getElementById('mainTitle').innerText = '全网三大负荷区趋势对比';
+        document.getElementById('subTitle').innerHTML = '<i class="ph ph-bar-chart mr-2 text-main"></i> 区域峰值结构对比';
+        document.getElementById('subSubtitle').innerText = 'Small Multiples 展示量级差异';
+        document.getElementById('kpiTitle1').innerText = '全网总负荷 (叠加)';
+        document.getElementById('kpiVal1').innerText = '27,900';
+        document.getElementById('actionText').innerText = '全网态势：AEP 区面临最高峰值压力。';
+    } else {
+        const z = DATASET[zoneKey];
+        document.getElementById('mainTitle').innerText = `${zoneKey} 负荷超短期推演`;
+        document.getElementById('subTitle').innerHTML = '<i class="ph ph-scatter-chart mr-2 text-main"></i> 负荷-气温敏感性归因';
+        document.getElementById('subSubtitle').innerText = `${zoneKey} 单区域分析：气象驱动因素`;
+        document.getElementById('kpiTitle1').innerText = `实时网供负荷 (${zoneKey})`;
+        document.getElementById('kpiVal1').innerText = Math.round(z.actual[NOW]).toLocaleString();
+        
+        // 峰值更新
+        document.getElementById('kpiVal2').innerText = Math.round(z.peakV).toLocaleString();
+        document.getElementById('kpiPeakTime').innerText = ('0'+z.peakH).slice(-2)+':00';
+        document.getElementById('kpiP90').innerText = Math.round(z.peakV*1.02).toLocaleString();
+        
+        // 行动 Banner 更新
+        const colors = {'AEP':'#3B82F6', 'DAYTON':'#10B981', 'DOM':'#8B5CF6'};
+        document.getElementById('actionText').innerText = `${zoneKey} 提示：关注 ${('0'+z.peakH).slice(-2)}:00 峰值冲击。`;
+        document.getElementById('actionText').style.color = colors[zoneKey];
+        document.getElementById('actionBanner').style.borderColor = colors[zoneKey] + '66';
+        document.getElementById('actionBanner').style.backgroundColor = colors[zoneKey] + '11';
+    }
+
+    // --- 2. 渲染主图 ---
+    renderMainChart(zoneKey);
+    // --- 3. 渲染副图 (概览=对比柱, 单区=散点) ---
+    renderSubChart(zoneKey);
+    // --- 4. 渲染侧边栏 (固定图表，但数值颜色微调) ---
+    renderSideCharts(zoneKey);
+}
+
+/* 子函数：主图 */
+function renderMainChart(zoneKey){
+    let series = [];
+    let legend = [];
+    const zoneColors = { AEP:'#3B82F6', DAYTON:'#10B981', DOM:'#8B5CF6' };
+
+    if(zoneKey === 'ALL'){
+        // 概览模式：三折线叠加对比
+        ['AEP','DOM','DAYTON'].forEach(zName => {
+            let z = DATASET[zName];
+            series.push({
+                name: `${zName} 实际`, type:'line', data: z.actual, showSymbol:false,
+                lineStyle:{color:zoneColors[zName], width:2}, itemStyle:{color:zoneColors[zName]}
+            });
+            series.push({
+                name: `${zName} 预测`, type:'line', data: z.p50, showSymbol:false,
+                lineStyle:{color:zoneColors[zName], width:2, type:'dashed'}, itemStyle:{color:zoneColors[zName]}
+            });
+        });
+        legend = ['AEP 实际','AEP 预测','DOM 实际','DOM 预测','DAYTON 实际','DAYTON 预测'];
+    } else {
+        // 单区模式：独立的置信区间
+        let z = DATASET[zoneKey];
+        let color = zoneColors[zoneKey];
+        series = [
+            { name:'P10-P90 带', type:'line', data:z.p90, lineStyle:{opacity:0}, symbol:'none', areaStyle:{color:'rgba(245,158,11,0.08)'} },
+            { name:'Mask', type:'line', data:z.p10, lineStyle:{opacity:0}, symbol:'none', areaStyle:{color:'#11151C'} },
+            { name:'实际负荷', type:'line', data:z.actual, showSymbol:false, lineStyle:{color:color, width:2.5, shadowColor:color+'55', shadowBlur:5} },
+            { name:'预测 P50', type:'line', data:z.p50, showSymbol:false, lineStyle:{color:'#F59E0B', width:2, type:'dashed'},
+              markLine:{ silent:true, symbol:'none', label:{ formatter:'NOW', color:'#8B949E', fontSize:10, position:'insideEndTop' }, lineStyle:{ color:'#8B949E' }, data:[{xAxis:NOW}] }
+            }
+        ];
+        legend = ['实际负荷','预测 P50','P10-P90 带'];
+    }
+
+    instMain.setOption({
+        tooltip:{ trigger:'axis', backgroundColor:'#1A1F2C', borderColor:'#2A3140', textStyle:{color:'#F1F5F9', fontSize:11} },
+        legend:{ data: legend, textStyle:{color:'#8B949E', fontSize:11}, top:0, right:10, icon:'roundRect', itemWidth:12, itemHeight:8 },
+        grid:{left:50, right:20, top:30, bottom:25},
+        xAxis:{ type:'category', data:times, axisLine:{lineStyle:{color:'#2A3140'}}, axisLabel:{color:'#8B949E', fontSize:10} },
+        yAxis:{ type:'value', splitLine:{lineStyle:{color:'#2A3140', type:'dashed'}}, axisLine:{show:false}, axisLabel:{color:'#8B949E', fontSize:10, formatter:v=>(v/1000)+'k'} },
+        series
+    }, {notMerge: true});
+}
+
+/* 子函数：副图 */
+function renderSubChart(zoneKey){
+    if(zoneKey === 'ALL'){
+        // 全网模式：峰值对比条形图
+        const peaks = Object.values(DATASET).map(z => ({name:z.name, value:Math.round(z.peakV)}));
+        instSub.setOption({
+            tooltip:{trigger:'axis', backgroundColor:'#1A1F2C', borderColor:'#2A3140'},
+            grid:{left:50, right:20, top:20, bottom:30},
+            xAxis:{type:'category', data:peaks.map(p=>p.name), axisLine:{lineStyle:{color:'#2A3140'}}, axisLabel:{color:'#8B949E'}},
+            yAxis:{type:'value', axisLine:{show:false}, splitLine:{lineStyle:{color:'#2A3140', type:'dashed'}}, axisLabel:{color:'#8B949E'}},
+            series:[{
+                type:'bar', data: peaks.map((p,i) => ({
+                    value: p.value,
+                    itemStyle: { color: ['#3B82F6','#10B981','#8B5CF6'][i], borderRadius:[4,4,0,0] }
+                })),
+                label:{show:true, position:'top', formatter:'{c} MW', color:'#F1F5F9', fontSize:10, fontWeight:'bold'},
+                barWidth:'40%'
+            }]
+        }, {notMerge: true});
+    } else {
+        // 单区模式：负荷-温度散点图
+        let z = DATASET[zoneKey];
+        let scatter = [];
+        for(let i=0; i<N; i++){
+            let loadVal = i<=NOW ? z.actual[i] : z.p50[i];
+            let tempVal = z.temp[i];
+            scatter.push([tempVal.toFixed(1), loadVal.toFixed(0)]);
+        }
+        instSub.setOption({
+            tooltip:{ formatter: (p) => `温度: ${p.value[0]}°C<br/>负荷: ${p.value[1]} MW`, backgroundColor:'#1A1F2C', borderColor:'#2A3140', textStyle:{color:'#F1F5F9'} },
+            grid:{left:50, right:20, top:20, bottom:40},
+            xAxis:{ type:'value', name:'温度 (°C)', nameLocation:'middle', nameGap:25, scale:true, axisLine:{lineStyle:{color:'#2A3140'}}, splitLine:{show:false}, axisLabel:{color:'#8B949E'} },
+            yAxis:{ type:'value', name:'MW', scale:true, axisLine:{show:false}, splitLine:{lineStyle:{color:'#2A3140', type:'dashed'}}, axisLabel:{color:'#8B949E'} },
+            series:[{
+                type:'scatter', data:scatter,
+                itemStyle:{ color:(p)=>parseFloat(p.value[0])>26?'#EF4444':'#3B82F6', opacity:0.7 },
+                symbolSize: 10
+            }]
+        }, {notMerge: true});
+    }
+}
+
+/* 子函数：侧边栏 (Spark, Backtest, Shap) */
+function renderSideCharts(zoneKey){
+    const mapeData = { AEP:[2.1,2.0,1.8,1.9,1.8,1.7,1.85], DAYTON:[3.1,2.9,3.2,2.8,2.5,2.6,2.7], DOM:[2.4,2.2,2.1,2.3,2.0,2.1,2.15] };
+    const shapWeights = { AEP:[2, 5, 12, 18, 45, 68], DAYTON:[5, 10, 15, 10, 35, 30], DOM:[1, 3, 10, 25, 40, 55] };
+    const shapZones = { 'AEP':68, 'DAYTON':30, 'DOM':55 };
+    let mape = zoneKey==='ALL' ? mapeData.AEP : mapeData[zoneKey];
+    let shap = zoneKey==='ALL' ? shapWeights.AEP : shapWeights[zoneKey];
+    let sw = zoneKey==='ALL' ? 68 : shapZones[zoneKey];
+    
+    document.getElementById('shapText').innerText = `检测到温度因子对当前峰值的贡献权重高达 ${sw}%。建议提前启动风冷机组。`;
+
+    // Spark
+    instSpark.setOption({
+        grid:{left:0,right:0,top:5,bottom:0}, xAxis:{type:'category',show:false,data:[1,2,3,4,5,6,7]}, yAxis:{type:'value',show:false},
+        series:[{ type:'line', data: mape, showSymbol:false, lineStyle:{color:'#10B981', width:1.5}, 
+            areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'rgba(16,185,129,0.2)'},{offset:1,color:'rgba(16,185,129,0)'}]}} 
+        }]
+    }, {notMerge:true});
+
+    // Backtest
+    instBack.setOption({
+        grid:{left:30,right:10,top:10,bottom:20},
+        xAxis:{ type:'category', data:['D-6','D-5','D-4','D-3','D-2','D-1','Now'], axisLabel:{color:'#8B949E', fontSize:10}, axisLine:{show:false} },
+        yAxis:{ type:'value', min:0, max:5, splitLine:{show:false}, axisLabel:{show:false} },
+        series:[{ type:'bar', data: mape, itemStyle:{color:(p)=>(p.value>3?'#EF4444':'#3B82F6'), borderRadius:[2,2,0,0]}, barWidth:'40%',
+            markLine:{ silent:true, symbol:'none', lineStyle:{type:'dashed', color:'#8B949E'}, label:{formatter:'3% Threshold', color:'#8B949E', fontSize:9, position:'insideEndTop'}, data:[{yAxis:3}] }
+        }]
+    }, {notMerge:true});
+
+    // Shap
+    instShap.setOption({
+        grid:{left:80, right:20, top:5, bottom:5, containLabel:true},
+        xAxis:{ type:'value', show:false, max:100 },
+        yAxis:{ type:'category', data:['Precip','Wind','Day/Week','Humidity','Lag-Load','Temperature'], inverse:true, axisLine:{show:false}, axisLabel:{color:'#8B949E', fontSize:10} },
+        series:[{ type:'bar', data: shap, barWidth:'55%',
+            label:{ show:true, position:'right', formatter:'{c}%', color:'#F1F5F9', fontSize:10, fontWeight:'bold' },
+            itemStyle:{ borderRadius:[0,2,2,0], color:{type:'linear',x:0,y:0,x2:1,y2:0,colorStops:[{offset:0,color:'rgba(59,130,246,0.4)'},{offset:1,color:'rgba(59,130,246,1)'}]} }
+        }]
+    }, {notMerge:true});
+}
+
+/* =========================================
+   4. 事件绑定：导航栏切换
+========================================= */
+document.getElementById('zoneNavigation').addEventListener('click', (e) => {
+    const tab = e.target.closest('.nav-tab');
+    if(!tab) return;
+    // UI 更新
+    document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+    tab.classList.add('active');
+    // 渲染引擎启动
+    const zone = tab.dataset.zone;
+    RenderEngine(zone);
+});
+
+/* 初始启动 */
+setInterval(() => {
+    const d = new Date();
+    document.getElementById('sysClock').innerText = d.toISOString().replace('T',' ').substring(0,19) + ' UTC';
+}, 1000);
+
+window.addEventListener('resize', () => {
+    [instMain, instSub, instBack, instShap, instSpark].forEach(i => i.resize());
+});
+
+// 启动：默认进入 AEP 区域（这是最有代表性的）
+RenderEngine('AEP');
+// 强制把 Tab UI 切回 AEP (因为 HTML 默认是 ALL，为了展示全貌，这里默认选中 AEP 更好)
+document.querySelectorAll('.nav-tab').forEach(el => {
+    el.classList.toggle('active', el.dataset.zone === 'AEP');
+});
+
+</script>
+</body>
+</html>

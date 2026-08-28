@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PJM NexusGrid | 负荷预测决策中台 v5</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ink: '#0B0F19', surface: '#11151C', panel: '#1A1F2C', line: '#2A3140',
+                        main: '#3B82F6', glow: 'rgba(59, 130, 246, 0.5)',
+                        warn: '#F59E0B', danger: '#EF4444', ok: '#10B981',
+                        dim: '#8B949E', bright: '#F1F5F9'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'SF Pro Display', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Menlo', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        body { background: #0B0F19; color: #F1F5F9; font-family: 'Inter', sans-serif; }
+        .glass { background: rgba(26, 31, 44, 0.7); border: 1px solid #2A3140; backdrop-filter: blur(8px); border-radius: 6px; }
+        .section-title { font-weight: 600; font-size: 14px; color: #F1F5F9; display: flex; align-items: center; }
+        .sub-info { font-size: 11px; color: #8B949E; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-thumb { background: #374151; border-radius: 2px; }
+    </style>
+</head>
+<body class="h-screen overflow-hidden flex flex-col selection:bg-blue-600/30">
+
+    <!-- 1. 顶层全局状态与行动呼吁 -->
+    <header class="h-12 border-b border-line bg-surface/90 flex items-center justify-between px-5 shrink-0">
+        <div class="flex items-center gap-4">
+            <div class="font-bold tracking-wide text-base flex items-center gap-2">
+                <i class="ph-fill ph-lightning text-main"></i> NexusGrid <span class="text-xs font-normal text-dim px-2 py-0.5 bg-line rounded">DSS Platform</span>
+            </div>
+            <div class="text-xs text-dim border-l border-line pl-4">AEP 控制区</div>
+        </div>
+        
+        <!-- 核心行动横幅：不只是警报，而是“下一步操作” -->
+        <div class="flex items-center gap-3 text-xs">
+            <div class="px-3 py-1 bg-warn/10 border border-warn/40 rounded text-warn font-medium flex items-center gap-2 shadow-[0_0_15px_rgba(245,158,11,0.1)]">
+                <i class="ph-fill ph-warning-circle animate-pulse"></i>
+                预测系统提示：建议 15:00 前投入 1 台 1200 MW 燃气机组，以覆盖 18:00 尖峰。
+            </div>
+            <div class="text-dim font-mono">2026-08-28 14:00 UTC</div>
+        </div>
+    </header>
+
+    <main class="flex-1 flex overflow-hidden">
+        
+        <!-- 左侧：业务态势视图 (占 70%) -->
+        <div class="flex-1 p-4 space-y-4 overflow-y-auto">
+            
+            <!-- Layer 1: 态势感知卡片 (保留 V4 的决策逻辑) -->
+            <div class="grid grid-cols-4 gap-4">
+                <!-- 1. 实时负荷 (强调异常偏差) -->
+                <div class="glass p-4 flex flex-col justify-between h-28">
+                    <div class="sub-info uppercase tracking-wider font-semibold">实时网供负荷</div>
+                    <div class="flex items-end justify-between mt-1">
+                        <div class="text-3xl font-bold font-mono text-bright">14,235</div>
+                        <span class="text-xs text-danger font-bold bg-danger/10 px-2 py-1 rounded border border-danger/20">+4.2%</span>
+                    </div>
+                    <div class="sub-text mt-2 text-[11px] text-dim">较日前预测高出 1,102 MW (异常)</div>
+                </div>
+
+                <!-- 2. 高峰预测 (强调 P90 极值风险) -->
+                <div class="glass p-4 flex flex-col justify-between h-28">
+                    <div class="sub-info uppercase tracking-wider font-semibold">今日晚高峰预测 P50</div>
+                    <div class="flex items-end justify-between mt-1">
+                        <div class="text-3xl font-bold font-mono text-warn">17,890</div>
+                        <span class="text-xs text-dim bg-line px-2 py-1 rounded">18:00</span>
+                    </div>
+                    <div class="sub-text mt-2 text-[11px] text-danger font-mono">
+                        <i class="ph ph-caret-up"></i> P90 风险极值: 18,450 MW
+                    </div>
+                </div>
+
+                <!-- 3. 爬坡能力 (动态安全指标) -->
+                <div class="glass p-4 flex flex-col justify-between h-28">
+                    <div class="sub-info uppercase tracking-wider font-semibold">最大爬坡速率 (Ramp Rate)</div>
+                    <div class="flex items-end justify-between mt-1">
+                        <div class="text-3xl font-bold font-mono text-warn">1,250</div>
+                        <span class="text-[11px] text-dim">MW/h</span>
+                    </div>
+                    <div class="sub-text mt-2 text-[11px] text-dim">发生区间: 16:00 - 17:00 (光伏/晚峰叠加)</div>
+                </div>
+
+                <!-- 4. 模型状态 (融合 V3 的 MAPE 可信度) -->
+                <div class="glass p-4 flex flex-col justify-between h-28">
+                    <div class="sub-info uppercase tracking-wider font-semibold">模型运行状态 (MAPE)</div>
+                    <div class="flex items-end justify-between mt-1">
+                        <div class="text-3xl font-bold font-mono text-ok">1.85</div>
+                        <span class="text-xs text-dim bg-line px-2 py-1 rounded flex items-center gap-1"><span class="w-1 h-1 bg-ok rounded-full"></span> STEADY</span>
+                    </div>
+                    <div id="spark_mape" class="h-8 -mx-2 -mb-1"></div>
+                </div>
+            </div>
+
+            <!-- Layer 2: 预测主图 (融合 V3 的双层 P10/P90 区间与解释性说明) -->
+            <div class="glass overflow-hidden flex flex-col h-[420px]">
+                <div class="h-11 border-b border-line flex items-center justify-between px-5 shrink-0">
+                    <div class="section-title">
+                        <i class="ph ph-trend-up mr-2 text-main"></i>全网负荷超短期推演 (Ultra-Short Forecast)
+                        <span class="ml-3 text-[10px] text-dim bg-panel px-2 py-0.5 border border-line rounded">T-24H ~ T+48H</span>
+                    </div>
+                    <div class="text-[11px] text-dim">
+                        悬停图表查看 P10/P90 带 · <i class="ph ph-arrows-in-line-vertical text-dim"></i> 滚轮缩放
+                    </div>
+                </div>
+                <div id="chart_main" class="flex-1 p-2"></div>
+                <!-- 底部专业解释 (融合参考文件的频率句说明) -->
+                <div class="border-t border-line bg-black/20 px-5 py-2.5 flex items-start gap-3 shrink-0">
+                    <i class="ph-fill ph-info text-main mt-0.5"></i>
+                    <p class="text-[11px] text-dim leading-relaxed">
+                        <b class="text-bright">关于不确定性区间的解释：</b> Fan Chart 展示了基于分位数回归的概率密度。历史重复推演表明，在相似气象日历条件下，
+                        <span class="text-warn font-semibold">约有 90% 的实际负荷会落入浅色带（P10–P90）</span>。
+                        点预测（P50 虚线）仅供粗估，电力调度的安全裕度核算请务必以 P90 上界作为底线。
+                    </p>
+                </div>
+            </div>
+
+            <!-- Layer 3: 空间分解 (保留 V4 的逻辑) -->
+            <div class="glass overflow-hidden flex flex-col h-[280px]">
+                <div class="h-11 border-b border-line flex items-center justify-between px-5 shrink-0">
+                    <div class="section-title"><i class="ph ph-map-pin-area mr-2 text-main"></i>子区域负荷结构分解 (Zone Deconstruction)</div>
+                    <div class="text-[11px] text-dim">确定风险高发区域</div>
+                </div>
+                <div id="chart_stack" class="flex-1 p-2"></div>
+            </div>
+        </div>
+
+        <!-- 右侧：模型可信度实验室 (占 30%) - 吸收 V3 的硬核数据科学指标 -->
+        <aside class="w-[420px] border-l border-line bg-surface/50 flex flex-col shrink-0 overflow-y-auto p-4 gap-4">
+            
+            <!-- 模块 1: 区间命中率 (Backtesting Coverage) -->
+            <div class="glass overflow-hidden flex flex-col">
+                <div class="h-11 border-b border-line flex items-center justify-between px-4 shrink-0 bg-black/20">
+                    <div class="section-title text-sm"><i class="ph-fill ph-shield-check mr-2 text-ok"></i>模型准确率自检</div>
+                </div>
+                <div class="p-4 space-y-4">
+                    <!-- P90 Coverage -->
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-xs text-dim">P90 区间命中率 (目标 90%)</span>
+                            <span class="text-xs font-bold font-mono text-ok">92.4%</span>
+                        </div>
+                        <div class="h-1.5 bg-line rounded overflow-hidden">
+                            <div class="h-full bg-ok w-[92%] relative">
+                                <div class="absolute right-0 h-4 w-0.5 bg-warn top-1/2 -translate-y-1/2"></div> <!-- 90% Target Line -->
+                            </div>
+                        </div>
+                    </div>
+                    <!-- P50 Coverage -->
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-xs text-dim">P50 区间命中率 (目标 50%)</span>
+                            <span class="text-xs font-bold font-mono text-bright">51.1%</span>
+                        </div>
+                        <div class="h-1.5 bg-line rounded overflow-hidden">
+                            <div class="h-full bg-main w-[51%]"></div>
+                        </div>
+                    </div>
+                    <!-- History Chart -->
+                    <div class="pt-2 border-t border-line">
+                        <div class="text-xs text-dim mb-2">过去 7 日 MAPE 误差走势</div>
+                        <div id="chart_backtest" class="h-28 w-full"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 模块 2: AI 特征归因 (SHAP) -->
+            <div class="glass overflow-hidden flex flex-col flex-1">
+                <div class="h-11 border-b border-line flex items-center justify-between px-4 shrink-0 bg-black/20">
+                    <div class="section-title text-sm"><i class="ph-fill ph-microscope mr-2 text-warn"></i>AI 特征贡献度 (SHAP)</div>
+                </div>
+                <div class="p-4 flex flex-col gap-4">
+                    <div id="chart_shap" class="h-48 w-full"></div>
+                    
+                    <!-- Insight Card -->
+                    <div class="p-3 bg-danger/5 border border-danger/20 rounded flex gap-3 items-start">
+                        <i class="ph-fill ph-lightbulb text-danger text-lg mt-0.5 shrink-0"></i>
+                        <div class="text-[11px] text-dim leading-relaxed">
+                            <b class="text-danger">AI 洞察：异常升温因子主导。</b>
+                            检测到 `temperature_2m_c` 对当前峰值的贡献权重高达 <b>68%</b>。历史同类特征样本建议：
+                            <br/>• 提前 2 小时启动风冷/储能预冷。
+                            <br/>• 关注相对湿度 > 85% 叠加区。
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-4 gap-2 pt-2 border-t border-line">
+                        <div class="text-center">
+                            <i class="ph ph-thermometer-hot text-warn text-xl"></i>
+                            <div class="text-[10px] text-dim mt-1">温度</div>
+                            <div class="text-xs font-mono text-bright">32.4°C</div>
+                        </div>
+                        <div class="text-center">
+                            <i class="ph ph-drop text-main text-xl"></i>
+                            <div class="text-[10px] text-dim mt-1">湿度</div>
+                            <div class="text-xs font-mono text-bright">78%</div>
+                        </div>
+                        <div class="text-center">
+                            <i class="ph ph-wind text-dim text-xl"></i>
+                            <div class="text-[10px] text-dim mt-1">风速</div>
+                            <div class="text-xs font-mono text-bright">14km/h</div>
+                        </div>
+                        <div class="text-center">
+                            <i class="ph ph-calendar-blank text-ok text-xl"></i>
+                            <div class="text-[10px] text-dim mt-1">类型</div>
+                            <div class="text-xs font-mono text-bright">周五</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 底部: 数据口径 (折叠) -->
+            <details class="glass group">
+                <summary class="h-9 border-b border-line flex items-center justify-between px-4 cursor-pointer list-none text-xs text-dim hover:text-bright bg-black/20 rounded-t">
+                    <span class="flex items-center gap-2"><i class="ph ph-database"></i> 数据采集与建模口径</span>
+                    <span class="transition group-open:rotate-180">▾</span>
+                </summary>
+                <div class="p-4 text-[10px] text-dim leading-relaxed space-y-2">
+                    <div><b class="text-bright">数据源</b>：PJM / Kaggle Hourly Energy Consumption.</div>
+                    <div><b class="text-bright">气象基址</b>：ERA5 再分析区域加权 (Open-Meteo).</div>
+                    <div><b class="text-bright">算法</b>：LightGBM Quantile Regression, 分位点 {0.1, 0.25, 0.5, 0.75, 0.9}.</div>
+                    <div class="pt-2 border-t border-line italic text-dim/70">
+                        注：本表中 `interval_end_utc` 均已规范化为 UTC 标准时间，无夏令时歧义。
+                    </div>
+                </div>
+            </details>
+
+        </aside>
+    </main>
+
+<script>
+/* --- 数据生成 --- */
+const N = 72; const NOW = 24;
+let times=[], actual=[], p50=[], p10=[], p90=[], temp=[], zones={AEP:[], DAYTON:[], DOM:[]};
+let t = new Date(); t.setHours(t.getHours() - 24);
+
+for(let i=0; i<N; i++){
+    times.push(('0'+t.getHours()).slice(-2)+':00');
+    let temp_v = 22 + 8 * Math.sin((i-6)/24*Math.PI*2) + Math.random();
+    temp.push(temp_v);
+    let base = 13000 + (temp_v>24 ? (temp_v-24)*450 : 0) - Math.cos((i-4)/24*Math.PI*2)*2500;
+    
+    // actual & fc
+    actual.push(i<=NOW ? base + (Math.random()*300-150) : null);
+    if(i>=NOW){
+        p50.push(base); 
+        p90.push(base + (i-NOW)*35); 
+        p10.push(base - (i-NOW)*35);
+    } else {
+        p50.push(null); p90.push(null); p10.push(null);
+    }
+    zones.AEP.push(base*0.52); zones.DAYTON.push(base*0.15); zones.DOM.push(base*0.33);
+    t.setHours(t.getHours()+1);
+}
+
+/* --- 1. 主预测图 (含双层区间+主色调+专业图例) --- */
+echarts.init(document.getElementById('chart_main')).setOption({
+    grid:{left:50, right:20, top:30, bottom:25},
+    tooltip:{ trigger:'axis', backgroundColor:'#1A1F2C', borderColor:'#2A3140', textStyle:{color:'#F1F5F9', fontSize:11},
+        formatter:(ps)=>{
+            let html = `<div style="color:#8B949E;font-size:10px;margin-bottom:5px;">${ps[0].axisValue}</div>`;
+            let v_a = ps.find(p=>p.seriesName==='实际负荷')?.value;
+            let v_p = ps.find(p=>p.seriesName==='预测 P50')?.value;
+            let idx = ps[0].dataIndex;
+            if(v_a!==null && v_a!==undefined) html += `<div style="color:#3B82F6">● 实际: <b>${Math.round(v_a).toLocaleString()}</b> MW</div>`;
+            if(idx >= NOW){
+                html += `<div style="color:#F59E0B">╌ P50: <b>${Math.round(p50[idx]).toLocaleString()}</b> MW</div>`;
+                html += `<div style="color:#8B949E;font-size:10px;">▤ P10-P90: ${Math.round(p10[idx]).toLocaleString()} ~ ${Math.round(p90[idx]).toLocaleString()} MW</div>`;
+            }
+            return html;
+        }
+    },
+    legend:{ data:['实际负荷','预测 P50','P10-P90 置信带'], textStyle:{color:'#8B949E', fontSize:11}, top:0, right:10, icon:'roundRect', itemWidth:12, itemHeight:8 },
+    xAxis:{ type:'category', data:times, axisLine:{lineStyle:{color:'#2A3140'}}, axisLabel:{color:'#8B949E', fontSize:10}, splitLine:{show:false} },
+    yAxis:{ type:'value', min:10000, splitLine:{lineStyle:{color:'#2A3140', type:'dashed'}}, axisLine:{show:false}, axisLabel:{color:'#8B949E', fontSize:10, formatter: v=>(v/1000)+'k'} },
+    series:[
+        { name:'P10-P90 置信带', type:'line', data:p90, lineStyle:{opacity:0}, symbol:'none', areaStyle:{color:'rgba(245, 158, 11, 0.08)'} },
+        { name:'BandMask', type:'line', data:p10, lineStyle:{opacity:0}, symbol:'none', areaStyle:{color:'#11151C'} },
+        { name:'实际负荷', type:'line', data:actual, showSymbol:false, smooth:false, lineStyle:{color:'#3B82F6', width:2.5, shadowColor:'rgba(59,130,246,0.3)', shadowBlur:5}, itemStyle:{color:'#3B82F6'} },
+        { name:'预测 P50', type:'line', data:p50, showSymbol:false, lineStyle:{color:'#F59E0B', width:2, type:'dashed'}, itemStyle:{color:'#F59E0B'},
+          markLine:{ silent:true, symbol:'none', label:{ formatter:'NOW', color:'#8B949E', fontSize:10, position:'insideEndTop' }, lineStyle:{ color:'#8B949E', type:'solid', width:1 }, data:[{xAxis:NOW}] }
+        }
+    ]
+});
+
+/* --- 2. KPI 迷你 MAPE 走势图 --- */
+echarts.init(document.getElementById('spark_mape')).setOption({
+    grid:{left:0,right:0,top:5,bottom:0},
+    xAxis:{type:'category', show:false, data:[1,2,3,4,5,6,7]},
+    yAxis:{type:'value', show:false},
+    series:[{ type:'line', data:[2.1, 2.0, 2.3, 1.9, 1.8, 1.9, 1.85], showSymbol:false, lineStyle:{color:'#10B981', width:1.5}, areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'rgba(16,185,129,0.2)'},{offset:1,color:'rgba(16,185,129,0)'}]}} }]
+});
+
+/* --- 3. 区域堆叠图 (V4 逻辑) --- */
+echarts.init(document.getElementById('chart_stack')).setOption({
+    grid:{left:50, right:20, top:30, bottom:25},
+    tooltip:{ trigger:'axis', axisPointer:{type:'shadow'}, backgroundColor:'#1A1F2C', borderColor:'#2A3140', textStyle:{color:'#F1F5F9', fontSize:11} },
+    legend:{ data:['AEP','DOM','DAYTON'], textStyle:{color:'#8B949E', fontSize:11}, top:0, right:10 },
+    xAxis:{ type:'category', data:times, axisLine:{lineStyle:{color:'#2A3140'}}, axisLabel:{color:'#8B949E', fontSize:10} },
+    yAxis:{ type:'value', splitLine:{lineStyle:{color:'#2A3140', type:'dashed'}}, axisLine:{show:false}, axisLabel:{color:'#8B949E', fontSize:10, formatter:v=>(v/1000)+'k'} },
+    series:[
+        { name:'AEP', type:'bar', stack:'Total', data:zones.AEP, itemStyle:{color:'#3B82F6'}, barWidth:'50%' },
+        { name:'DOM', type:'bar', stack:'Total', data:zones.DOM, itemStyle:{color:'#8B5CF6'} },
+        { name:'DAYTON', type:'bar', stack:'Total', data:zones.DAYTON, itemStyle:{color:'#10B981'} },
+        { type:'line', markLine:{ silent:true, symbol:'none', label:{show:false}, lineStyle:{ color:'#8B949E', type:'solid', width:1 }, data:[{xAxis:NOW}] } }
+    ]
+});
+
+/* --- 4. 侧边栏：回测趋势柱状图 --- */
+echarts.init(document.getElementById('chart_backtest')).setOption({
+    grid:{left:30, right:10, top:10, bottom:20},
+    xAxis:{ type:'category', data:['D-6','D-5','D-4','D-3','D-2','D-1','D-0'], axisLine:{show:false}, axisTick:{show:false}, axisLabel:{color:'#8B949E', fontSize:10} },
+    yAxis:{ type:'value', min:0, max:5, splitLine:{show:false}, axisLine:{show:false}, axisLabel:{show:false} },
+    series:[{ type:'bar', data:[2.2, 2.4, 3.1, 1.9, 2.0, 1.6, 1.85], 
+        itemStyle:{ color:(p)=>(p.value>3?'#EF4444':'#3B82F6'), borderRadius:[2,2,0,0] }, 
+        barWidth:'40%', 
+        markLine:{ silent:true, symbol:'none', lineStyle:{type:'dashed', color:'#8B949E', width:1}, label:{formatter:'Threshold 3%', color:'#8B949E', position:'insideEndTop', fontSize:9}, data:[{yAxis:3}] }
+    }]
+});
+
+/* --- 5. 侧边栏：特征归因水平条形图 --- */
+echarts.init(document.getElementById('chart_shap')).setOption({
+    grid:{left:70, right:20, top:5, bottom:5, containLabel:true},
+    xAxis:{ type:'value', show:false, max:100 },
+    yAxis:{ type:'category', data:['Precip','Wind Speed','Day-of-Week','Humidity','Lag-24 Load','Temperature'], inverse:true, axisLine:{show:false}, axisTick:{show:false}, axisLabel:{color:'#8B949E', fontSize:10} },
+    series:[{ type:'bar', data:[2, 5, 12, 18, 45, 68], 
+        barWidth:'55%',
+        label:{ show:true, position:'right', formatter:'{c}%', color:'#F1F5F9', fontSize:10, fontWeight:'bold' },
+        itemStyle:{ 
+            borderRadius:[0, 2, 2, 0],
+            color:{ type:'linear', x:0, y:0, x2:1, y2:0, colorStops:[
+                {offset:0, color:'rgba(239, 68, 68, 0.5)'}, {offset:1, color:'rgba(239, 68, 68, 1)'}
+            ]}
+        }
+    }]
+});
+
+window.addEventListener('resize', ()=>{
+    window.dispatchEvent(new Event('resize')); // handled automatically by echarts globally? better explicit
+    document.querySelectorAll('[_echarts_instance_]').forEach(dom=>{
+        const inst = echarts.getInstanceByDom(dom); if(inst) inst.resize();
+    })
+});
+</script>
+</body>
+</html>
