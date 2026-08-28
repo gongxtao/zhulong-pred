@@ -29,6 +29,61 @@
   },
   "customNotes": [],
   "directoryMap": {},
-  "hotPaths": [],
+  "hotPaths": [
+    {
+      "path": "zhulong.html",
+      "accessCount": 51,
+      "lastAccessed": 1787926217893,
+      "type": "file"
+    },
+    {
+      "path": "docs/load-forecast-ui-research.md",
+      "accessCount": 1,
+      "lastAccessed": 1787912829002,
+      "type": "file"
+    },
+    {
+      "path": "dashboard_v5.html",
+      "accessCount": 1,
+      "lastAccessed": 1787912829349,
+      "type": "file"
+    },
+    {
+      "path": "dashboard_v4.html",
+      "accessCount": 1,
+      "lastAccessed": 1787912910484,
+      "type": "file"
+    },
+    {
+      "path": "docs/prototype/load-forecast-prototype.html",
+      "accessCount": 1,
+      "lastAccessed": 1787912910981,
+      "type": "file"
+    },
+    {
+      "path": ".shots/v2_full.png",
+      "accessCount": 1,
+      "lastAccessed": 1787926272988,
+      "type": "file"
+    },
+    {
+      "path": ".shots/v2_vortex.png",
+      "accessCount": 1,
+      "lastAccessed": 1787926359426,
+      "type": "file"
+    },
+    {
+      "path": ".shots/v2_heat.png",
+      "accessCount": 1,
+      "lastAccessed": 1787926416765,
+      "type": "file"
+    },
+    {
+      "path": "docs/zhulong-design.md",
+      "accessCount": 1,
+      "lastAccessed": 1787926497854,
+      "type": "file"
+    }
+  ],
   "userDirectives": []
 }
