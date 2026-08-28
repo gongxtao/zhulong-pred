@@ -32,20 +32,20 @@
   "hotPaths": [
     {
       "path": "zhulong.html",
-      "accessCount": 166,
-      "lastAccessed": 1787937586502,
+      "accessCount": 187,
+      "lastAccessed": 1787940129325,
       "type": "file"
     },
     {
       "path": "docs/zhulong-design.md",
-      "accessCount": 22,
-      "lastAccessed": 1787937945097,
+      "accessCount": 30,
+      "lastAccessed": 1787939917983,
       "type": "file"
     },
     {
       "path": "docs/zhulong-handoff.md",
-      "accessCount": 4,
-      "lastAccessed": 1787937978169,
+      "accessCount": 12,
+      "lastAccessed": 1787939948851,
       "type": "file"
     },
     {
@@ -178,6 +178,48 @@
       "path": ".shots/v14_hero_merge_dark.jpeg",
       "accessCount": 1,
       "lastAccessed": 1787937862089,
+      "type": "file"
+    },
+    {
+      "path": ".shots/v14_first_screen_light.jpeg",
+      "accessCount": 1,
+      "lastAccessed": 1787938179341,
+      "type": "file"
+    },
+    {
+      "path": ".shots/v14_replay_banner.jpeg",
+      "accessCount": 1,
+      "lastAccessed": 1787938213081,
+      "type": "file"
+    },
+    {
+      "path": ".shots/v15_fused_light.jpeg",
+      "accessCount": 1,
+      "lastAccessed": 1787938797027,
+      "type": "file"
+    },
+    {
+      "path": ".shots/v15_fused_dark.jpeg",
+      "accessCount": 1,
+      "lastAccessed": 1787938817218,
+      "type": "file"
+    },
+    {
+      "path": ".shots/v16_qmark_banner.jpeg",
+      "accessCount": 1,
+      "lastAccessed": 1787939174286,
+      "type": "file"
+    },
+    {
+      "path": ".shots/v17_strip_light.jpeg",
+      "accessCount": 1,
+      "lastAccessed": 1787939839965,
+      "type": "file"
+    },
+    {
+      "path": ".shots/v17_strip_dark.jpeg",
+      "accessCount": 1,
+      "lastAccessed": 1787939874400,
       "type": "file"
     }
   ],
