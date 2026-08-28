@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>烛龙 ZHULONG · 负荷预测决策台</title>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<!-- 真数据快照（scripts/build-snapshot.mjs 生成；缺文件时页面自动回退内置仿真） -->
+<script src="data/zhulong-data.js"></script>
 <style>
 /* ============ 设计令牌 · 浅色（色板经 CVD 六项验证） ============ */
 :root{
@@ -340,7 +342,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--actual);outline-off
     <span id="zoneCap"></span>
     <div class="tb-right">
       <span id="clock" aria-live="off"></span>
-      <span class="live" style="color:var(--ink3)"><span class="dot" style="background:var(--actual);animation:none"></span>演示数据 · 2018-08</span>
+      <span class="live" id="srcBadge" style="color:var(--ink3)"><span class="dot" style="background:var(--actual);animation:none"></span><span id="srcText">演示数据 · 仿真</span></span>
       <button class="iconBtn" id="themeBtn" title="深色 / 浅色切换" aria-label="主题切换">
         <svg class="ic-moon" viewBox="0 0 16 16"><path d="M13.2 9.8 A5.8 5.8 0 1 1 6.2 2.8 A4.6 4.6 0 0 0 13.2 9.8 Z"/></svg>
         <svg class="ic-sun" viewBox="0 0 16 16"><circle cx="8" cy="8" r="3"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M12.6 3.4l-1.4 1.4M4.8 11.2l-1.4 1.4"/></svg>
@@ -430,10 +432,11 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--actual);outline-off
           <div id="mapeSpark"></div>
           <div>
             <div id="mapeVal">—</div>
-            <div id="mapeNote">日前 48h 预测平均绝对百分比误差（行业优良 &lt;3%）</div>
+            <div id="mapeNote">日前 24h 预测平均绝对百分比误差（行业优良 &lt;3%）</div>
           </div>
         </div>
         <div id="basisCmp" style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-size:11.5px;color:var(--ink2)"></div>
+        <div id="modelLine" style="margin-top:6px;font-size:11.5px;color:var(--ink2)"></div>
         <div style="margin-top:8px" id="credBadge"></div>
       </div>
     </div>
@@ -534,9 +537,16 @@ const ZONES = {
   DOM:   {label:'DOM · 多米尼恩（弗吉尼亚）',   base:11900, amp:3300, seas:.15, wtr:.10, cool:40, heat:120, wknd:.92,  tOff:.6},
 };
 const HOUR=3600e3, DAY=86400e3;
-const T_MIN = Date.UTC(2004,9,1,5);
-const T_MAX = Date.UTC(2018,7,3,9);
-const NOW_DEFAULT = Date.UTC(2018,7,1,5);      // 演示锚点：2018-08-01 00:00 EST
+/* ===== 数据源：本地真数据快照（PJM+ERA5）→ 内置仿真兜底 ===== */
+const ZD=(typeof window!=='undefined'&&window.ZL_DATA)||null;
+let T_MIN = Date.UTC(2004,9,1,5);
+let T_MAX = Date.UTC(2018,7,3,9);
+let NOW_DEFAULT = Date.UTC(2018,7,1,5);      // 演示锚点（仿真口径）
+if(ZD){ /* 真数据：时间锚从快照推导；NOW=2018-07-31 05:00 EST（峰前清晨，留足 48h 预测窗） */
+  T_MIN=Math.min(...Object.values(ZD.zones).map(x=>x.t0));
+  T_MAX=Math.max(...Object.values(ZD.zones).map(x=>x.t0+(x.n-1)*HOUR));
+  NOW_DEFAULT=Math.min(Date.UTC(2018,6,31,10),T_MAX-49*HOUR);
+}
 const H_FC = 48;
 
 /* 极端事件（真实历史：2014-01 极地涡旋 / 2012-07 热浪） */
@@ -580,17 +590,17 @@ function eventW(ts){ // 事件影响权重 0..1
   }
   return w;
 }
-function tempAt(ts,tOff=0){
+function simTempAt(ts,tOff=0){
   const d=LOC(ts),h=d.getUTCHours();
   let t=12.8+11.2*Math.cos((doyOf(ts)-197)/365*2*Math.PI)+5.4*Math.sin((h-9)/24*2*Math.PI);
   for(const e of EVENTS){const dd=Math.abs(ts-e.c)/DAY;const w=Math.exp(-(dd*dd)/(2*2.2*2.2));t+=e.tAnom*w}
   t+=(rnd2('t',ts)-.5)*1.4+tOff;
   return t;
 }
-function loadAt(zone,ts){
+function simLoadAt(zone,ts){
   const c=ZONES[zone],d=LOC(ts),h=d.getUTCHours(),wd=d.getUTCDay();
   const wk=(wd===0||wd===6)?c.wknd:1;
-  const t=tempAt(ts,c.tOff);
+  const t=simTempAt(ts,c.tOff);
   const doy=doyOf(ts);
   const season=c.base*(1+c.seas*Math.cos((doy-197)/365*2*Math.PI)+c.wtr*Math.cos((doy-15)/365*2*Math.PI));
   const diurnal=c.amp*(0.52*gauss(h,9.2,2.7)+0.9*gauss(h,19,3.1));
@@ -601,6 +611,18 @@ function loadAt(zone,ts){
   for(const e of EVENTS){const dd=Math.abs(ts-e.c)/DAY;const w=Math.exp(-(dd*dd)/(2*2.2*2.2));L*=1+(e.mult-1)*w}
   L*=1+(rnd2(zone,ts)-.5)*0.045;
   return L;
+}
+/* 真数据查表（O(1)；缺测已在快照生成时线性插值；区间外回退仿真——仅 DOM 2005-05 前的回放会触及） */
+const REAL=ZD?{
+  idx(z,ts){const zz=ZD.zones[z];if(!zz)return -1;const i=Math.round((ts-zz.t0)/HOUR);return i>=0&&i<zz.n?i:-1},
+}:null;
+function tempAt(ts,tOff=0){ /* 真模式下 tOff 无效（真温度即区域加权实测）；所有调用方均针对当前区 */
+  if(REAL){const i=REAL.idx(state.zone,ts);if(i>=0)return ZD.zones[state.zone].temps[i]}
+  return simTempAt(ts,tOff);
+}
+function loadAt(zone,ts){
+  if(REAL){const i=REAL.idx(zone,ts);if(i>=0)return ZD.zones[zone].loads[i]}
+  return simLoadAt(zone,ts);
 }
 /* 当前温度段的负荷灵敏度（MW/°C），由区域冷/热负荷系数导出 */
 function sensAt(zone,ts){
@@ -616,12 +638,26 @@ const RECORD={}; // zone → {v,ts} 历史峰值
 function buildDaily(){
   for(const z of Object.keys(ZONES)){
     const arr=[];let rec={v:-1,ts:0};
-    for(let di=D0;di<=D1;di++){
-      const t0=dayTs(di);let pk=-1,ph=0;
-      for(let h=0;h<24;h++){const v=loadAt(z,t0+h*HOUR);if(v>pk){pk=v;ph=h}}
-      arr.push({ts:t0+ph*HOUR,peak:pk,ph,di});
-      if(pk>rec.v)rec={v:pk,ts:t0+ph*HOUR};
+    if(REAL){ /* 真数据：直接扫网格，按美东日切分 */
+      const zz=ZD.zones[z];
+      let pk=-1,ph=0,day=-1;
+      const push=()=>{if(day>=0&&pk>0)arr.push({ts:dayTs(day)+ph*HOUR,peak:pk,ph,di:day})};
+      for(let i=0;i<zz.n;i++){
+        const ts=zz.t0+i*HOUR,di=locDay(ts);
+        if(di!==day){push();day=di;pk=-1;ph=0}
+        const v=zz.loads[i];
+        if(v>pk){pk=v;ph=etP(ts).h}
+      }
+      push();
+    } else {
+      for(let di=D0;di<=D1;di++){
+        const t0=dayTs(di);let pk=-1,ph=0;
+        for(let h=0;h<24;h++){const v=loadAt(z,t0+h*HOUR);if(v>pk){pk=v;ph=h}}
+        arr.push({ts:t0+ph*HOUR,peak:pk,ph,di});
+        if(pk>rec.v)rec={v:pk,ts:t0+ph*HOUR};
+      }
     }
+    for(const d of arr)if(d.peak>rec.v)rec={v:d.peak,ts:d.ts};
     daily[z]=arr;RECORD[z]=rec;
   }
 }
@@ -633,8 +669,9 @@ function dayMean(zone,di){const k=zone+':'+di;
 /* 相似日候选：与「目标日」同星期、就近取 10 个、且不晚于 dLimit（防未来信息泄露） */
 function candsFor(zone,wdT,dLimit){
   const c=[];
+  const dFloor=REAL?locDay(ZD.zones[zone].t0)+2:D0+2; /* 真模式下按各区实际起始日 */
   for(let di=dLimit;di>=dLimit-70&&c.length<10;di--){
-    if(di<D0+2)break;
+    if(di<dFloor)break;
     if(wdT<0||LOC(dayTs(di)).getUTCDay()===wdT)c.push(di);
   }
   return c;
@@ -669,6 +706,28 @@ function forecastAt(zone,originTs){
     }
     out.push({ts,p50,p10:q.p10,p90:q.p90,p25:q.p25,p75:q.p75});
   }
+  /* 真模型注入：取 ≤24h 内最近的 pred_static 日起点，按偏移重索引（mh = 起点偏移 + 页面 horizon）→
+     生产模型 p50 + 真残差分位带；超出模型 24h 视界的部分回退相似日基线（口径注明）。
+     审计卡回测因此审计的正是页面展示的预测路径。 */
+  if(ZD&&ZD.pred&&ZD.pred[zone]){
+    const P=ZD.pred[zone];
+    let lo=0,hi=P.origins.length-1,best=-1;
+    while(lo<=hi){const m=(lo+hi)>>1;if(P.origins[m]<=originTs){best=m;lo=m+1}else hi=m-1}
+    if(best>=0&&originTs-P.origins[best]<24*HOUR){
+      const off=Math.round((originTs-P.origins[best])/HOUR);
+      const row=P.preds[best];
+      for(let h=1;h<=H_FC;h++){
+        const mh=off+h;
+        if(mh<1||mh>24)continue;
+        const p=out[h-1],mp=row&&row[mh-1];
+        if(mp!=null&&mp>0){
+          p.p50=mp;
+          const c=P.cal[mh-1];
+          p.p10=mp*(1-c.z90);p.p90=mp*(1+c.z90);p.p25=mp*(1-c.z50);p.p75=mp*(1+c.z50);
+        }
+      }
+    }
+  }
   FC_CACHE.set(key,out);
   return out;
 }
@@ -693,33 +752,33 @@ function buildCal(zone){
     return{z90:quantile(abs,.90),z50:quantile(abs,.50)};
   });
 }
-/* 持久性基线（昨日同时刻 = 预测）的 MAPE：用于「本模型 vs 基线」对比 */
+/* 持久性基线（昨日同时刻 = 预测）的 MAPE：用于「本模型 vs 基线」对比（同视界 24h，公平比较） */
 const PERS={};
 function buildPers(zone){
   let se=0,n=0;
   for(let i=28;i>=1;i--){
     const origin=dayTs(D1-6-i);
-    for(let h=1;h<=H_FC;h++){
+    for(let h=1;h<=24;h++){
       const ts=origin+h*HOUR,a=loadAt(zone,ts),p=loadAt(zone,ts-24*HOUR);
       se+=Math.abs(p-a)/a;n++;
     }
   }
   PERS[zone]=se/n*100;
 }
-/* 回测：滚动起点 vs 真实 */
+/* 回测：滚动起点 vs 真实（审计口径 = 模型契约视界 24h；25–48h 为基线延伸不纳入） */
 function backtest(zone,nOrigins=28){
   const per=[];
   for(let i=nOrigins;i>=1;i--){
     const origin=dayTs(D1-6-i);
     const fc=forecastAt(zone,origin);
     let se=0,n=0,c50=0,c90=0;
-    for(const p of fc){
-      const a=loadAt(zone,p.ts);if(a==null)continue;
+    for(let h=1;h<=24;h++){
+      const p=fc[h-1],a=loadAt(zone,p.ts);if(a==null)continue;
       se+=Math.abs(p.p50-a)/a;n++;
       if(a>=p.p25&&a<=p.p75)c50++;
       if(a>=p.p10&&a<=p.p90)c90++;
     }
-    const pkA=Math.max(...fc.map(p=>loadAt(zone,p.ts))),pkP=Math.max(...fc.map(p=>p.p50));
+    const pkA=Math.max(...fc.slice(0,24).map(p=>loadAt(zone,p.ts))),pkP=Math.max(...fc.slice(0,24).map(p=>p.p50));
     per.push({origin,mape:se/n*100,cov50:c50/n*100,cov90:c90/n*100,peakErr:(pkP-pkA)/pkA*100});
   }
   return per;
@@ -959,7 +1018,7 @@ function renderStatusQuad(){
       <div class="sq-v num" style="color:${C.fcHi}">${fmt(peak.p50)}<small>MW</small><small class="at">@${peakEt}</small></div>
       <div class="sq-s">最坏 P90 <b class="num">${fmt(peak90.p90)}</b></div>
     </div>
-    <div class="sq" title="MAPE = 日前 48h 预测平均绝对百分比误差 · 行业优良 &lt;3% · ${live?'近 28 起点回测':'本段重演 · 48h'}">
+    <div class="sq" title="MAPE = 日前 24h 预测平均绝对百分比误差 · 行业优良 &lt;3% · ${live?'近 28 起点回测':'本段重演 · 24h'}">
       <div class="sq-l">预测误差${live?'':' · 本段重演'}<span class="db-q sq-i" data-sq="3" role="button" tabindex="0">i</span></div>
       <div class="sq-v num">${mapeShow.toFixed(2)}<small>%</small></div>
       <div class="sq-s">${mapeShow<3?'<span class="badge ok">✓ 优于 3%</span>':'<span class="badge warn">劣于 3%</span>'} P90 命中 <b class="num">${cov90.toFixed(1)}%</b></div>
@@ -970,7 +1029,7 @@ const SQ_TIPS=[
   '<h3>现在负荷</h3>当前小时的实际负荷（估算平均功率，MW）。子行为与昨日同一时刻的涨跌幅。',
   '<h3>预测偏差</h3>实际 − 昨日起点的日前预测，近 6 小时加权平均（越近权重越大）；±1.5% 内为正常。',
   '<h3>今日峰值 · 预测</h3>未来 24 小时预测日峰（P50 最可能路径），@ 为预计达到时刻；最坏 P90 = 90% 分位上界。距历史纪录与预备窗见格子悬停。',
-  '<h3>预测误差（MAPE）</h3>日前 48h 预测的平均绝对百分比误差，近 28 个滚动起点回测；行业优良 &lt;3%。P90 命中率标称 90%。',
+  '<h3>预测误差（MAPE）</h3>日前 24h 预测的平均绝对百分比误差，近 28 个滚动起点回测；行业优良 &lt;3%。P90 命中率标称 90%。',
 ];
 $('statusQuad').addEventListener('click',e=>{
   const ic=e.target.closest('.sq-i');if(!ic)return;
@@ -1110,8 +1169,10 @@ function renderAttrib(){
     <div class="attRow"><span class="nm">日历与其他</span><span class="bar">${bar(other)}</span>
       <span class="vl">${other>=0?'+':''}${fmt(other)} MW · ${pctOf(other)}</span></div>
     <div class="attNote">温度贡献 = Δ温度 × 当前灵敏度（<span class="num">${Math.round(sensAt(z,org))}</span> MW/°C）；余项不拆分、不虚构精度。同类日离散 ±<span class="num">${sigma.toFixed(1)}</span>%。</div>`;
-  const hum=58+Math.round(rnd2('h',org)*30),
-    wind=6+Math.round(rnd2('w',org)*16),prec=rnd2('p',org)<.75?0:Math.round(rnd2('p2',org)*40)/10;
+  let hum,wind,prec;
+  if(REAL){const i=REAL.idx(z,org);
+    hum=ZD.zones[z].hum[i]??0;wind=ZD.zones[z].wind[i]??0;prec=ZD.zones[z].prec[i]??0}
+  else{hum=58+Math.round(rnd2('h',org)*30);wind=6+Math.round(rnd2('w',org)*16);prec=rnd2('p',org)<.75?0:Math.round(rnd2('p2',org)*40)/10}
   $('wxGrid').innerHTML=[
     ['气温',T1.toFixed(1)+'°C'],['湿度',hum+'%'],['风速',wind+'km/h'],['降水',prec+'mm'],
   ].map(([l,v])=>`<div class="wx"><div class="gl">${l}</div><div class="gv">${v}</div></div>`).join('');
@@ -1120,7 +1181,7 @@ function renderAttrib(){
 function renderCred(){
   const z=state.zone;
   let per=BT[z],scope='近 28 个起点回测';
-  if(state.mode!=='live'){per=[replayBT()],scope='本段重演 · 48h'}
+  if(state.mode!=='live'){per=[replayBT()],scope='本段重演 · 24h'}
   const n=per.length;
   const c50=per.reduce((s,d)=>s+d.cov50,0)/n, c90=per.reduce((s,d)=>s+d.cov90,0)/n;
   const mape=per.reduce((s,d)=>s+d.mape,0)/n;
@@ -1153,26 +1214,42 @@ function renderCred(){
   $('basisCmp').innerHTML = impr>0
     ?`基线对比：持久性（昨日同时）MAPE <b class="num">${pers.toFixed(2)}%</b> → 本模型 <b class="num">${mape.toFixed(2)}%</b> <b style="color:var(--ok)">误差 ↓${impr}%</b>`
     :`基线对比：持久性（昨日同时）MAPE <b class="num">${pers.toFixed(2)}%</b> → 本模型 <b class="num">${mape.toFixed(2)}%</b> <b style="color:var(--warn)">天气突变段落后于基线</b>（相似日盲区，正是接入气象预报的论据，见口径）`;
+  /* 生产模型行（真数据模式）：来自训练管道的独立验证 */
+  const M=ZD&&ZD.model, mz=M&&M.zones&&M.zones[z];
+  $('modelLine').innerHTML=(M&&M.modelId&&mz)?`
+    <span class="hint">生产模型</span> <b class="num">${M.modelId.slice(0,20)}</b> · ${M.trials.length} 组试验 · 本区验证 WAPE <b class="num">${mz.wape}%</b>
+    <span class="hint">vs 昨日基线</span> <b class="num">${mz.lastDayWape}%</b> <b style="color:var(--ok)">↓${Math.round((1-mz.wape/mz.lastDayWape)*100)}%</b>`:'';
 }
 function replayBT(){
   const z=state.zone,fc=forecastAt(z,state.origin);
   let se=0,n=0,c50=0,c90=0;
-  for(const p of fc){const a=loadAt(z,p.ts);se+=Math.abs(p.p50-a)/a;n++;
+  for(let h=1;h<=24;h++){const p=fc[h-1],a=loadAt(z,p.ts);se+=Math.abs(p.p50-a)/a;n++;
     if(a>=p.p25&&a<=p.p75)c50++;if(a>=p.p10&&a<=p.p90)c90++}
   return{mape:se/n*100,cov50:c50/n*100,cov90:c90/n*100};
 }
 /* 口径（仅 ⓘ 弹层，无展开卡——彻底避免展开改变布局） */
 function renderCaliber(){
+  const real=!!REAL;
   const rows=[
-    ['负荷','PJM 负荷区小时级<b>估算平均功率</b>（MW）；小时区间内数值上 ≈ MWh。原型阶段为形态校准的仿真数据，接入 Supabase 后为真值。'],
-    ['气象','ERA5 再分析区域加权（Open-Meteo），非单站实测：气温/湿度/降水/风速。'],
-    ['时间','入库统一 UTC（interval_end，区间右端）；展示统一为美东标准时间 EST（UTC−5）。2004-10 至 2018-08。'],
-    ['预测','相似日分位数基线（按目标日同星期、就近 70 天、k=10）＋残差经验分位标定；无未来信息泄露。正式模型交付后按 p10–p90 契约替换。'],
+    ['负荷', real
+      ?'PJM 负荷区小时级<b>估算平均功率</b>（MW）；小时区间内数值上 ≈ MWh。<b>2004-10 至 2018-08 真值</b>（真实历史 + 模拟未来流，快照内嵌本页、断网可用）。'
+      :'PJM 负荷区小时级<b>估算平均功率</b>（MW）；小时区间内数值上 ≈ MWh。原型阶段为形态校准的仿真数据，接入 Supabase 后为真值。'],
+    ['气象', real
+      ?'ERA5 再分析区域加权<b>真值</b>（气温/湿度/降水/风速），非单站实测。'
+      :'ERA5 再分析区域加权（Open-Meteo），非单站实测：气温/湿度/降水/风速。'],
+    ['时间','入库统一 UTC（interval_end，区间右端）；展示统一为美东标准时间 EST（UTC−5）。2004-10 至 2018-08'+(real?'（DOM 区自 2005-05 起）':'')+'。'],
+    ['预测', real
+      ?'<b>0–24h：生产模型</b>（梯度提升回归，Supabase model_versions 注册、pred_static 579 起点回测标定分位带）；<b>25–48h：相似日分位数基线</b>（按目标日同星期、k=10）＋残差经验分位标定。无未来信息泄露。'
+      :'相似日分位数基线（按目标日同星期、就近 70 天、k=10）＋残差经验分位标定；无未来信息泄露。正式模型交付后按 p10–p90 契约替换。'],
     ['建议','建议容量 = P90 上界 − 97%×P50（向上取整至 50 MW）：按「最坏情形超出预期的部分」预留调峰资源；预备窗 = 峰前 3 小时。P90 上界取逐时分位数的包络（跨时刻拼接，结果偏保守）；正式版按日峰值分布的分位数计算。'],
-    ['气象输入','相似日基线不直接消费气象预报，天气突变日（如 2014 极涡，见重演）误差如实放大；正式模型接入气象预报后，区间与精度将同步改善。当前湿度/风速/降水为演示占位（未与季节模型耦合），接入后为 ERA5 真值。'],
+    ['气象输入', real
+      ?'当前模型不直接消费气象预报，天气突变日（如 2014 极涡，见重演）误差如实放大——这正是接入气象预报的改进论据；接入后区间与精度将同步改善。'
+      :'相似日基线不直接消费气象预报，天气突变日（如 2014 极涡，见重演）误差如实放大；正式模型接入气象预报后，区间与精度将同步改善。当前湿度/风速/降水为演示占位（未与季节模型耦合），接入后为 ERA5 真值。'],
     ['归因','温度贡献 = Δ温度 × 当前温度段灵敏度（MW/°C，由区域冷/热负荷系数导出）；「日历与其他」为总变化减温度贡献的余项，不虚构精度。'],
     ['区域','AEP / DAYTON / DOM 为 PJM 负荷区，非单一城市或变电站。换省级电网分区即可迁移。'],
-    ['回测','滚动 28 起点 × 48h；MAPE 与 P50/P90 覆盖率由真实（仿真）后续计算，非预设数字。'],
+    ['回测', real
+      ?'页面内滚动 28 起点 × 24h 复算（模型契约视界）；另嵌入训练管道独立回测 pred_static（579 日起点）双轨互证。25–48h 为相似日基线延伸，不入审计。'
+      :'滚动 28 起点 × 24h；MAPE 与 P50/P90 覆盖率由真实（仿真）后续计算，非预设数字。'],
   ];
   $('calPopoverBody').innerHTML=rows.map(([k,v])=>`<div><b>${k}</b>：${v}</div>`).join('')
     +`<div style="margin-top:6px;color:var(--ink3)">演示模式中的每一个数字，均可由页面内数据复算。</div>`;
@@ -1405,7 +1482,7 @@ $('drawerFold').onclick=()=>{$('drawer').classList.toggle('folded');
    演示模式（六幕）
    ===================================================================== */
 const DEMO=[
-  {t:'纵　深',s:'14 年 · 3 个负荷区 · 358,737 个小时——先看见负荷的呼吸',run:()=>switchTab('heat')},
+  {t:'纵　深',s:'14 年 · 3 个负荷区 · 358,800 个小时——先看见负荷的呼吸',run:()=>switchTab('heat')},
   {t:'节　律',s:'昼夜双峰、周末低谷、夏冬双峰——三区各有性格',run:()=>{switchTab('sm');setOrigin(NOW_DEFAULT,'live')}},
   {t:'推　演',s:'每个数字都有参照：昨日、历史极值、概率区间',run:()=>{foldDrawer(true);renderMain()}},
   {t:'验　证',s:'把时间拨回 2014 年 1 月——极地涡旋那一周，预测与真实对质',run:()=>{state.opts.god=true;$('optGod').checked=true;jumpTo(EVENTS[0].c)}},
@@ -1478,6 +1555,9 @@ for(const z of Object.keys(ZONES)){
 renderLegendTable();
 renderCaliber();
 renderAll();
+/* 数据源徽章 */
+$('srcText').textContent=REAL?'真数据 · PJM+ERA5':'演示数据 · 仿真';
+$('srcBadge').title=REAL?'PJM 负荷 + ERA5 天气真值快照（2004-10 → 2018-08），内嵌本页、断网可用':'形态校准的仿真数据（未找到 data/zhulong-data.js）';
 function renderLegendTable(){
   $('legendTable').innerHTML=[
     ['<span class="sw"></span>','实际负荷','截至 NOW'],

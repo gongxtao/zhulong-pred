@@ -14,6 +14,9 @@ v14–v18 完成五轮重审并实测通过：主体化→减密→时光机并�
 | 文件 | 说明 |
 |---|---|
 | `docs/prototype/zhulong.html` | **唯一主文件**（用户明确：其它不看；2026-08-29 从根目录迁入） |
+| `docs/prototype/data/zhulong-data.js` | 真数据快照（7.1MB，build-snapshot.mjs 产物，勿手改勿提交巨型 diff 外的改动） |
+| `scripts/build-snapshot.mjs` | 快照生成器（ZL_SKEY 环境变量传入，绝不入库） |
+| `CLAUDE.md` / `init.sh` / `feature_list.json` / `progress.md` | 工程 harness（启动验证走 `bash init.sh`） |
 | `docs/zhulong-design.md` | 设计文档（布局/交互/方法论/质量记录/版本小史） |
 | `docs/zhulong-handoff.md` | 本文 |
 | `.shots/` | 验证截图（**v18_quad_final_\*** 双主题终稿；v17_strip / v16_qmark / v15_fused 为过程版） |
@@ -57,13 +60,18 @@ v14–v18 完成五轮重审并实测通过：主体化→减密→时光机并�
 ```
 CSS :root + html[data-theme="dark"]   全部视觉令牌（改色只动这里）
 THEMES = {light, dark}                 图表调色板（改图表色动这里）
-DataHub：loadAt/tempAt/buildDaily/RECORD/sensAt   ← Supabase 替换点
-预测：forecastAt(相似日分位) + buildCal(残差经验分位标定) + FC_CACHE(memo)
-评估：backtest(28起点) + buildPers(持久性基线) + replayBT(重演回测)
+数据源：<script src="data/zhulong-data.js"> → window.ZL_DATA（真数据快照，7.1MB）
+        REAL/ZD 探测 → loadAt/tempAt 真值查表（O(1)），无快照回退 simLoadAt/simTempAt
+        时间锚 T_MIN/T_MAX/NOW_DEFAULT 真模式下从快照推导（NOW=2018-07-31 05:00 EST）
+预测：forecastAt = 真模型注入（≤24h 内最近 pred_static 日起点，偏移重索引 mh=off+h，
+      p50+真残差分位带）+ 相似日基线兜底（25–48h/2017 前）+ CAL + FC_CACHE(memo)
+评估：backtest(28起点×24h，审计=模型契约视界) + buildPers(24h 同视界) + replayBT(24h)
 渲染：renderDecision/StatusQuad/Main/Film/Attrib/Cred/SM/Heat/Extremes/LegendTable
 交互：setZone/setOrigin/jumpTo/胶片拖拽(rAF轻量刷新)/抽屉tabs/弹层四件套(互斥+重渲即关)/CSV
 演示：DEMO 六幕数组 + demoToggle（D键/Esc/←→）
 主题：setTheme + localStorage('zl-theme')
+快照：scripts/build-snapshot.mjs（ZL_SKEY=<service_role> 环境变量运行，产出 data/zhulong-data.js；
+      含 3 区全量小时序列+天气、model 元数据、pred_static 579 起点聚合）
 ```
 
 ## 4. 已踩过的坑（红线清单）
@@ -80,22 +88,26 @@ DataHub：loadAt/tempAt/buildDaily/RECORD/sensAt   ← Supabase 替换点
    （innerHTML 换锚后旧弹层会悬空显示陈旧内容）
 8. **弹层定位**：入口在页面左侧时必须左锚定（togglePop 第三参 'left'），右对齐会推出屏幕
 
-## 5. 验证基线（改完必须对上）
+## 5. 验证基线（真数据 v2 口径：审计 = 日前 24h，改完必须对上）
 
-- BT.AEP：MAPE 2.34 / cov90 87.8 / cov50 46.3（DAYTON 2.76/85.9/47.8，DOM 2.20/86.7/48.0）
-- 基线对比文案：持久性 3.91% → 本模型 2.34% 误差↓40%
-- 四格基线：现在负荷 **16,361** · 预测偏差 **−0.47%**（±0.5% 量级）· 今日峰 **20,229 @19:00 · 最坏 P90 22,316** · 预测误差 **2.34% [✓优于3%] P90命中 87.8%**
-- 重演基线（jumpTo 2014-01-06）：偏差 +28.19% · 本段 MAPE 17.57%「劣于 3%」· 24,893 MW（极涡诚实劣化，勿"修"）
-- 决策通知条：预备 2,700 MW（DAYTON 550 / DOM 2,200）；首屏预算 783px
-- 浏览器流程：`file:///.../docs/prototype/zhulong.html` → evaluate 断言 → 截图 `.shots/`（chrome-devtools MCP）
-- 回归点：切区域/胶片拖拽/极涡重演(审计卡切"本段重演")/热力图 tab/演示六幕开合/主题来回切/弹层四件套互斥
+**先决**：`bash init.sh` 全绿（快照在位、脚本语法、无 service_role 泄漏）。
+
+- BT.AEP：MAPE **3.64** / cov90 **88.8** / cov50 **52.2**（DAYTON **5.58/81.1/42.9**，DOM **5.47/87.2/48.5**）
+- 基线对比：持久性 5.84% → 3.64% ↓38%（DAYTON 8.94→5.58 ↓38%，DOM 7.62→5.47 ↓28%）
+- 模型行：WAPE 3.82% vs 昨日基线 6.51% ↓41%（DAYTON 3.43/7.48 ↓54%，DOM 5.08/7.97 ↓36%）
+- 四格基线（AEP live @2018-07-31 05:00 EST）：现在负荷 **12,926** · 偏差 **−2.03%** · 今日峰 **18,261 @16:00** · 误差 **3.64%**
+- 决策通知条：预备 **2,250 MW**（DAYTON 400 / DOM 2,750）
+- 极涡重演（jumpTo 2014-01-06，真数据）：持久性 **17.02% → 相似日 23.14% 落后于基线**——杀手锏话术在真数据上成立
+- 页面总装：`file:///.../docs/prototype/zhulong.html`（同目录需 `data/zhulong-data.js`）
+- 回归点：切区域/胶片拖拽/极涡重演(审计卡切"本段重演·24h")/热力图 tab/演示六幕/主题来回/弹层四件套互斥
+- 旧仿真基线（无快照时的回退路径，勿删）：AEP 2.34/87.8/46.3 · 今日峰 20,229@19:00 · 预备 2,700 MW
 
 ## 6. 待办（按优先级）
 
-1. **接 Supabase 真数据**（替换点已隔离）：需要用户提供 URL + anon key + RLS 读策略 SQL；
-   `loadAt→小时查询`、`buildDaily→日聚合`、`RECORD→真实极值`；打包快照兜底（现场断网）
-2. **真模型契约**：`forecastAt` 返回 `{ts,p10,p25,p50,p75,p90}[]`，模型好了无缝替换；BT/CAL 由离线回测喂
-3. 用户自己的优化方向（框架内微调即可）
+1. ~~接 Supabase 真数据~~ ✅ **已完成（v2）**：快照三级数据源（本地真值快照→内置仿真兜底）+ 真模型注入 + 审计卡生产模型行
+2. 可选增强：在线刷新模式（anon key 直接拉 Supabase，RLS 已开 energy_hourly/pred_static/energy_hourly_future；model_versions/training_trials 还需 GRANT）；energy_forecasts 管道跑起来后切真前瞻
+3. 赛后：Next.js + Tailwind 工程化移植（本原型当 spec，断言基线照搬）
+4. 用户自己的优化方向（框架内微调即可）
 
 ## 7. 演示剧本（按 D）
 

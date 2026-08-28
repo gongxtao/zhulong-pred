@@ -1,0 +1,44 @@
+{
+  "features": [
+    {
+      "id": "feat-001",
+      "name": "数据快照工件",
+      "description": "scripts/build-snapshot.mjs：分页拉取 energy_hourly ∪ energy_hourly_future（3 区去重、缺测插值），嵌入 model_versions + training_trials 基线 + pred_static 逐 horizon 残差聚合，产出 docs/prototype/data/zhulong-data.js（window.ZL_DATA）",
+      "dependencies": [],
+      "status": "done",
+      "evidence": "构建日志：AEP/DAYTON 121,296 小时、DOM 116,208（缺测 19-23 处、最长 2h 已线性插值）；pred_static 579 起点聚合 MAPE 3.16/3.74/4.84%；产物 7.1MB；init.sh 快照自检 ✓"
+    },
+    {
+      "id": "feat-002",
+      "name": "页面数据层接入（真数据）",
+      "description": "zhulong.html：数据源探测（本地快照→内置仿真）；loadAt/tempAt/天气/buildDaily/RECORD 切换真值查表；T_MIN/T_MAX/NOW_DEFAULT 从数据推导；数据源徽章动态化；口径文案更新",
+      "dependencies": ["feat-001"],
+      "status": "done",
+      "evidence": "浏览器断言：徽章「真数据 · PJM+ERA5」、hero 2,250 MW、四格 12,926/−2.03%/18,261@16:00、零控制台错误；无快照时回退仿真（simLoadAt/simTempAt 保留）"
+    },
+    {
+      "id": "feat-003",
+      "name": "真模型预测接入",
+      "description": "forecastAt：≤24h 内最近 pred_static 日起点按偏移重索引注入生产模型 p50 + 真残差分位带；超出模型视界回退相似日基线",
+      "dependencies": ["feat-002"],
+      "status": "done",
+      "evidence": "AEP 0-24h MAPE 3.64%（模型段）vs 24-48h 基线段 9.97%——注入生效；审计口径随之改为 24h（模型契约视界），持久性同视界对比 5.84→3.64 ↓38%"
+    },
+    {
+      "id": "feat-004",
+      "name": "审计卡真模型故事",
+      "description": "审计卡显示生产模型元数据（model_id/试验数/本区 WAPE vs 昨日基线）；归因卡天气四格真值；口径去「演示占位」措辞",
+      "dependencies": ["feat-002"],
+      "status": "done",
+      "evidence": "modelLine：model-20260828T18272 · 3 组试验 · WAPE 3.82% vs 6.51% ↓41%（AEP）；renderAttrib 天气走 ZD 查表；口径双分支（真/仿真）"
+    },
+    {
+      "id": "feat-005",
+      "name": "全量回归与新基线",
+      "description": "浏览器断言全清单重跑；真数据新基线写入 handoff §5；双主题截图；progress/feature_list 收口；提交",
+      "dependencies": ["feat-003", "feat-004"],
+      "status": "done",
+      "evidence": "回归零失败（三区/拖拽/极涡重演[真数据：持久性17.02→相似日23.14 落后，话术成立]/热力图/六幕/主题/弹层互斥）；handoff §3/§5/§6 已更新；截图 .shots/v19_realdata_{light,dark}.jpeg"
+    }
+  ]
+}
