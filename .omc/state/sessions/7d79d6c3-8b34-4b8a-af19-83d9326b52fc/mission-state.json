@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-08-28T13:19:43.727Z",
+  "updatedAt": "2026-08-28T16:05:01.413Z",
   "missions": [
     {
       "id": "session:7d79d6c3-8b34-4b8a-af19-83d9326b52fc:none",
@@ -7,7 +7,7 @@
       "name": "none",
       "objective": "Session mission",
       "createdAt": "2026-08-28T10:26:18.700Z",
-      "updatedAt": "2026-08-28T13:19:43.727Z",
+      "updatedAt": "2026-08-28T16:05:01.413Z",
       "status": "running",
       "workerCount": 3,
       "taskCounts": {
@@ -25,9 +25,9 @@
           "ownership": "a47c99eb6775fed96",
           "status": "done",
           "currentStep": null,
-          "latestUpdate": "Marked as stale during unmatched stop reconciliation - exceed...",
-          "completedSummary": "Marked as stale during unmatched stop reconciliation - exceed...",
-          "updatedAt": "2026-08-28T13:19:43.727Z"
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-08-28T16:05:01.413Z"
         },
         {
           "name": "general-purpose:ab7e2c3",
@@ -330,6 +330,14 @@
           "agent": "general-purpose:a47c99e",
           "detail": "Marked as stale during unmatched stop reconciliation - exceeded timeout",
           "sourceKey": "session-stop:a47c99eb6775fed96"
+        },
+        {
+          "id": "session-stop:a952cd12e917fcd61:2026-08-28T16:05:01.413Z",
+          "at": "2026-08-28T16:05:01.413Z",
+          "kind": "completion",
+          "agent": "general-purpose:a47c99e",
+          "detail": "completed",
+          "sourceKey": "session-stop:a952cd12e917fcd61"
         }
       ]
     }

@@ -36,3 +36,4 @@
 {"t":0,"agent":"a47c99e","agent_type":"general-purpose","event":"agent_stop","success":true,"duration_ms":10405027}
 {"t":0,"agent":"system","event":"skill_invoked","skill_name":"dataviz"}
 {"t":0,"agent":"system","event":"skill_invoked","skill_name":"frontend-design:frontend-design"}
+{"t":0,"agent":"a952cd1","agent_type":"untracked-native-fork","event":"agent_stop","success":true,"synthetic":true,"telemetry_status":"unmatched_stop","reason":"SubagentStop arrived without a matching SubagentStart; native Agent/Task start telemetry was not observed."}

@@ -304,7 +304,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--actual);outline-off
     <span id="zoneCap"></span>
     <div class="tb-right">
       <span id="clock" aria-live="off"></span>
-      <span class="live"><span class="dot"></span>LIVE</span>
+      <span class="live" style="color:var(--ink3)"><span class="dot" style="background:var(--actual);animation:none"></span>演示数据 · 锚定 2018-08</span>
       <button id="demoBtn" title="按 D 键也可进入"><svg viewBox="0 0 12 12"><path d="M2 1.2 L10.6 6 L2 10.8 Z"/></svg>演示模式</button>
     </div>
   </header>
@@ -492,6 +492,7 @@ const rnd2=(ns,ts)=>lcg(hash2(ns,ts))();
 const gauss=(x,mu,sig)=>Math.exp(-((x-mu)**2)/(2*sig*sig));
 const fmt=n=>Math.round(n).toLocaleString('en-US');
 const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const rgba=(hex,a)=>{const n=parseInt(hex.slice(1),16);return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`};
 const LOC=ts=>new Date(ts-5*HOUR);             // 美东墙钟（固定 EST 展示基准）
 const locDay=ts=>Math.floor((ts+5*HOUR)/DAY);  // 美东日序号
 const dayTs=di=>di*DAY+5*HOUR;                 // 美东日序号 → 当日 00:00（EST）对应的 UTC 时刻
@@ -581,7 +582,11 @@ function candsFor(zone,wdT,dLimit){
 /* 预测：相似日分位数。关键：逐小时按「目标日」的星期选相似日——
    跨越午夜后星期变化（如周五→周六），候选集随之切换；
    再做日均位校正（锚定最近同星期日的水平），只保留形状差异 + 噪声作为分布 */
+/* 预测缓存：同一 (zone, origin) 的结果确定性一致，避免 renderAll 内重复计算 */
+const FC_CACHE=new Map();
 function forecastAt(zone,originTs){
+  const key=zone+'@'+originTs;
+  if(FC_CACHE.has(key))return FC_CACHE.get(key);
   const d0=locDay(originTs);
   const out=[];
   for(let h=1;h<=H_FC;h++){
@@ -604,6 +609,7 @@ function forecastAt(zone,originTs){
     }
     out.push({ts,p50,p10:q.p10,p90:q.p90,p25:q.p25,p75:q.p75});
   }
+  FC_CACHE.set(key,out);
   return out;
 }
 /* 残差标定表：CAL[zone] = 逐 horizon（1..48h）的残差分位（相对误差，±2h 池化平滑） */
@@ -715,14 +721,14 @@ function renderMain(){
   const peak90=day1.reduce((a,b)=>b.p90>a.p90?b:a,day1[0]);
   const peakEt=fmtHM(peak.ts);
   const prepMW=Math.ceil((peak90.p90-peak.p50*0.97)/50)*50;
-  /* 偏差带数据（实际 − 昨日起点预测；重演/上帝视角段 = 真实 − 当前预测） */
-  const devPts=[];
+  /* 偏差带数据：NOW 左 = 实际 − 昨日预测（实线）；NOW 右 = 真实 − 当前预测（虚线，语义不同的追踪段） */
+  const devL=[],devR=[];
   for(let ts=org-back*HOUR;ts<=org;ts+=HOUR){
     const idx=(ts-(org-24*HOUR))/HOUR;
-    if(idx>=1&&idx<=H_FC){const p=FC_PREV[idx-1];if(p.ts===ts)devPts.push([ts,(loadAt(state.zone,ts)-p.p50)/p.p50*100])}
+    if(idx>=1&&idx<=H_FC){const p=FC_PREV[idx-1];if(p.ts===ts)devL.push([ts,(loadAt(state.zone,ts)-p.p50)/p.p50*100])}
   }
   if(state.opts.god)for(const p of fc){
-    if(p.ts<=T_MAX)devPts.push([p.ts,(loadAt(state.zone,p.ts)-p.p50)/p.p50*100]);
+    if(p.ts<=T_MAX)devR.push([p.ts,(loadAt(state.zone,p.ts)-p.p50)/p.p50*100]);
   }
 
   const series=[
@@ -827,15 +833,19 @@ function renderMain(){
       axisLabel:{show:false},splitLine:{show:false}},
     yAxis:{type:'value',min:v=>Math.min(-4,v.min),max:v=>Math.max(4,v.max),
       axisLabel:{show:false},splitLine:{show:false},axisLine:{show:false}},
-    series:[{type:'line',data:devPts,showSymbol:false,z:2,connectNulls:false,
-      lineStyle:{color:C.actualHi,width:1.5},itemStyle:{color:C.actualHi},
-      markLine:{symbol:'none',silent:true,label:{show:false},
-        data:[
-          {yAxis:0,lineStyle:{color:C.axisLine,width:1}},
-          {yAxis:3,lineStyle:{color:C.danger,type:'dashed',width:1,opacity:.4}},
-          {yAxis:-3,lineStyle:{color:C.danger,type:'dashed',width:1,opacity:.4}},
-          {xAxis:org,lineStyle:{color:C.ink2,width:1,opacity:.8}},
-        ]}}]
+    series:[
+      {name:'偏差·已发生',type:'line',data:devL,showSymbol:false,z:2,connectNulls:false,
+       lineStyle:{color:C.actualHi,width:1.5},itemStyle:{color:C.actualHi},
+       markLine:{symbol:'none',silent:true,label:{show:false},
+         data:[
+           {yAxis:0,lineStyle:{color:C.axisLine,width:1}},
+           {yAxis:3,lineStyle:{color:C.danger,type:'dashed',width:1,opacity:.4}},
+           {yAxis:-3,lineStyle:{color:C.danger,type:'dashed',width:1,opacity:.4}},
+           {xAxis:org,lineStyle:{color:C.ink2,width:1,opacity:.8}},
+         ]}},
+      {name:'偏差·预测追踪',type:'line',data:devR,showSymbol:false,z:2,connectNulls:false,
+       lineStyle:{color:C.actualHi,width:1.4,type:'dashed',opacity:.8},itemStyle:{color:C.actualHi}},
+    ]
   },true);
 }
 
@@ -853,14 +863,16 @@ function renderStatusQuad(){
   const peak90=fc.reduce((a,b)=>b.p90>a.p90?b:a,fc[0]);
   const peakEt=fmtHM(peak.ts);
   /* 偏差：最近 6 个已发生小时，实际 vs 昨日起点预测 */
-  let dev=null;
+  let dev=null,wSum=0;
   for(let h=6;h>=1;h--){
     const ts=org-h*HOUR,idx=(ts-(org-24*HOUR))/HOUR;
     if(idx>=1&&idx<=H_FC&&FC_PREV[idx-1].ts===ts){
+      const d=(loadAt(z,ts)-FC_PREV[idx-1].p50)/FC_PREV[idx-1].p50*100;
       if(dev==null)dev=0;
-      dev+=(loadAt(z,ts)-FC_PREV[idx-1].p50)/FC_PREV[idx-1].p50*100/h;
+      dev+=d/h;wSum+=1/h;
     }
   }
+  if(dev!=null)dev/=wSum; /* 加权平均（越近权重越高）——必须除以权重和 Σ(1/h)=2.45 */
   const nowV=loadAt(z,org),yesV=loadAt(z,org-24*HOUR);
   const dPct=(nowV-yesV)/yesV*100;
   const devOk=dev!=null&&Math.abs(dev)<1.5;
@@ -880,7 +892,7 @@ function renderStatusQuad(){
     <div class="sq">
       <div class="sq-l">今日峰<span class="ref">未来 24h</span></div>
       <div class="sq-v num" style="color:${C.fcHi}">${fmt(peak.p50)}<small>MW</small></div>
-      <div class="sq-s">@${peakEt} · 最坏 P90 <b class="num">${fmt(peak90.p90)}</b> · 距纪录 ${recGap>=0?'+':''}${recGap.toFixed(1)}%</div>
+      <div class="sq-s">@${peakEt} · 最坏 P90 <b class="num">${fmt(peak90.p90)}</b> · P90 距纪录 ${recGap>=0?'+':''}${recGap.toFixed(1)}%</div>
     </div>
     <div class="sq">
       <div class="sq-l">可信<span class="ref">${live?'近 28 起点回测':'本段重演'}</span></div>
@@ -908,7 +920,7 @@ function renderFilm(){
     series:[{type:'line',data,showSymbol:false,
       lineStyle:{color:C.zone[state.zone],width:1.2,opacity:.9},itemStyle:{color:C.zone[state.zone]},
       areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[
-        {offset:0,color:'rgba(8,145,178,.18)'},{offset:1,color:'rgba(8,145,178,0)'}]}}}]
+        {offset:0,color:rgba(C.zone[state.zone],.18)},{offset:1,color:rgba(C.zone[state.zone],0)}]}}}]
   },true);
   renderFilmEvents();positionHandle(false);
 }
@@ -1030,10 +1042,10 @@ function renderCred(){
   $('credScope').textContent=scope;
   $('cov90v').textContent=c90.toFixed(1)+'%';
   $('cov50v').textContent=c50.toFixed(1)+'%';
-  setBar('cov90bar',c90,90);setBar('cov50bar',c50,50);
-  function setBar(id,v,nom){const b=$(id);const f=b.querySelector('.fill');
+  setBar('cov90bar',c90,90,6);setBar('cov50bar',c50,50,8);
+  function setBar(id,v,nom,tol){const b=$(id);const f=b.querySelector('.fill');
     f.style.width=clamp(v,0,100)+'%';
-    f.style.background=Math.abs(v-nom)<=6?C.ok:C.fc}
+    f.style.background=Math.abs(v-nom)<=tol?C.ok:C.fc}
   $('mapeVal').innerHTML=mape.toFixed(2)+'<small>%</small>';
   mapeC.setOption({
     grid:{left:0,right:0,top:2,bottom:0},animation:false,
@@ -1071,8 +1083,8 @@ function renderCaliber(){
     ['气象','ERA5 再分析区域加权（Open-Meteo），非单站实测：气温/湿度/降水/风速。'],
     ['时间','入库统一 UTC（interval_end，区间右端）；展示统一为美东标准时间 EST（UTC−5）。2004-10 至 2018-08。'],
     ['预测','相似日分位数基线（按目标日同星期、就近 70 天、k=10）＋残差经验分位标定；无未来信息泄露。正式模型交付后按 p10–p90 契约替换。'],
-    ['建议','建议容量 = P90 上界 − 97%×P50（向上取整至 50 MW）：按「最坏情形超出预期的部分」预留调峰资源；预备窗 = 峰前 3 小时。'],
-    ['气象输入','相似日基线不直接消费气象预报，天气突变日（如 2014 极涡，见重演）误差如实放大；正式模型接入气象预报后，区间与精度将同步改善。'],
+    ['建议','建议容量 = P90 上界 − 97%×P50（向上取整至 50 MW）：按「最坏情形超出预期的部分」预留调峰资源；预备窗 = 峰前 3 小时。P90 上界取逐时分位数的包络（跨时刻拼接，结果偏保守）；正式版按日峰值分布的分位数计算。'],
+    ['气象输入','相似日基线不直接消费气象预报，天气突变日（如 2014 极涡，见重演）误差如实放大；正式模型接入气象预报后，区间与精度将同步改善。当前湿度/风速/降水为演示占位（未与季节模型耦合），接入后为 ERA5 真值。'],
     ['归因','温度贡献 = Δ温度 × 当前温度段灵敏度（MW/°C，由区域冷/热负荷系数导出）；「日历与其他」为总变化减温度贡献的余项，不虚构精度。'],
     ['区域','AEP / DAYTON / DOM 为 PJM 负荷区，非单一城市或变电站。换省级电网分区即可迁移。'],
     ['回测','滚动 28 起点 × 48h；MAPE 与 P50/P90 覆盖率由真实（仿真）后续计算，非预设数字。'],
@@ -1231,9 +1243,9 @@ function togglePop(pop,btn){
   pop.style.left=Math.min(r.right-pop.offsetWidth-8,window.innerWidth-pop.offsetWidth-10)+'px';
   pop.style.top=(r.bottom+8)+'px';
 }
-$('calBtn').onclick=e=>{e.stopPropagation();const p=$('calPopover');
+$('calBtn').onclick=e=>{e.stopPropagation();$('optPopover').style.display='none';const p=$('calPopover');
   p.style.display==='none'?togglePop(p,$('calBtn')):p.style.display='none'};
-$('optBtn').onclick=e=>{e.stopPropagation();const p=$('optPopover');
+$('optBtn').onclick=e=>{e.stopPropagation();$('calPopover').style.display='none';const p=$('optPopover');
   p.style.display==='none'?togglePop(p,$('optBtn')):p.style.display='none'};
 document.addEventListener('click',e=>{
   if(!e.target.closest('#calPopover'))$('calPopover').style.display='none';
@@ -1357,7 +1369,12 @@ window.addEventListener('resize',()=>{
    ===================================================================== */
 buildDaily();
 const BT={};
-for(const z of Object.keys(ZONES)){buildCal(z);BT[z]=backtest(z);buildPers(z)}
+for(const z of Object.keys(ZONES)){
+  buildCal(z);
+  FC_CACHE.clear(); /* buildCal 期间缓存的是未标定结果，backtest 前必须作废 */
+  BT[z]=backtest(z);
+  buildPers(z);
+}
 renderLegendTable();
 renderCaliber();
 renderAll();
