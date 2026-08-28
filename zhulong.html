@@ -34,7 +34,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--actual);outline-off
 /* ============ 布局骨架 · 一栏三层（状态→主线→证据→探索） ============ */
 #app{min-height:100vh;display:flex;flex-direction:column}
 #stageCard{margin:10px 12px 0}
-#mainChart{height:clamp(320px,42vh,430px)}
+#mainChart{height:clamp(290px,37vh,400px)}
 /* ⓪ 决策层（结论主导：建议句 = 唯一主角，峰值为依据行；左色条 = 风险等级） */
 #decisionBanner{flex-shrink:0;margin:10px 12px 0;
   background:var(--bg1);border:1px solid var(--line);border-left:4px solid var(--warn);
@@ -339,7 +339,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--actual);outline-off
       <div id="mainChart"></div>
       <div id="stripRow">
         <div class="mini"><span class="tag">气温 °C · 区域加权</span><div id="tempChart" style="position:absolute;inset:10px 0 0 0"></div></div>
-        <div class="mini"><span class="tag">偏差 % · 实际−预测</span><div id="devChart" style="position:absolute;inset:10px 0 0 0"></div></div>
+        <div class="mini"><span class="tag">偏差 % · 实际−预测 · 虚线 ±3% 为关注线</span><div id="devChart" style="position:absolute;inset:10px 0 0 0"></div></div>
       </div>
     </div>
     <div id="legendTable" aria-hidden="true"></div>
@@ -372,10 +372,11 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--actual);outline-off
           <div id="mapeSpark"></div>
           <div>
             <div id="mapeVal">—</div>
-            <div id="mapeNote">日前 48h 预测平均绝对百分比误差</div>
+            <div id="mapeNote">日前 48h 预测平均绝对百分比误差（行业优良 &lt;3%）</div>
           </div>
         </div>
-        <div style="margin-top:9px" id="credBadge"></div>
+        <div id="basisCmp" style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-size:11.5px;color:var(--ink2)"></div>
+        <div style="margin-top:8px" id="credBadge"></div>
       </div>
     </div>
 
@@ -626,6 +627,19 @@ function buildCal(zone){
     return{z90:quantile(abs,.90),z50:quantile(abs,.50)};
   });
 }
+/* 持久性基线（昨日同时刻 = 预测）的 MAPE：用于「本模型 vs 基线」对比 */
+const PERS={};
+function buildPers(zone){
+  let se=0,n=0;
+  for(let i=28;i>=1;i--){
+    const origin=dayTs(D1-6-i);
+    for(let h=1;h<=H_FC;h++){
+      const ts=origin+h*HOUR,a=loadAt(zone,ts),p=loadAt(zone,ts-24*HOUR);
+      se+=Math.abs(p-a)/a;n++;
+    }
+  }
+  PERS[zone]=se/n*100;
+}
 /* 回测：滚动起点 vs 真实 */
 function backtest(zone,nOrigins=28){
   const per=[];
@@ -870,7 +884,7 @@ function renderStatusQuad(){
     </div>
     <div class="sq">
       <div class="sq-l">可信<span class="ref">${live?'近 28 起点回测':'本段重演'}</span></div>
-      <div class="sq-v num">${live?mape.toFixed(2):replayBT().mape.toFixed(2)}<small>% MAPE</small></div>
+      <div class="sq-v num">${live?mape.toFixed(2):replayBT().mape.toFixed(2)}<small>% MAPE（优 &lt;3%）</small></div>
       <div class="sq-s">P90 命中 <b class="num">${cov90.toFixed(1)}%</b> ${Math.abs(cov90-90)<=6?'<span class="badge ok">自检通过</span>':'<span class="badge warn">偏离</span>'}</div>
     </div>`;
 }
@@ -884,8 +898,8 @@ function renderFilm(){
   filmC.setOption({
     animationDuration:500,
     grid:{left:10,right:10,top:14,bottom:14},
-    tooltip:{trigger:'axis',backgroundColor:C.tipBg,borderColor:C.tipLine,textStyle:{color:C.ink,fontSize:11.5},
-      extraCssText:'box-shadow:0 6px 20px rgba(15,23,42,.12);',
+    tooltip:{trigger:'axis',appendToBody:true,backgroundColor:C.tipBg,borderColor:C.tipLine,textStyle:{color:C.ink,fontSize:11.5},
+      extraCssText:'box-shadow:0 6px 20px rgba(15,23,42,.12);z-index:1000;',
       formatter:ps=>`${fmtFull(ps[0].value[0])}<br/>日峰值 <b style="font-family:JetBrains Mono">${fmt(ps[0].value[1])}</b> MW`},
     xAxis:{type:'time',min:T_MIN,max:T_MAX,axisLine:{lineStyle:{color:C.axisLine}},axisTick:{show:false},
       axisLabel:{color:C.ink3,fontSize:9.5,fontFamily:'JetBrains Mono',formatter:v=>''+LOC(v).getUTCFullYear()},
@@ -961,7 +975,7 @@ function renderDecision(){
         <span class="sevTag sev-${sev}-bg">${sev==='high'?'⚠ 高风险':sev==='mid'?'⚠ 关注':'✓ 平稳'}</span></div>
       <div class="db-action">「预备窗 <span class="win">${winFrom}–${peakEt}</span> 内，预备 <span class="num">${fmt(prepMW)}</span> MW 调峰资源」</div>
       <div class="db-basis">
-        依据：${WD_ZH[etP(peak.ts).wd]} ${peakEt} 日峰 P50 <b class="num">${fmt(peak.p50)}</b> → P90 <b class="num">${fmt(peak90.p90)}</b> MW
+        依据：${WD_ZH[etP(peak.ts).wd]} ${peakEt} 日峰 P50 <b class="num">${fmt(peak.p50)}</b><span class="dim">（最可能）</span> → P90 <b class="num">${fmt(peak90.p90)}</b><span class="dim">（最坏情形）</span> MW
         （距纪录 ${recGap>=0?'+':''}${recGap.toFixed(1)}% · 较 30 日均值 ${anom>=0?'+':''}${anom.toFixed(1)}%）<br>
         爬坡需求 <b class="num">${fmt(rampNeed)}</b> MW/h · 预备窗见主图琥珀底色段 ·
         区间校准 <b style="color:${calOk?'var(--ok)':'var(--warn)'}">${calOk?'✓ 通过':'⚠ 偏离'}</b>
@@ -1032,6 +1046,16 @@ function renderCred(){
   $('credBadge').innerHTML=`<span class="${okC90&&okC50?'okBadge':''}" style="${okC90&&okC50?'':'color:var(--warn);font-size:10.5px;font-weight:700'}">${
     okC90&&okC50?'✓ 区间校准通过：实际命中率与标称一致，P90 可作调度底线'
     :'⚠ 区间'+(c90<84?'偏窄':'偏宽')+'：已按回测自动修正张开系数'}</span>`;
+  /* 基线对比：持久性（昨日同时 = 预测）vs 本模型——页面内实时复算 */
+  const pers=state.mode==='live'?PERS[z]:(()=>{
+    let se=0,n=0;
+    for(const p of forecastAt(z,state.origin)){const a=loadAt(z,p.ts),pp=loadAt(z,p.ts-24*HOUR);se+=Math.abs(pp-a)/a;n++}
+    return se/n*100;
+  })();
+  const impr=Math.round((pers-mape)/pers*100);
+  $('basisCmp').innerHTML = impr>0
+    ?`基线对比：持久性（昨日同时）MAPE <b class="num">${pers.toFixed(2)}%</b> → 本模型 <b class="num">${mape.toFixed(2)}%</b> <b style="color:var(--ok)">误差 ↓${impr}%</b>`
+    :`基线对比：持久性（昨日同时）MAPE <b class="num">${pers.toFixed(2)}%</b> → 本模型 <b class="num">${mape.toFixed(2)}%</b> <b style="color:var(--warn)">天气突变段落后于基线</b>（相似日盲区，正是接入气象预报的论据，见口径）`;
 }
 function replayBT(){
   const z=state.zone,fc=forecastAt(z,state.origin);
@@ -1047,6 +1071,8 @@ function renderCaliber(){
     ['气象','ERA5 再分析区域加权（Open-Meteo），非单站实测：气温/湿度/降水/风速。'],
     ['时间','入库统一 UTC（interval_end，区间右端）；展示统一为美东标准时间 EST（UTC−5）。2004-10 至 2018-08。'],
     ['预测','相似日分位数基线（按目标日同星期、就近 70 天、k=10）＋残差经验分位标定；无未来信息泄露。正式模型交付后按 p10–p90 契约替换。'],
+    ['建议','建议容量 = P90 上界 − 97%×P50（向上取整至 50 MW）：按「最坏情形超出预期的部分」预留调峰资源；预备窗 = 峰前 3 小时。'],
+    ['气象输入','相似日基线不直接消费气象预报，天气突变日（如 2014 极涡，见重演）误差如实放大；正式模型接入气象预报后，区间与精度将同步改善。'],
     ['归因','温度贡献 = Δ温度 × 当前温度段灵敏度（MW/°C，由区域冷/热负荷系数导出）；「日历与其他」为总变化减温度贡献的余项，不虚构精度。'],
     ['区域','AEP / DAYTON / DOM 为 PJM 负荷区，非单一城市或变电站。换省级电网分区即可迁移。'],
     ['回测','滚动 28 起点 × 48h；MAPE 与 P50/P90 覆盖率由真实（仿真）后续计算，非预设数字。'],
@@ -1078,7 +1104,8 @@ function renderSM(){
     smC[z].setOption({
       animation:false,
       grid:{left:46,right:6,top:6,bottom:16},
-      tooltip:{trigger:'axis',backgroundColor:C.tipBg,borderColor:C.tipLine,textStyle:{color:C.ink,fontSize:11},
+      tooltip:{trigger:'axis',appendToBody:true,backgroundColor:C.tipBg,borderColor:C.tipLine,textStyle:{color:C.ink,fontSize:11},
+        extraCssText:'box-shadow:0 6px 20px rgba(15,23,42,.12);z-index:1000;',
         formatter:ps=>`${fmtMDH(ps[0].value[0])}<br/>${z} <b style="font-family:JetBrains Mono">${fmt(ps[0].value[1])}</b> MW`},
       xAxis:{type:'time',axisLine:{lineStyle:{color:C.axisLine}},axisTick:{show:false},
         axisLabel:{color:C.ink3,fontSize:9,fontFamily:'JetBrains Mono',formatter:v=>fmtHM(v)},splitLine:{show:false}},
@@ -1114,7 +1141,8 @@ function renderHeat(){
   heatC.setOption({
     animation:false,
     grid:{left:34,right:6,top:4,bottom:18},
-    tooltip:{backgroundColor:C.tipBg,borderColor:C.tipLine,textStyle:{color:C.ink,fontSize:11},
+    tooltip:{appendToBody:true,backgroundColor:C.tipBg,borderColor:C.tipLine,textStyle:{color:C.ink,fontSize:11},
+      extraCssText:'box-shadow:0 6px 20px rgba(15,23,42,.12);z-index:1000;',
       formatter:p=>`${p.data[2]>0?`<b>${yList[p.data[1]]}</b> 年第 <b>${p.data[0]+1}</b> 周<br/>周峰 <b style="font-family:JetBrains Mono">${fmt(years[yList[p.data[1]]+'-'+p.data[0]].v)}</b> MW`:''}`},
     xAxis:{type:'category',data:Array.from({length:weeks},(_,i)=>i),
       axisLine:{show:false},axisTick:{show:false},splitArea:{show:false},
@@ -1329,7 +1357,7 @@ window.addEventListener('resize',()=>{
    ===================================================================== */
 buildDaily();
 const BT={};
-for(const z of Object.keys(ZONES)){buildCal(z);BT[z]=backtest(z)}
+for(const z of Object.keys(ZONES)){buildCal(z);BT[z]=backtest(z);buildPers(z)}
 renderLegendTable();
 renderCaliber();
 renderAll();
