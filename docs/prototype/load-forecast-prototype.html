@@ -32,6 +32,8 @@
     border:1px solid #dfe4ff;border-radius:999px;padding:3px 11px;font-weight:600;font-size:12px;
   }
   .meta .chip .dot{width:6px;height:6px;border-radius:50%;background:#4f46e5;animation:pulse 2s infinite}
+  .meta .chip.demo{background:#fff7ed;color:#9a3412;border-color:#ffedd5}
+  .meta .chip.demo .dot{background:#d97706}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
   .meta .upd{margin-top:6px}
 
@@ -92,6 +94,11 @@
   .freq-note b{color:#9a3412}
   .freq-note .swatches{display:inline-flex;gap:4px;align-items:center}
   .sw{width:14px;height:9px;border-radius:2.5px;display:inline-block}
+  .csvbtn{
+    border:1px solid var(--line);background:#fff;color:var(--sub);font-size:12px;font-weight:600;
+    padding:5px 12px;border-radius:8px;cursor:pointer;transition:all .15s;font-family:inherit;white-space:nowrap;
+  }
+  .csvbtn:hover{border-color:#c7d0dc;color:var(--ink)}
 
   /* ---------- small multiples ---------- */
   .sm-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:10px}
@@ -144,7 +151,7 @@
       <p>小时级负荷预测 · AEP / DAYTON / DOM 三负荷区 · 数据截至 <span id="hdrNow"></span></p>
     </div>
     <div class="meta">
-      <span class="chip"><span class="dot"></span>实时数据流正常</span>
+      <span class="chip demo"><span class="dot"></span>模拟数据 · 接入真实数据前演示</span>
       <div class="upd" id="hdrUpd"></div>
     </div>
   </header>
@@ -176,19 +183,19 @@
       <div class="spark" id="spNow"></div>
     </div>
     <div class="kpi">
-      <div class="label" title="P50 = 中位数预测：模型认为有 50% 的概率实际负荷低于此值、50% 高于此值。P90 带 = 更保守的范围，实际负荷有 90% 的概率落在带内（用于按最坏情况备容量）。">今日预测峰值 <span style="font-weight:500;color:var(--faint)">P50 ⓘ</span></div>
+      <div class="label" title="P90 上界 = 九成把握的实际峰值上限：只有 10% 的概率实际峰值会超过它。调度备容量应按此值准备。P50 = 最可能的峰值（一半概率高于它、一半低于它），仅作参考。">今日预测峰值 · 九成把握上限 <span style="font-weight:500;color:var(--faint)">P90 ⓘ</span></div>
       <div class="value" id="kPeak">—<small>MW</small></div>
       <div class="sub" id="kPeakSub">—</div>
       <div class="spark" id="spPeak"></div>
     </div>
     <div class="kpi">
-      <div class="label" title="日前预测 = 提前一天做出的未来 24 小时预测。MAPE = 平均绝对百分比误差：预测值与实际值平均相差百分之几（如 2.1% = 平均每 100 MW 偏差约 2.1 MW）。越低越准。">日前预测 MAPE（近 7 日）<span style="font-weight:500;color:var(--faint)">ⓘ</span></div>
+      <div class="label" title="MAPE = 平均绝对百分比误差：日前（提前一天）预测与实际负荷平均相差百分之几。越低越准，行业优秀线为 3%。">近 7 日预测平均偏差 <span style="font-weight:500;color:var(--faint)">MAPE ⓘ</span></div>
       <div class="value" id="kMape">—<small>%</small></div>
       <div class="sub" id="kMapeSub">—</div>
       <div class="spark" id="spMape"></div>
     </div>
     <div class="kpi">
-      <div class="label" title="自检：过去 7 天，实际负荷有多大比例真的落入了模型给出的 P10–P90 区间。标称 90%，实测也接近 90% 说明区间诚实可信；明显偏低 = 区间太窄（过度自信），明显偏高 = 区间太宽（过度保守）。">P90 区间覆盖率自检 <span style="font-weight:500;color:var(--faint)">ⓘ</span></div>
+      <div class="label" title="自检：过去 7 天实际负荷有多大比例真的落入模型给的 P10–P90 区间。实测接近标称 90% = 区间诚实可信；明显偏低 = 区间太窄（过度自信），偏高 = 太宽（保守浪费）。">区间可信度自检 <span style="font-weight:500;color:var(--faint)">P90 覆盖率 ⓘ</span></div>
       <div class="value" id="kCov">—<small>%</small></div>
       <div class="sub" id="kCovSub">—</div>
       <div class="spark" id="spCov"></div>
@@ -199,7 +206,10 @@
   <div class="card">
     <div class="card-h">
       <h2>负荷：实际 vs 预测（含不确定性区间）</h2>
-      <span class="hint">悬停查看 P50 与区间上下界 · 滚轮/拖拽缩放 · 图例可点击显隐</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="hint">悬停查看 P50 与区间上下界 · 滚轮/拖拽缩放 · 图例可点击显隐</span>
+        <button class="csvbtn" id="csvBtn" title="导出当前区域的完整数据（实际 + 回测预测 + 未来预测分位数）">⬇ 导出 CSV</button>
+      </div>
     </div>
     <div id="main"></div>
     <div class="freq-note">
@@ -207,7 +217,7 @@
         <span class="sw" style="background:rgba(234,88,12,.10)"></span>
         <span class="sw" style="background:rgba(234,88,12,.22)"></span>
       </span>
-      <span><b>如何读这张图：</b>蓝色实线为历史实际负荷；NOW 竖线左侧的<b>琥珀色虚线是「当时做出的预测」</b>——把它与蓝线的贴合程度看在眼里，你就知道右侧的预测该信几分（悬停可见逐小时偏差）。
+      <span><b>如何读这张图：</b>蓝色实线为历史实际负荷；NOW 竖线左侧的<b>灰色虚线是「当时做出的预测」</b>（快速可信度检查——它与蓝线贴合，右侧的预测才可信；逐日完整审计见下方「预测回放」卡片，悬停可见逐小时偏差）。
       NOW 右侧为未来预测：橙色为不确定性区间——
       <b>在相同天气与日历条件下重复 100 次，负荷约有 90 次落入浅色带（P10–P90）、50 次落入深色带（P25–P75）内</b>。
       区间随时间变宽表示预测逐渐不确定。点预测（P50 虚线）仅供参考，不建议作为唯一决策依据。</span>
@@ -282,11 +292,11 @@
       <div class="dnote"><b>④ 区间不画满、透明度内深外浅</b>色深编码概率密度是英国央行 fan chart 的原始设计；不覆盖 100% 以避免「伪造有界」。<i>Britton, Fisher &amp; Whitley 1998</i></div>
       <div class="dnote"><b>⑤ 频率句图注（「100 次约 90 次」）</b>裸百分比与概率词会被系统性误读（IPCC 研究、Gigerenzer 2005）；频率框架是实证最稳的表达。<i>Budescu 2009</i></div>
       <div class="dnote"><b>⑥ 覆盖率自检作为一等公民指标</b>区间不报实际命中率就无法验证可信度——这是专业预测产品与普通 demo 的分水岭。<i>Correll &amp; Gleicher, IEEE TVCG 2014</i></div>
-      <div class="dnote"><b>⑦ 峰值给区间而非单值；误差卡用红涨绿跌语义</b>峰值是调度决策的核心关切（Amperon 范式）；峰值误差若仅给单点数字会复制「点预测过度信任」问题。<i>amperon.co</i></div>
+      <div class="dnote"><b>⑦ 峰值卡以 P90 上界为决策主数字，P50 降为参考</b>调度场景按最坏情况备容量，P90 才是决策数字；主数字若给 P50 会让用户以「一半概率不够用」的数字做决策。峰值口径 = 已实现峰值与剩余时段预测取大。<i>Amperon 决策流范式；点预测过度信任实证</i></div>
       <div class="dnote"><b>⑧ 区域对比用 small multiples 而非同图叠加</b>三区量级差 ~7 倍，叠加会压扁 DAYTON；共享视觉语言的小多图是量级悬殊多序列的标准解。<i>Cleveland 1985; Datawrapper 指南</i></div>
       <div class="dnote"><b>⑨ 温度副轴低饱和度、图例可关</b>温度仅作情境解释（空调负荷），必须视觉上从属于负荷；双轴不做斜率对比。<i>Grafana 双轴警示</i></div>
       <div class="dnote"><b>⑩ 预测回放视图</b>让用户亲自回看「当时预测 vs 实际」来建立对模型的信任，比展示一个准确率数字更有说服力。<i>Amperon 96h 回放；预测信任研究</i></div>
-      <div class="dnote"><b>⑪ 历史侧回测叠加（NOW 左侧 48h 当时预测）</b>把「预测 vs 实际」的验证直接放进主图，用户不需要跳到回放页就能评估右侧预测的可信度—— hindsight overlay 是 EIA/Amperon 式的信任设计。<i>eia.gov；Amperon</i></div>
+      <div class="dnote"><b>⑪ 历史侧回测叠加（NOW 左侧 48h 当时预测，灰色系）</b>主图叠加用灰色弱化为「快速可信度检查」（它与预测的橙色语义分层：灰=验证过去、橙=预测未来）；完整逐日审计交给下方「预测回放」卡片，两处职责分明。hindsight overlay 是 EIA/Amperon 式的信任设计。<i>eia.gov；Amperon</i></div>
     </div>
   </details>
 
@@ -407,7 +417,7 @@ const axisTime = { axisLabel:{ formatter:v=>fmtT(v), color:'#64748b', fontSize:1
    主图
 ================================================================ */
 const mainC = echarts.init(document.getElementById('main'));
-function bandSeries(pts, loKey, hiKey, stack, opacity, dispName){
+function bandSeries(pts, loKey, hiKey, stack, opacity, dispName, color){
   const lo = [], hi = [];
   pts.forEach(p=>{ lo.push([p.ts, p[loKey]]); hi.push([p.ts, p[hiKey]-p[loKey]]); });
   return [
@@ -415,7 +425,7 @@ function bandSeries(pts, loKey, hiKey, stack, opacity, dispName){
       silent:true, tooltip:{show:false}, emphasis:{disabled:true}, z:1 },
     { name:dispName, type:'line', stack, data:hi, lineStyle:{opacity:0}, symbol:'none',
       silent:true, tooltip:{show:false}, emphasis:{disabled:true}, z:1,
-      areaStyle:{ color:'rgba(234,88,12,'+opacity+')' } },
+      areaStyle:{ color:'rgba('+(color||'234,88,12')+','+opacity+')' } },
   ];
 }
 
@@ -441,13 +451,13 @@ function renderMain(){
       markPoint:{ symbol:'circle', symbolSize:7, silent:true,
         itemStyle:{ color:'#ea580c', borderColor:'#fff', borderWidth:2 },
         label:{ show:true, position:'top', distance:8, color:'#9a3412', fontSize:11, fontWeight:700,
-                formatter:`预测峰值 ${fmt(peak.p50)} MW · ${String(peakTs.getHours()).padStart(2,'0')}:00` },
-        data:[{ coord:[peak.ts, peak.p50] }] } },
+                formatter:`九成把握峰值 ≤ ${fmt(peak.p90)} MW · ${String(peakTs.getHours()).padStart(2,'0')}:00` },
+        data:[{ coord:[peak.ts, peak.p90] }] } },
     ...bandSeries(fc,'p10','p90','b90',0.10,'P10–P90 区间'),
     ...bandSeries(fc,'p25','p75','b50',0.22,'P25–P75 区间'),
-    ...bandSeries(rbt,'p10','p90','rb',0.08,'回测区间'),
+    ...bandSeries(rbt,'p10','p90','rb',0.10,'当时预测（回测）','100,116,139'),
     { name:'当时预测（回测）', type:'line', data:rbt.map(p=>[p.ts,p.pred]), showSymbol:false,
-      lineStyle:{ color:'#f59e0b', width:1.4, type:'dashed' }, itemStyle:{color:'#f59e0b'},
+      lineStyle:{ color:'#94a3b8', width:1.3, type:'dashed' }, itemStyle:{color:'#94a3b8'},
       emphasis:{focus:'series'}, z:4 },
     { name:'预测 P50', type:'line', data:fc.map(p=>[p.ts,p.p50]), showSymbol:false,
       lineStyle:{ color:'#ea580c', width:1.6, type:'dashed' }, itemStyle:{color:'#ea580c'},
@@ -463,10 +473,10 @@ function renderMain(){
     legend:{
       top:6, left:4, icon:'roundRect', itemWidth:16, itemHeight:8,
       textStyle:{ color:'#475569', fontSize:12 },
-      data:['实际负荷','当时预测（回测）','预测 P50','P10–P90 区间','P25–P75 区间','回测区间','温度（右轴）'],
-      selected:{ 'P10–P90 区间':true, 'P25–P75 区间':true, '回测区间':true, '当时预测（回测）':true },
+      data:['实际负荷','当时预测（回测）','预测 P50','P10–P90 区间','P25–P75 区间','温度（右轴）'],
+      selected:{ 'P10–P90 区间':true, 'P25–P75 区间':true, '当时预测（回测）':true },
       formatter:name=>({ '实际负荷':'● 实际负荷','当时预测（回测）':'╌ 当时预测（回测）','预测 P50':'╌ 预测 P50',
-        'P10–P90 区间':'▤ P10–P90 区间','P25–P75 区间':'▤ P25–P75 区间','回测区间':'▤ 回测区间','温度（右轴）':'－ 温度（右轴）'} )[name]||name
+        'P10–P90 区间':'▤ P10–P90 区间','P25–P75 区间':'▤ P25–P75 区间','温度（右轴）':'－ 温度（右轴）'} )[name]||name
     },
     tooltip:{
       trigger:'axis', axisPointer:{ type:'cross', label:{backgroundColor:'#334155'} },
@@ -481,7 +491,7 @@ function renderMain(){
           if(pt){
             const e = (pt.pred-pt.actual)/pt.actual*100;
             html += `<br/>当时预测　<b>${fmt(pt.pred)}</b> MW <span style="color:${e>=0?'#dc2626':'#059669'}">偏差 ${e>=0?'+':''}${e.toFixed(1)}%</span>`;
-            html += `<br/><span style="color:#f59e0b">当时 P10–P90</span>　${fmt(pt.p10)} – ${fmt(pt.p90)} MW`;
+            html += `<br/><span style="color:#64748b">当时 P10–P90</span>　${fmt(pt.p10)} – ${fmt(pt.p90)} MW`;
           }
         }
         if(by['预测 P50']){
@@ -494,13 +504,14 @@ function renderMain(){
         return html;
       }
     },
-    xAxis:{ type:'time', ...axisTime, min:+new Date(NOW-7*24*HOUR), max:fc[fc.length-1].ts },
+    xAxis:{ type:'time', ...axisTime, min:hist[0][0], max:fc[fc.length-1].ts },
     yAxis:[
       { type:'value', name:'MW', nameTextStyle:{color:'#94a3b8',fontSize:11},
         scale:true, axisLabel:{formatter:v=>(v/1000).toFixed(0)+'k', color:'#64748b', fontSize:11},
         splitLine:{lineStyle:{color:'#eef2f6'}} },
       { type:'value', name:'°C', nameTextStyle:{color:'#b6c2d1',fontSize:11},
-        min:12, max:40, axisLabel:{formatter:'{value}°', color:'#b6c2d1', fontSize:11},
+        min:v=>Math.floor(v.min)-1, max:v=>Math.ceil(v.max)+1,
+        axisLabel:{formatter:'{value}°', color:'#b6c2d1', fontSize:11},
         splitLine:{show:false} },
     ],
     dataZoom:[
@@ -514,12 +525,16 @@ function renderMain(){
   applyRange();
 }
 
-/* ---- 时间范围切换 ---- */
+/* ---- 时间范围切换：按数据真实总跨度（H_HIST 历史 + H_FC 预测）计算百分比 ---- */
 function applyRange(){
-  const total = (H_HIST+H_FC)*HOUR;
-  const spans = { '24h':[0.86,1], '3d':[0.76,1], '7d':[0,1], 'all':[0,1] };
-  const [s,e] = spans[curRange];
-  mainC.dispatchAction({ type:'dataZoom', start:s*100, end:e*100 });
+  const z = DATA[curZone];
+  const t0 = z.hist[0][0], t1 = z.fc[z.fc.length-1].ts;
+  const total = t1 - t0;
+  // 各档位 = 「NOW 前回看 N 小时」到预测终点
+  const lookback = { '24h':24, '3d':72, '7d':168, 'all':Infinity }[curRange];
+  const startTs = lookback===Infinity ? t0 : Math.max(t0, +NOW - lookback*HOUR);
+  const s = (startTs - t0)/total;
+  mainC.dispatchAction({ type:'dataZoom', start:s*100, end:100 });
 }
 let curRange = '7d';
 document.getElementById('rangeBtns').addEventListener('click', ev=>{
@@ -554,6 +569,12 @@ function sparkline(id, data, color, baseline){
   });
 }
 
+/* 时段描述（动态生成，避免硬编码"周五午间"这类换日期即错的文案） */
+function periodName(h){
+  if(h<6) return '夜间低谷'; if(h<11) return '早间爬坡';
+  if(h<17) return '午间高位'; if(h<22) return '晚高峰'; return '夜间回落';
+}
+
 function renderKPIs(){
   const z = DATA[curZone];
   const nowV = z.hist[z.hist.length-1][1];
@@ -561,10 +582,28 @@ function renderKPIs(){
   const dPct = (nowV-yV)/yV*100;
   const last24 = z.hist.slice(-24).map(p=>p[1]);
 
-  const today = z.fc.filter(p=>new Date(p.ts).getDate()===NOW.getDate());
-  const peak = today.length ? today.reduce((a,b)=>b.p50>a.p50?b:a) : z.fc[0];
+  // 今日峰值口径：已发生峰值（今日历史最大） vs 剩余时段预测峰值，取大者为"今日峰值"
+  const isToday = ts => { const d=new Date(ts); return d.getDate()===NOW.getDate() && d.getMonth()===NOW.getMonth(); };
+  const todayHist = z.hist.filter(p=>isToday(p[0]));
+  const todayActPeak = todayHist.length ? Math.max(...todayHist.map(p=>p[1])) : null;
+  const todayActPeakTs = todayHist.length ? todayHist.reduce((a,b)=>b[1]>a[1]?b:a)[0] : null;
+
+  const today = z.fc.filter(p=>isToday(p.ts));
+  const peak = today.length ? today.reduce((a,b)=>b.p50>a.p50?b:a) : z.fc[0];   // 以 P50 选峰时
   const pkH = String(new Date(peak.ts).getHours()).padStart(2,'0');
-  const peakHist = []; // 近7日同时刻峰值走势（用每日最大近似）
+
+  // 峰值卡：主数字 = P90 上界（决策数字）；若已实现峰值更高，则今日峰值已出现
+  let peakMain, peakSub;
+  if(todayActPeak != null && todayActPeak >= peak.p90){
+    peakMain = todayActPeak;
+    peakSub = `今日峰值已出现（${String(new Date(todayActPeakTs).getHours()).padStart(2,'0')}:00）· 高于预测 P90 上界，请关注偏差`;
+  } else {
+    peakMain = Math.max(peak.p90, todayActPeak||0);
+    peakSub = `九成把握不高于此值 · 预计 ${pkH}:00 达峰 · P50（最可能）${fmt(peak.p50)} MW`;
+    if(todayActPeak != null) peakSub = `今日已实现峰值 ${fmt(todayActPeak)} MW · 剩余时段九成把握 ≤ 此值`;
+  }
+
+  const peakHist = []; // 近7日每日峰值走势
   for(let k=7;k>=0;k--){
     const d0 = +new Date(NOW - k*24*HOUR);
     const seg = z.hist.filter(p=>p[0]>d0-24*HOUR && p[0]<=d0);
@@ -577,19 +616,19 @@ function renderKPIs(){
   const cov90 = bt7.reduce((s,d)=>s+d.c90,0)/bt7.length;
   const covTrend = bt7.map(d=>d.c90);
   const covOk = Math.abs(cov90-90)<=6;
+  const nSamp = bt7.reduce((s,d)=>s+d.pts.length,0);   // 覆盖率样本量（小时数）
 
   document.getElementById('kNow').innerHTML = `${fmt(nowV)}<small>MW</small>`;
   document.getElementById('kNowSub').innerHTML =
-    `较昨日同时 <span class="${dPct>=0?'up':'down'}">${dPct>=0?'▲ +':'▼ '}${dPct.toFixed(1)}%</span> · 周五午间爬坡段`;
-  document.getElementById('kPeak').innerHTML = `${fmt(peak.p50)}<small>MW</small>`;
-  document.getElementById('kPeakSub').innerHTML =
-    `预计 <b>${pkH}:00</b> 出现 · P90 带 ${fmt(peak.p10)}–${fmt(peak.p90)} MW`;
+    `较昨日同时 <span class="${dPct>=0?'up':'down'}">${dPct>=0?'▲ +':'▼ '}${dPct.toFixed(1)}%</span> · ${periodName(NOW.getHours())}`;
+  document.getElementById('kPeak').innerHTML = `${fmt(peakMain)}<small>MW</small>`;
+  document.getElementById('kPeakSub').innerHTML = peakSub;
   document.getElementById('kMape').innerHTML = `${mape7.toFixed(1)}<small>%</small>`;
   document.getElementById('kMapeSub').innerHTML =
-    `<span class="trend-pill ${mape7<3?'down':'up'}">${mape7<3?'达标':'关注'}</span> 目标 &lt; 3%`;
+    `<span class="trend-pill ${mape7<3?'down':'up'}">${mape7<3?'达标':'关注'}</span> 平均每 100 MW 偏差约 ${mape7.toFixed(1)} MW · 目标 &lt; 3%`;
   document.getElementById('kCov').innerHTML = `${cov90.toFixed(1)}<small>%</small>`;
   document.getElementById('kCovSub').innerHTML =
-    `标称 90% <span class="badge ${covOk?'ok':'warn'}">${covOk?'自检通过':'轻微偏离'}</span>`;
+    `标称 90% · n=${nSamp} 小时 <span class="badge ${covOk?'ok':'warn'}">${covOk?'自检通过':'轻微偏离'}</span>`;
   document.getElementById('zoneCap').textContent = ZONES[curZone].label + ' · 量级参考：' + fmt(ZONES[curZone].base*1.5) + ' MW 峰';
 
   sparkline('spNow', last24, '#1d4ed8');
@@ -708,12 +747,38 @@ function renderBT(){
 }
 
 /* ================================================================
+   CSV 导出（当前区域：实际 + 当时预测 + 未来预测分位数 + 温度）
+================================================================ */
+document.getElementById('csvBtn').addEventListener('click', ()=>{
+  const z = DATA[curZone], rbt = RBT[curZone];
+  const rbtBy = {}; rbt.forEach(p=>rbtBy[p.ts]=p);
+  const tempBy = {}; z.temps.concat(z.tNext).forEach(p=>tempBy[p[0]]=p[1]);
+  const rows = [['interval_end_utc','zone','load_mw_actual','hindcast_pred_mw','p10_mw','p25_mw','p50_mw','p75_mw','p90_mw','temperature_2m_c']];
+  z.hist.forEach(p=>{
+    const r = rbtBy[p[0]];
+    rows.push([new Date(p[0]).toISOString(), curZone, p[1].toFixed(1),
+      r?r.pred.toFixed(1):'', r?r.p10.toFixed(1):'', '', '', '', r?r.p90.toFixed(1):'',
+      tempBy[p[0]]!=null?tempBy[p[0]].toFixed(1):'']);
+  });
+  z.fc.forEach(p=>{
+    rows.push([new Date(p.ts).toISOString(), curZone, '', '',
+      p.p10.toFixed(1), p.p25.toFixed(1), p.p50.toFixed(1), p.p75.toFixed(1), p.p90.toFixed(1),
+      tempBy[p.ts]!=null?tempBy[p.ts].toFixed(1):'']);
+  });
+  const csv = '\uFEFF' + rows.map(r=>r.join(',')).join('\n');   // BOM 保证 Excel 中文/数字友好
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+  a.download = `load_forecast_${curZone}_${NOW.getFullYear()}${p2(NOW.getMonth()+1)}${p2(NOW.getDate())}.csv`;
+  a.click(); URL.revokeObjectURL(a.href);
+});
+
+/* ================================================================
    header & init
 ================================================================ */
 const p2 = n=>String(n).padStart(2,'0');
 document.getElementById('hdrNow').textContent =
   `${NOW.getFullYear()}-${p2(NOW.getMonth()+1)}-${p2(NOW.getDate())} ${p2(NOW.getHours())}:00`;
-document.getElementById('hdrUpd').textContent = `模型: D-A Quantile GBM · 最后训练 05:00 UTC · 每 15 分钟刷新`;
+document.getElementById('hdrUpd').textContent = `演示数据（模拟生成） · 布局/颜色语义为定稿设计规格`;
 
 function renderAll(){ renderMain(); renderKPIs(); renderBT(); }
 renderSM(); renderBT(); renderAll();

@@ -32,8 +32,14 @@
   "hotPaths": [
     {
       "path": "zhulong.html",
-      "accessCount": 51,
-      "lastAccessed": 1787926217893,
+      "accessCount": 82,
+      "lastAccessed": 1787928962224,
+      "type": "file"
+    },
+    {
+      "path": "docs/zhulong-design.md",
+      "accessCount": 4,
+      "lastAccessed": 1787929028863,
       "type": "file"
     },
     {
@@ -79,9 +85,27 @@
       "type": "file"
     },
     {
-      "path": "docs/zhulong-design.md",
+      "path": ".shots/v3_light_full.png",
       "accessCount": 1,
-      "lastAccessed": 1787926497854,
+      "lastAccessed": 1787927965003,
+      "type": "file"
+    },
+    {
+      "path": ".shots/v3_final.png",
+      "accessCount": 1,
+      "lastAccessed": 1787928083184,
+      "type": "file"
+    },
+    {
+      "path": ".shots/v4_hero.png",
+      "accessCount": 1,
+      "lastAccessed": 1787928851485,
+      "type": "file"
+    },
+    {
+      "path": ".shots/v4_final.png",
+      "accessCount": 1,
+      "lastAccessed": 1787929006086,
       "type": "file"
     }
   ],
