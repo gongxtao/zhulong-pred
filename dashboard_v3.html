@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Energy - Pro Load Forecast</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: { bg: '#050505', panel: '#0f1115', border: '#1f2229', line: '#2a2f3a' },
+                        brand: { actual: '#00f0ff', fc: '#ff7b00', fcDim: 'rgba(255, 123, 0, 0.15)', fcSolid: 'rgba(255, 123, 0, 0.3)', ok: '#00ffa3', warn: '#ff3366' }
+                    },
+                    fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #050505; color: #e2e8f0;
+            background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        .glass-panel {
+            background-color: rgba(15, 17, 21, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid #1f2229;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px -8px rgba(0, 0, 0, 0.5);
+        }
+        .glass-header { border-bottom: 1px solid #1f2229; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        
+        .btn-seg {
+            background: #111318; border: 1px solid #1f2229; border-radius: 8px; padding: 3px; display: inline-flex;
+        }
+        .btn-seg button {
+            color: #64748b; font-size: 13px; font-weight: 600; padding: 6px 16px; border-radius: 6px; transition: all 0.2s;
+        }
+        .btn-seg button:hover { color: #e2e8f0; }
+        .btn-seg button.on { background: #1f2229; color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+
+        .btn-range {
+            background: transparent; border: 1px solid #1f2229; color: #64748b; font-size: 12px; font-weight: 600;
+            padding: 5px 12px; border-radius: 6px; transition: all 0.2s;
+        }
+        .btn-range:hover { border-color: #334155; color: #e2e8f0; }
+        .btn-range.on { background: #e2e8f0; border-color: #e2e8f0; color: #0f172a; }
+
+        .stat-card { background: rgba(255,255,255,0.02); border: 1px solid #1f2229; border-radius: 10px; padding: 12px; }
+        
+        details summary::-webkit-details-marker { display: none; }
+        details summary::after { content: "▾"; margin-left: auto; transition: transform .2s; }
+        details[open] summary::after { transform: rotate(180deg); }
+    </style>
+</head>
+<body class="min-h-screen p-4 lg:p-6 overflow-y-auto">
+
+    <div class="max-w-[1440px] mx-auto space-y-5">
+        
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-2">
+            <div>
+                <h1 class="text-2xl font-bold flex items-center tracking-tight text-white">
+                    <i class="ph-fill ph-lightning text-brand-actual mr-2"></i> PJM 负荷预测控制台
+                    <span class="ml-3 text-xs font-medium px-2 py-1 rounded bg-slate-800 text-slate-400 border border-slate-700 tracking-wider">PRO EDITION</span>
+                </h1>
+                <p class="text-sm text-slate-400 mt-1">小时级负荷预测 · 包含不确定性分析与回测验证 · 数据截至 <span id="hdrNow" class="text-slate-300 font-mono"></span></p>
+            </div>
+            <div class="flex flex-col items-end">
+                <div class="flex items-center space-x-2 text-xs font-semibold text-brand-ok bg-brand-ok/10 border border-brand-ok/20 px-3 py-1.5 rounded-full mb-2">
+                    <span class="w-2 h-2 rounded-full bg-brand-ok animate-pulse"></span>
+                    <span>模型 D-A Quantile 在线</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Controls -->
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <div class="btn-seg" id="zoneSeg">
+                    <button data-zone="AEP" class="on">Zone: AEP</button>
+                    <button data-zone="DAYTON">Zone: DAYTON</button>
+                    <button data-zone="DOM">Zone: DOM</button>
+                </div>
+                <span class="text-xs text-slate-500 font-medium" id="zoneCap"></span>
+            </div>
+            <div class="flex gap-2" id="rangeBtns">
+                <button class="btn-range" data-r="24h">24 小时</button>
+                <button class="btn-range" data-r="3d">3 天</button>
+                <button class="btn-range on" data-r="7d">7 天</button>
+                <button class="btn-range" data-r="all">全部区间</button>
+            </div>
+        </div>
+
+        <!-- KPIs -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="glass-panel p-5 relative overflow-hidden group">
+                <div class="text-xs text-slate-400 font-semibold mb-1">当前实际负荷</div>
+                <div class="text-3xl font-bold text-white tracking-tight" id="kNow">— <span class="text-sm text-slate-500 font-medium">MW</span></div>
+                <div class="text-xs mt-2 min-h-[16px]" id="kNowSub">—</div>
+                <div class="h-10 mt-3 -mx-2" id="spNow"></div>
+            </div>
+            <div class="glass-panel p-5 relative overflow-hidden group">
+                <div class="text-xs text-slate-400 font-semibold mb-1">今日预测峰值 <span class="text-slate-600 font-medium ml-1">P50</span></div>
+                <div class="text-3xl font-bold text-brand-fc tracking-tight" id="kPeak">— <span class="text-sm text-brand-fc/50 font-medium">MW</span></div>
+                <div class="text-xs text-slate-400 mt-2 min-h-[16px]" id="kPeakSub">—</div>
+                <div class="h-10 mt-3 -mx-2" id="spPeak"></div>
+            </div>
+            <div class="glass-panel p-5 relative overflow-hidden group">
+                <div class="text-xs text-slate-400 font-semibold mb-1">日前预测 MAPE <span class="text-slate-600 font-medium ml-1">(近 7 日)</span></div>
+                <div class="text-3xl font-bold text-white tracking-tight" id="kMape">— <span class="text-sm text-slate-500 font-medium">%</span></div>
+                <div class="text-xs mt-2 min-h-[16px]" id="kMapeSub">—</div>
+                <div class="h-10 mt-3 -mx-2" id="spMape"></div>
+            </div>
+            <div class="glass-panel p-5 relative overflow-hidden group">
+                <div class="text-xs text-slate-400 font-semibold mb-1">P90 区间覆盖率自检</div>
+                <div class="text-3xl font-bold text-white tracking-tight" id="kCov">— <span class="text-sm text-slate-500 font-medium">%</span></div>
+                <div class="text-xs mt-2 min-h-[16px]" id="kCovSub">—</div>
+                <div class="h-10 mt-3 -mx-2" id="spCov"></div>
+            </div>
+        </div>
+
+        <!-- Main Chart -->
+        <div class="glass-panel flex flex-col">
+            <div class="glass-header px-6 py-4 flex justify-between items-center">
+                <div>
+                    <h2 class="text-base font-bold text-white">综合负荷预测：实际 vs 预测（含置信区间）</h2>
+                    <p class="text-xs text-slate-400 mt-0.5">悬停查看 P50 与分位带细节 · 滚轮/拖拽缩放时间轴</p>
+                </div>
+            </div>
+            <div class="p-2">
+                <div id="mainChart" class="w-full h-[450px]"></div>
+            </div>
+            <div class="px-6 py-3 border-t border-dark-border bg-black/20 flex items-start gap-3">
+                <i class="ph-fill ph-info text-brand-fc text-lg mt-0.5"></i>
+                <p class="text-xs text-slate-400 leading-relaxed">
+                    <strong class="text-slate-200">如何解读置信区间（Fan Chart）：</strong> 
+                    历史负荷为<span class="text-brand-actual font-semibold">青色实线</span>；右侧为预测。橙色带为模型评估的不确定性区间。
+                    如果在相同气象与日历条件下重复 100 次，负荷约有 <strong class="text-brand-fc">90 次落入外侧浅色带（P10–P90）</strong>，
+                    <strong class="text-brand-fc">50 次落入内侧深色带（P25–P75）</strong>。
+                    单点预测（P50 虚线）仅供参考，调度决策应考虑 P90 极值风险。
+                </p>
+            </div>
+        </div>
+
+        <!-- Small Multiples -->
+        <div class="glass-panel">
+            <div class="glass-header px-6 py-4">
+                <h2 class="text-base font-bold text-white">负荷区对比 (Small Multiples)</h2>
+                <p class="text-xs text-slate-400 mt-0.5">近 72h 实际 + 未来 24h 预测 · 图表联动缩放</p>
+            </div>
+            <div class="p-5 grid grid-cols-1 lg:grid-cols-3 gap-5">
+                <div class="stat-card">
+                    <div class="flex justify-between items-center px-2 mb-2">
+                        <span class="font-bold text-white">AEP</span><span id="smA" class="text-xs text-brand-actual font-mono"></span>
+                    </div>
+                    <div id="smA_c" class="h-32 w-full"></div>
+                </div>
+                <div class="stat-card">
+                    <div class="flex justify-between items-center px-2 mb-2">
+                        <span class="font-bold text-white">DAYTON</span><span id="smD" class="text-xs text-brand-actual font-mono"></span>
+                    </div>
+                    <div id="smD_c" class="h-32 w-full"></div>
+                </div>
+                <div class="stat-card">
+                    <div class="flex justify-between items-center px-2 mb-2">
+                        <span class="font-bold text-white">DOM</span><span id="smM" class="text-xs text-brand-actual font-mono"></span>
+                    </div>
+                    <div id="smM_c" class="h-32 w-full"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Backtest -->
+        <div class="glass-panel">
+            <div class="glass-header px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-base font-bold text-white">模型回放验证 (Backtesting)</h2>
+                    <p class="text-xs text-slate-400 mt-0.5">过去 7 天「日前预测 vs 实际」对比复盘</p>
+                </div>
+                <div class="btn-seg text-xs" id="daySeg"></div>
+            </div>
+            <div class="p-5 grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <div class="lg:col-span-3">
+                    <div id="backtestChart" class="w-full h-[320px]"></div>
+                </div>
+                <div class="flex flex-col gap-3 justify-center">
+                    <div class="stat-card flex justify-between items-center">
+                        <div><div class="text-xs text-slate-400 font-medium">当日 MAPE</div><div class="text-[10px] text-slate-500">24h 平均绝对误差</div></div>
+                        <div class="text-xl font-bold text-white font-mono" id="btMape">—</div>
+                    </div>
+                    <div class="stat-card flex justify-between items-center">
+                        <div><div class="text-xs text-slate-400 font-medium">峰值偏差</div><div class="text-[10px] text-slate-500">预测 - 实际</div></div>
+                        <div class="text-xl font-bold font-mono" id="btPeak">—</div>
+                    </div>
+                    <div class="stat-card flex justify-between items-center">
+                        <div><div class="text-xs text-slate-400 font-medium">P50 覆盖率</div><div class="text-[10px] text-slate-500">标称 50%</div></div>
+                        <div class="text-xl font-bold text-white font-mono" id="btC50">—</div>
+                    </div>
+                    <div class="stat-card flex justify-between items-center">
+                        <div><div class="text-xs text-slate-400 font-medium">P90 覆盖率</div><div class="text-[10px] text-slate-500">标称 90%</div></div>
+                        <div class="text-xl font-bold text-white font-mono" id="btC90">—</div>
+                    </div>
+                    <div class="stat-card flex justify-between items-center">
+                        <div><div class="text-xs text-slate-400 font-medium">最差偏差时段</div><div class="text-[10px] text-slate-500">按小时最大误差</div></div>
+                        <div class="text-base font-bold text-brand-warn font-mono" id="btWorst">—</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Documentation -->
+        <details class="glass-panel group">
+            <summary class="px-6 py-4 font-bold text-white cursor-pointer flex items-center outline-none">
+                <i class="ph ph-book-open text-xl mr-2 text-slate-400"></i> 数据口径与 AI 建模说明
+            </summary>
+            <div class="px-6 pb-6 text-xs text-slate-400 leading-relaxed grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4 border-t border-dark-border pt-4">
+                <div><strong class="text-slate-200">负荷 (load_mw)</strong>：PJM 负荷区小时级估算平均功率。</div>
+                <div><strong class="text-slate-200">气象特征</strong>：ERA5 再分析数据的区域加权聚合。</div>
+                <div><strong class="text-slate-200">预测架构</strong>：LightGBM Quantile Regression 结合时间序列特征。</div>
+                <div><strong class="text-slate-200">UI 理论支持</strong>：依据 BAMS (2007) 气象预报标准，弱化单点预测，突出置信区间，避免「过度自信偏误」。</div>
+            </div>
+        </details>
+
+    </div>
+
+<script>
+/* --- 数据模拟核心算法 (保留自参考文件) --- */
+function lcg(seed){ let s=seed>>>0; return ()=>{ s=(1664525*s+1013904223)>>>0; return s/4294967296; }; }
+const rnd = lcg(20260828);
+function gauss(x,mu,sig){ return Math.exp(-Math.pow(x-mu,2)/(2*sig*sig)); }
+
+const ZONES = {
+  AEP:    { base:13600, amp:4300, cool:58, wknd:0.90, label:'Appalachian Power (AEP)' },
+  DAYTON: { base:2120,  amp:660,  cool:9,  wknd:0.88, label:'Dayton Power (DAYTON)' },
+  DOM:    { base:12200, amp:3800, cool:44, wknd:0.92, label:'Dominion (DOM)' },
+};
+const NOW = new Date(2026, 7, 28, 14, 0, 0); // 2026-08-28 14:00
+const H_HIST = 168, H_FC = 48, HOUR = 3600*1000;
+
+function tempAt(d, jitter){
+  const h = d.getHours() + d.getMinutes()/60;
+  const t = 23.5 + 6.8*Math.sin((h-9.5)/24*Math.PI*2) + 1.6*gauss(h,15,3) - 1.2;
+  return t + (jitter? (rnd()-0.5)*1.6 : 0);
+}
+function shapeLoad(cfg, d, t){
+  const h = d.getHours();
+  const day = (d.getDay()===0||d.getDay()===6) ? cfg.wknd : 1;
+  let L = cfg.base + cfg.amp*(0.50*gauss(h,9,2.6) + 0.86*gauss(h,19,3.0)) * day;
+  L += cfg.cool * Math.pow(Math.max(0, t-24), 1.35);
+  return L;
+}
+function genZone(name){
+  const cfg = ZONES[name]; const hist = [], temps = [];
+  for(let i=H_HIST-1;i>=0;i--){
+    const d = new Date(NOW - i*HOUR); const t = tempAt(d, true);
+    hist.push([+d, shapeLoad(cfg,d,t)*(1+(rnd()-0.5)*0.030)]);
+    temps.push([+d, t]);
+  }
+  const fc = [], tNext = [];
+  for(let i=1;i<=H_FC;i++){
+    const d = new Date(+NOW + i*HOUR); const t = tempAt(d, false) + 0.8*(i/H_FC);
+    tNext.push([+d, t]);
+    const p50 = shapeLoad(cfg,d,t)*(1+(rnd()-0.5)*0.004);
+    const sig = p50*(0.006 + 0.011*Math.sqrt(i/6));
+    fc.push({ ts:+d, p50, p10:p50-1.2816*sig, p25:p50-0.6745*sig, p75:p50+0.6745*sig, p90:p50+1.2816*sig });
+  }
+  return { name, hist, temps, fc, tNext };
+}
+const DATA = { AEP:genZone('AEP'), DAYTON:genZone('DAYTON'), DOM:genZone('DOM') };
+
+/* 回测数据 */
+const BT_DAYS = [];
+for(let k=7;k>=1;k--){
+  const dayStart = new Date(NOW - k*24*HOUR); dayStart.setHours(0,0,0,0);
+  const pts = [];
+  for(let h=0; h<24; h++){
+    const ts = +new Date(+dayStart + h*HOUR);
+    let actual = null;
+    for(const z of Object.values(DATA)){
+      const hit = z.hist.find(p=>p[0]===ts); if(hit){ actual = hit[1]; break; }
+    }
+    const err = (rnd()-0.5)*0.052 + (rnd()-0.5)*0.018 + (h>=16&&h<=21? (rnd()-0.3)*0.02 : 0);
+    const pred = actual*(1+err); const sig = actual*0.017;
+    pts.push({ ts, actual, pred, p10:pred-1.2816*sig, p90:pred+1.2816*sig, p25:pred-0.6745*sig, p75:pred+0.6745*sig });
+  }
+  const mape = pts.reduce((s,p)=>s+Math.abs(p.pred-p.actual)/p.actual,0)/24*100;
+  const c90 = pts.filter(p=>p.actual>=p.p10&&p.actual<=p.p90).length/24*100;
+  const c50 = pts.filter(p=>p.actual>=p.p25&&p.actual<=p.p75).length/24*100;
+  const pkA = Math.max(...pts.map(p=>p.actual)), pkP = Math.max(...pts.map(p=>p.pred));
+  const worst = pts.reduce((a,b)=>Math.abs(b.pred-b.actual)/b.actual>Math.abs(a.pred-a.actual)/a.actual?b:a);
+  BT_DAYS.push({ dayStart, pts, mape, c90, c50, peakErr:(pkP-pkA)/pkA*100, worstH:new Date(worst.ts).getHours(), worstE:Math.abs(worst.pred-worst.actual)/worst.actual*100 });
+}
+
+/* --- 工具 & 主题 --- */
+const fmt = n => Math.round(n).toLocaleString('en-US');
+const fmtT = ts => { const d=new Date(ts); const p=n=>String(n).padStart(2,'0'); return `${d.getMonth()+1}/${d.getDate()} ${p(d.getHours())}:00`; };
+const axisTheme = {
+    axisLabel: { color: '#64748b', fontSize: 11, formatter: v=>fmtT(v) },
+    axisLine: { lineStyle: { color: '#2a2f3a' } },
+    splitLine: { lineStyle: { color: '#1f2229', type: 'dashed' } }
+};
+
+/* --- 1. Main Chart --- */
+const mainChart = echarts.init(document.getElementById('mainChart'));
+function bandSeries(z, loKey, hiKey, stack, colorStr, name){
+  const lo = [], hi = [];
+  z.fc.forEach(p=>{ lo.push([p.ts, p[loKey]]); hi.push([p.ts, p[hiKey]-p[loKey]]); });
+  return [
+    { type:'line', stack, data:lo, lineStyle:{opacity:0}, symbol:'none', silent:true, tooltip:{show:false} },
+    { name, type:'line', stack, data:hi, lineStyle:{opacity:0}, symbol:'none', silent:true, tooltip:{show:false}, areaStyle:{ color: colorStr } }
+  ];
+}
+
+let curZone = 'AEP';
+function renderMain(){
+  const z = DATA[curZone]; const hist = z.hist, fc = z.fc;
+  const today = fc.filter(p=>new Date(p.ts).getDate()===NOW.getDate());
+  const peak = today.length ? today.reduce((a,b)=>b.p50>a.p50?b:a) : fc[0];
+
+  const series = [
+    { name:'实际负荷', type:'line', data:hist, showSymbol:false,
+      lineStyle:{ color:'#00f0ff', width:2.5, shadowColor:'rgba(0,240,255,0.4)', shadowBlur:10 }, itemStyle:{color:'#00f0ff'}, z:5,
+      markLine:{ symbol:'none', silent:true, label:{ formatter:'NOW', color:'#fff', backgroundColor:'#1e293b', padding:[3,6], borderRadius:4, position:'insideEndTop' }, lineStyle:{ color:'#64748b', type:'dashed' }, data:[{xAxis:+NOW}] },
+      markPoint:{ symbol:'circle', symbolSize:8, itemStyle:{ color:'#ff7b00', borderColor:'#050505', borderWidth:2, shadowColor:'#ff7b00', shadowBlur:10 }, label:{ show:true, position:'top', color:'#ff7b00', formatter:`预测峰值 ${fmt(peak.p50)} MW`, fontWeight:'bold', fontSize:11, backgroundColor:'rgba(255,123,0,0.1)', padding:[4,8], borderRadius:4, borderColor:'rgba(255,123,0,0.3)', borderWidth:1 }, data:[{ coord:[peak.ts, peak.p50] }] }
+    },
+    ...bandSeries(z,'p10','p90','b90','rgba(255, 123, 0, 0.1)','P10–P90 区间'),
+    ...bandSeries(z,'p25','p75','b50','rgba(255, 123, 0, 0.25)','P25–P75 区间'),
+    { name:'预测 P50', type:'line', data:fc.map(p=>[p.ts,p.p50]), showSymbol:false, lineStyle:{ color:'#ff7b00', width:2, type:'dashed' }, itemStyle:{color:'#ff7b00'}, z:4 },
+    { name:'温度 (右轴)', type:'line', yAxisIndex:1, data:z.temps.concat(z.tNext), showSymbol:false, lineStyle:{ color:'#64748b', width:1.5 }, itemStyle:{color:'#64748b'}, tooltip:{ valueFormatter:v=>v.toFixed(1)+' °C' } }
+  ];
+
+  mainChart.setOption({
+    grid: { left: 50, right: 40, top: 40, bottom: 45 },
+    tooltip: { trigger:'axis', backgroundColor:'rgba(15, 17, 21, 0.95)', borderColor:'#1f2229', textStyle:{color:'#e2e8f0', fontSize:12}, axisPointer:{ type:'cross', label:{backgroundColor:'#1e293b'} },
+      formatter(params){
+        let html = `<div style="color:#94a3b8;margin-bottom:6px;">${fmtT(params[0].axisValue)}</div>`;
+        const by = {}; params.forEach(p=>by[p.seriesName]=p);
+        if(by['实际负荷']) html += `<div><span style="color:#00f0ff">●</span> 实际负荷 <b style="float:right;margin-left:20px;color:#fff">${fmt(by['实际负荷'].value[1])} MW</b></div>`;
+        if(by['预测 P50']){
+          const ts = by['预测 P50'].value[0]; const pt = fc.find(p=>p.ts===ts);
+          html += `<div style="margin-top:4px"><span style="color:#ff7b00">╌</span> 预测 P50 <b style="float:right;margin-left:20px;color:#fff">${fmt(pt.p50)} MW</b></div>`;
+          html += `<div><span style="color:#ff7b00;opacity:0.7">▤</span> P25-P75 <b style="float:right;margin-left:20px;color:#cbd5e1">${fmt(pt.p25)} - ${fmt(pt.p75)}</b></div>`;
+          html += `<div><span style="color:#ff7b00;opacity:0.4">▤</span> P10-P90 <b style="float:right;margin-left:20px;color:#94a3b8">${fmt(pt.p10)} - ${fmt(pt.p90)}</b></div>`;
+        }
+        if(by['温度 (右轴)']) html += `<div style="margin-top:6px;padding-top:6px;border-top:1px solid #1f2229"><span style="color:#64748b">－</span> 温度 <b style="float:right;margin-left:20px;color:#cbd5e1">${by['温度 (右轴)'].value[1].toFixed(1)} °C</b></div>`;
+        return html;
+      }
+    },
+    legend: { top: 0, right: 20, textStyle: { color: '#94a3b8' }, data: ['实际负荷','预测 P50','P10–P90 区间','P25–P75 区间','温度 (右轴)'], icon: 'roundRect', itemWidth: 14, itemHeight: 8 },
+    xAxis: { type: 'time', ...axisTheme, min: +new Date(NOW-7*24*HOUR), max: fc[fc.length-1].ts },
+    yAxis: [
+      { type: 'value', scale: true, ...axisTheme, axisLabel:{...axisTheme.axisLabel, formatter:v=>(v/1000).toFixed(0)+'k'} },
+      { type: 'value', min: 10, max: 42, splitLine:{show:false}, axisLabel:{color:'#64748b', fontSize:11, formatter:'{value}°'} }
+    ],
+    dataZoom: [
+      { type: 'inside' },
+      { type: 'slider', height: 16, bottom: 5, borderColor: 'transparent', backgroundColor: 'rgba(255,255,255,0.02)', fillerColor: 'rgba(0,240,255,0.1)', handleStyle: { color: '#00f0ff' }, textStyle: { color: 'transparent' } }
+    ],
+    series
+  }, {notMerge:true});
+  applyRange();
+}
+
+/* Range Controls */
+let curRange = '7d';
+function applyRange(){
+  const spans = { '24h':[0.86,1], '3d':[0.76,1], '7d':[0,1], 'all':[0,1] };
+  const [s,e] = spans[curRange];
+  mainChart.dispatchAction({ type:'dataZoom', start:s*100, end:e*100 });
+}
+document.getElementById('rangeBtns').addEventListener('click', ev=>{
+  const b = ev.target.closest('button'); if(!b) return;
+  curRange = b.dataset.r;
+  document.querySelectorAll('#rangeBtns button').forEach(x=>x.classList.toggle('on', x===b));
+  applyRange();
+});
+
+/* Zone Controls */
+document.getElementById('zoneSeg').addEventListener('click', ev=>{
+  const b = ev.target.closest('button'); if(!b) return;
+  curZone = b.dataset.zone;
+  document.querySelectorAll('#zoneSeg button').forEach(x=>x.classList.toggle('on', x===b));
+  renderAll();
+});
+
+/* --- 2. KPIs & Sparklines --- */
+function drawSpark(id, data, color, baseline){
+  echarts.init(document.getElementById(id)).setOption({
+    grid:{left:0,right:0,top:2,bottom:2}, xAxis:{type:'category',show:false,data:data.map((_,i)=>i)}, yAxis:{type:'value',show:false,min:'dataMin'},
+    series:[{ type:'line', data, showSymbol:false, lineStyle:{color,width:1.5}, areaStyle:{color: new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:color.replace(')',',0.3)').replace('rgb','rgba')},{offset:1,color:'transparent'}]) }, markLine: baseline!=null ? {symbol:'none',silent:true,lineStyle:{color:'#475569',type:'dashed'},label:{show:false},data:[{yAxis:baseline}]} : undefined }]
+  });
+}
+
+function renderKPIs(){
+  const z = DATA[curZone];
+  const nowV = z.hist[z.hist.length-1][1]; const yV = z.hist[z.hist.length-25][1];
+  const dPct = (nowV-yV)/yV*100;
+  const today = z.fc.filter(p=>new Date(p.ts).getDate()===NOW.getDate());
+  const peak = today.length ? today.reduce((a,b)=>b.p50>a.p50?b:a) : z.fc[0];
+  const pkH = String(new Date(peak.ts).getHours()).padStart(2,'0');
+  
+  const peakHist = [];
+  for(let k=7;k>=0;k--){ const d0=+new Date(NOW-k*24*HOUR); const seg=z.hist.filter(p=>p[0]>d0-24*HOUR && p[0]<=d0); if(seg.length) peakHist.push(Math.max(...seg.map(p=>p[1]))); }
+  const mape7 = BT_DAYS.reduce((s,d)=>s+d.mape,0)/7;
+  const cov90 = BT_DAYS.reduce((s,d)=>s+d.c90,0)/7; const covOk = Math.abs(cov90-90)<=6;
+
+  document.getElementById('kNow').innerHTML = `${fmt(nowV)} <span class="text-sm text-slate-500 font-medium">MW</span>`;
+  document.getElementById('kNowSub').innerHTML = `同比昨日 <span class="${dPct>=0?'text-brand-warn':'text-brand-ok'} font-bold">${dPct>=0?'▲ +':'▼ '}${dPct.toFixed(1)}%</span>`;
+  document.getElementById('kPeak').innerHTML = `${fmt(peak.p50)} <span class="text-sm text-brand-fc/50 font-medium">MW</span>`;
+  document.getElementById('kPeakSub').innerHTML = `发生于 <b>${pkH}:00</b> · P90上限 ${fmt(peak.p90)}`;
+  document.getElementById('kMape').innerHTML = `${mape7.toFixed(1)} <span class="text-sm text-slate-500 font-medium">%</span>`;
+  document.getElementById('kMapeSub').innerHTML = `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${mape7<3?'bg-brand-ok/20 text-brand-ok':'bg-brand-warn/20 text-brand-warn'}">${mape7<3?'PASS':'WARN'}</span> 目标 < 3%`;
+  document.getElementById('kCov').innerHTML = `${cov90.toFixed(1)} <span class="text-sm text-slate-500 font-medium">%</span>`;
+  document.getElementById('kCovSub').innerHTML = `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${covOk?'bg-brand-ok/20 text-brand-ok':'bg-brand-warn/20 text-brand-warn'}">${covOk?'PASS':'WARN'}</span> 目标 90% ±6%`;
+  document.getElementById('zoneCap').textContent = `${ZONES[curZone].label} · 容量基准 ${fmt(ZONES[curZone].base)} MW`;
+
+  drawSpark('spNow', z.hist.slice(-24).map(p=>p[1]), 'rgb(0, 240, 255)');
+  drawSpark('spPeak', peakHist, 'rgb(255, 123, 0)');
+  drawSpark('spMape', BT_DAYS.map(d=>d.mape), 'rgb(148, 163, 184)', 3);
+  drawSpark('spCov', BT_DAYS.map(d=>d.c90), 'rgb(0, 255, 163)', 90);
+}
+
+/* --- 3. Small Multiples --- */
+const smCharts = ['smA_c','smD_c','smM_c'].map(id => { const c = echarts.init(document.getElementById(id)); c.group='sm'; return c; });
+echarts.connect(smCharts);
+
+function renderSM(){
+  const conf = [['AEP','smA'],['DAYTON','smD'],['DOM','smM']];
+  conf.forEach(([zone,id], i)=>{
+    const z = DATA[zone]; const hist = z.hist.slice(-72);
+    smCharts[i].setOption({
+      grid:{left:10,right:10,top:5,bottom:20},
+      tooltip:{ trigger:'axis', backgroundColor:'rgba(15, 17, 21, 0.9)', borderColor:'#1f2229', textStyle:{color:'#e2e8f0',fontSize:10}, padding:[6,8], formatter:ps=>`<b>${fmtT(ps[0].axisValue)}</b><br/>${ps[0].seriesName}: ${fmt(ps[0].value[1])}<br/>${ps[1].seriesName}: ${fmt(ps[1].value[1])}` },
+      xAxis:{ type:'time', axisLabel:{formatter:v=>fmtT(v), color:'#64748b', fontSize:9}, splitLine:{show:false}, axisLine:{lineStyle:{color:'#1f2229'}} },
+      yAxis:{ type:'value', show:false, min:'dataMin' },
+      series:[
+        { name:'实际', type:'line', data:hist, showSymbol:false, lineStyle:{color:'#00f0ff', width:1.5}, itemStyle:{color:'#00f0ff'} },
+        { name:'预测', type:'line', data:z.fc.slice(0,24).map(p=>[p.ts,p.p50]), showSymbol:false, lineStyle:{color:'#ff7b00', width:1.5, type:'dashed'}, itemStyle:{color:'#ff7b00'} }
+      ]
+    }, {notMerge:true});
+    document.getElementById(id).textContent = `${fmt(z.hist[z.hist.length-1][1])} MW`;
+  });
+}
+
+/* --- 4. Backtest --- */
+const btChart = echarts.init(document.getElementById('backtestChart'));
+let btDay = BT_DAYS[BT_DAYS.length-1];
+const daySeg = document.getElementById('daySeg');
+BT_DAYS.forEach((d,i)=>{
+  const b = document.createElement('button');
+  b.textContent = i===BT_DAYS.length-1 ? '昨日' : `${d.dayStart.getMonth()+1}/${d.dayStart.getDate()}`;
+  if(i===BT_DAYS.length-1) b.classList.add('on');
+  b.onclick = ()=>{ btDay=d; [...daySeg.children].forEach(x=>x.classList.toggle('on',x===b)); renderBT(); };
+  daySeg.appendChild(b);
+});
+
+function renderBT(){
+  const pts = btDay.pts;
+  document.getElementById('btMape').textContent = btDay.mape.toFixed(2) + '%';
+  const pkErr = btDay.peakErr;
+  document.getElementById('btPeak').innerHTML = `<span class="${pkErr>0?'text-brand-warn':'text-brand-ok'}">${pkErr>0?'+':''}${pkErr.toFixed(2)}%</span>`;
+  document.getElementById('btC50').textContent = btDay.c50.toFixed(0) + '%';
+  document.getElementById('btC90').textContent = btDay.c90.toFixed(0) + '%';
+  document.getElementById('btWorst').textContent = `${String(btDay.worstH).padStart(2,'0')}:00 (误差 ${btDay.worstE.toFixed(1)}%)`;
+
+  btChart.setOption({
+    grid: { left: 45, right: 15, top: 30, bottom: 25 },
+    legend: { top: 0, left: 10, textStyle: { color: '#94a3b8' }, icon: 'roundRect', itemWidth: 12, itemHeight: 6, data:['实际负荷','日前预测 P50','P10-P90 区间'] },
+    tooltip: { trigger:'axis', backgroundColor:'rgba(15, 17, 21, 0.9)', borderColor:'#1f2229', textStyle:{color:'#e2e8f0',fontSize:11}, padding:[8,12], axisPointer:{type:'cross', label:{backgroundColor:'#1e293b'}},
+      formatter(ps){
+        const by={}; ps.forEach(p=>by[p.seriesName]=p); let h=`<b style="color:#94a3b8">${fmtT(ps[0].axisValue)}</b>`;
+        if(by['实际负荷']) h+=`<br/><span style="color:#00f0ff">●</span> 实际 <b style="float:right;margin-left:15px;color:#fff">${fmt(by['实际负荷'].value[1])}</b>`;
+        if(by['日前预测 P50']){
+          const pt = pts.find(p=>p.ts===by['日前预测 P50'].value[0]);
+          h+=`<br/><span style="color:#ff7b00">╌</span> 预测 <b style="float:right;margin-left:15px;color:#fff">${fmt(pt.pred)}</b>`;
+          h+=`<br/><span style="color:#64748b">误差</span> <b style="float:right;margin-left:15px;color:${Math.abs(pt.pred-pt.actual)/pt.actual>0.05?'#ff3366':'#00ffa3'}">${(((pt.pred-pt.actual)/pt.actual)*100).toFixed(2)}%</b>`;
+        }
+        return h;
+      }
+    },
+    xAxis: { type: 'time', ...axisTheme },
+    yAxis: { type: 'value', scale: true, ...axisTheme, axisLabel:{...axisTheme.axisLabel, formatter:v=>(v/1000).toFixed(1)+'k'} },
+    series: [
+      { name:'_lo', type:'line', stack:'bt', data:pts.map(p=>[p.ts, p.p10]), lineStyle:{opacity:0}, symbol:'none', silent:true, tooltip:{show:false} },
+      { name:'P10-P90 区间', type:'line', stack:'bt', data:pts.map(p=>[p.ts, p.p90-p.p10]), lineStyle:{opacity:0}, symbol:'none', silent:true, areaStyle:{color:'rgba(255,123,0,0.1)'} },
+      { name:'实际负荷', type:'line', data:pts.map(p=>[p.ts, p.actual]), showSymbol:false, lineStyle:{color:'#00f0ff', width:2}, itemStyle:{color:'#00f0ff'} },
+      { name:'日前预测 P50', type:'line', data:pts.map(p=>[p.ts, p.pred]), showSymbol:false, lineStyle:{color:'#ff7b00', width:1.5, type:'dashed'}, itemStyle:{color:'#ff7b00'} }
+    ]
+  }, {notMerge:true});
+}
+
+/* --- Init --- */
+document.getElementById('hdrNow').textContent = `${NOW.getFullYear()}-${String(NOW.getMonth()+1).padStart(2,'0')}-${String(NOW.getDate()).padStart(2,'0')} ${String(NOW.getHours()).padStart(2,'0')}:00`;
+function renderAll(){ renderMain(); renderKPIs(); }
+renderSM(); renderBT(); renderAll();
+
+window.addEventListener('resize', ()=>{ mainChart.resize(); btChart.resize(); smCharts.forEach(c=>c.resize()); ['spNow','spPeak','spMape','spCov'].forEach(id=>{ const i=echarts.getInstanceByDom(document.getElementById(id)); if(i)i.resize(); }); });
+</script>
+</body>
+</html>
