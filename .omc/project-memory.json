@@ -32,8 +32,8 @@
   "hotPaths": [
     {
       "path": "zhulong.html",
-      "accessCount": 125,
-      "lastAccessed": 1787932840777,
+      "accessCount": 146,
+      "lastAccessed": 1787936014337,
       "type": "file"
     },
     {
@@ -148,6 +148,12 @@
       "path": ".shots/v11_lower.png",
       "accessCount": 1,
       "lastAccessed": 1787932415684,
+      "type": "file"
+    },
+    {
+      "path": ".shots/v13_dark.png",
+      "accessCount": 1,
+      "lastAccessed": 1787936090080,
       "type": "file"
     }
   ],

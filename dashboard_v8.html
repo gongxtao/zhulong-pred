@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>烛龙 负荷预测决策台 v8 (专业修复版)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        main: '#3B82F6',
+                        solar: '#F59E0B', // 光伏专属色
+                        warn: '#F59E0B', danger: '#EF4444', ok: '#10B981',
+                        zones: { aep: '#3B82F6', dayton: '#10B981', dom: '#8B5CF6' }
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        :root {
+            --bg-body: #0B0F19; --bg-surface: #11151C; --bg-panel: #1A1F2C; --bg-elevated: rgba(26, 31, 44, 0.7);
+            --color-line: #2A3140; --color-border: #2A3140;
+            --text-bright: #F1F5F9; --text-dim: #8B949E; --text-muted: #5A6272;
+            --glass-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            --selection-bg: rgba(59,130,246,0.3);
+            --scroll-thumb: #374151;
+            --color-yesterday: rgba(59,130,246,0.02);
+            --color-today: rgba(255,255,255,0);
+            --color-tomorrow: rgba(16,185,129,0.02);
+        }
+        [data-theme="light"] {
+            --bg-body: #F5F7FA; --bg-surface: #FFFFFF; --bg-panel: #FFFFFF; --bg-elevated: rgba(255, 255, 255, 0.9);
+            --color-line: #E5E7EB; --color-border: #E2E8F0;
+            --text-bright: #0F172A; --text-dim: #64748B; --text-muted: #94A3B8;
+            --glass-shadow: 0 4px 16px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
+            --selection-bg: rgba(59,130,246,0.15);
+            --scroll-thumb: #CBD5E1;
+            --color-yesterday: rgba(59,130,246,0.03);
+            --color-today: rgba(255,255,255,0);
+            --color-tomorrow: rgba(16,185,129,0.03);
+        }
+        body { background: var(--bg-body); color: var(--text-bright); font-family: 'Inter', sans-serif; transition: all 0.4s ease; }
+        ::selection { background: var(--selection-bg); }
+        .glass { background: var(--bg-elevated); border: 1px solid var(--color-border); backdrop-filter: blur(12px); border-radius: 10px; box-shadow: var(--glass-shadow); transition: all 0.3s ease; }
+        .section-title { font-weight: 600; font-size: 14px; color: var(--text-bright); display: flex; align-items: center; }
+        .sub-info { font-size: 11px; color: var(--text-dim); }
+        .panel-header { border-bottom: 1px solid var(--color-line); transition: border-color 0.3s ease; }
+        .nav-tab { padding: 8px 16px; font-size: 13px; font-weight: 600; color: var(--text-dim); border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; gap: 8px; border: 1px solid transparent; }
+        .nav-tab:hover { color: var(--text-bright); background: var(--bg-panel); border-color: var(--color-border); }
+        .nav-tab.active { background: var(--bg-panel); color: var(--text-bright); border: 1px solid #3B82F6; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15); }
+        .nav-tab .dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+        .app-header { background: color-mix(in srgb, var(--bg-surface) 85%, transparent); border-bottom: 1px solid var(--color-line); backdrop-filter: blur(12px); }
+        .sidebar-aside { border-left: 1px solid var(--color-line); background: color-mix(in srgb, var(--bg-surface) 60%, transparent); }
+        .sidebar-header { border-bottom: 1px solid var(--color-line); background: color-mix(in srgb, var(--bg-body) 50%, transparent); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 3px; }
+        .theme-toggle { width: 36px; height: 36px; border-radius: 999px; background: var(--bg-panel); border: 1px solid var(--color-border); color: var(--text-bright); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; }
+        .theme-toggle:hover { transform: scale(1.05); color: #F59E0B; }
+        
+        /* 新增：KPI 高亮警告边框 */
+        .alert-card { border-color: rgba(239, 68, 68, 0.4); background: color-mix(in srgb, var(--bg-elevated) 90%, rgba(239,68,68,0.1)); }
+    </style>
+</head>
+<body class="h-screen overflow-hidden flex flex-col">
+
+    <!-- Header -->
+    <header class="app-header h-14 flex items-center justify-between px-5 shrink-0 z-20">
+        <div class="flex items-center gap-8 h-full">
+            <div class="font-bold tracking-wide text-base flex items-center gap-2 border-r pr-6 h-full" style="border-color: var(--color-line);">
+                <i class="ph-fill ph-lightning text-main"></i> 
+                <span style="color: var(--text-bright);">烛龙</span>
+                <span class="text-xs font-normal px-2 py-0.5 rounded" style="background: var(--bg-panel); color: var(--text-dim); border: 1px solid var(--color-border);">负荷预测决策台 · 睁眼为昼，闭眼为夜</span>
+            </div>
+            <div class="flex items-center gap-2" id="zoneNavigation">
+                <div class="nav-tab active" data-zone="AEP"><span class="dot bg-zones-aep"></span> AEP 控制区</div>
+                <div class="nav-tab" data-zone="DOM"><span class="dot bg-zones-dom"></span> DOM 控制区</div>
+                <div class="nav-tab" data-zone="DAYTON"><span class="dot bg-zones-dayton"></span> DAYTON 控制区</div>
+            </div>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="theme-toggle" id="themeSwitcher"><i class="ph-fill ph-moon-stars text-lg" id="themeIcon"></i></div>
+            <div class="flex items-center gap-3 text-xs">
+                <div id="actionBanner" class="px-3 py-1.5 rounded text-danger font-medium flex items-center gap-2 border border-danger/40 bg-danger/10">
+                    <i class="ph-fill ph-warning-circle animate-pulse"></i>
+                    <span id="actionText">傍晚爬坡危机：需投入 1200MW 备用容量。</span>
+                </div>
+                <div class="font-mono" id="sysClock" style="color: var(--text-dim);"></div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 flex overflow-hidden">
+        <div class="flex-1 p-4 space-y-4 overflow-y-auto">
+            
+            <!-- Layer 1: KPIs (专业修复版) -->
+            <div class="grid grid-cols-5 gap-4">
+                <!-- 1. 当前净负荷 (Net Load) -->
+                <div class="glass p-4 flex flex-col justify-between h-28">
+                    <div class="sub-info uppercase tracking-wider font-semibold flex items-center gap-1"><i class="ph-fill ph-waves"></i> 实时净负荷</div>
+                    <div class="flex items-end justify-between mt-1">
+                        <div class="text-3xl font-bold font-mono" style="color: var(--text-bright);" id="kpiNet">11,420</div>
+                        <span class="text-[11px] text-dim">MW</span>
+                    </div>
+                    <div class="mt-2 text-[11px]" style="color: var(--text-dim);">总负荷 14,235 - 光伏 2,815</div>
+                </div>
+                <!-- 2. 预测晚峰 (P90 上界) -->
+                <div class="glass p-4 flex flex-col justify-between h-28">
+                    <div class="sub-info uppercase tracking-wider font-semibold flex items-center gap-1"><i class="ph-fill ph-flag-pennant text-warn"></i> 今日净峰预测 (P90)</div>
+                    <div class="flex items-end justify-between mt-1">
+                        <div class="text-3xl font-bold font-mono text-danger" id="kpiPeak">17,890</div>
+                        <span class="text-xs px-2 py-1 rounded" style="background: var(--bg-panel); color: var(--text-dim); border: 1px solid var(--color-border);" id="kpiPeakTime">19:00</span>
+                    </div>
+                    <div class="mt-2 text-[11px] text-warn font-mono"><i class="ph ph-caret-up"></i> 对比昨日: <b>+3.1%</b></div>
+                </div>
+                <!-- 3. 修复：关键爬坡窗口 (Critical Up-Ramp) -->
+                <div class="glass alert-card p-4 flex flex-col justify-between h-28">
+                    <div class="sub-info uppercase tracking-wider font-semibold text-danger flex items-center gap-1"><i class="ph-fill ph-trend-up"></i> 关键爬坡 (16-18点)</div>
+                    <div class="flex items-end justify-between mt-1">
+                        <div class="text-3xl font-bold font-mono text-danger" id="kpiRamp">4,250</div>
+                        <span class="text-[11px] text-dim">MW / 2h</span>
+                    </div>
+                    <div class="mt-2 text-[11px] text-danger font-semibold bg-danger/10 w-fit px-2 py-0.5 rounded">⚠ 超出常规机组调节能力</div>
+                </div>
+                <!-- 4. 修复：模型校准度 (Calibration) -->
+                <div class="glass p-4 flex flex-col justify-between h-28">
+                    <div class="sub-info uppercase tracking-wider font-semibold flex items-center gap-1"><i class="ph-fill ph-crosshair"></i> P90 校准度 (30D)</div>
+                    <div class="flex items-end justify-between mt-1">
+                        <div class="text-3xl font-bold font-mono text-warn" id="kpiCalib">92.4</div>
+                        <span class="text-[11px] text-dim">%</span>
+                    </div>
+                    <div class="mt-2 text-[11px]" style="color: var(--text-dim);"><span class="text-warn">略保守</span> (目标 90.0%)</div>
+                </div>
+                <!-- 5. 修复：模型锐度 (Sharpness / Bandwidth) -->
+                <div class="glass p-4 flex flex-col justify-between h-28">
+                    <div class="sub-info uppercase tracking-wider font-semibold flex items-center gap-1"><i class="ph-fill ph-ruler"></i> P90 平均带宽 (锐度)</div>
+                    <div class="flex items-end justify-between mt-1">
+                        <div class="text-3xl font-bold font-mono text-ok" id="kpiSharp">8.5</div>
+                        <span class="text-[11px] text-dim">%</span>
+                    </div>
+                    <div class="mt-2 text-[11px]" style="color: var(--text-dim);">区间窄，置信度高 <i class="text-ok ph ph-check-circle"></i></div>
+                </div>
+            </div>
+
+            <!-- Layer 2: 主图 (专业修复版: 双峰/净负荷/日分界) -->
+            <div class="glass overflow-hidden flex flex-col h-[440px]">
+                <div class="panel-header h-11 flex items-center justify-between px-5 shrink-0">
+                    <div class="section-title">
+                        <i class="ph-fill ph-chart-line mr-2 text-main"></i>
+                        负荷 & 净负荷 (鸭子曲线) 推演
+                        <span class="ml-3 text-[10px] px-2 py-0.5 rounded" style="background: var(--bg-panel); color: var(--text-dim); border: 1px solid var(--color-border);">T-24H ~ T+48H</span>
+                    </div>
+                    <div class="text-[11px]" style="color: var(--text-dim);">
+                        <span class="inline-block w-3 h-3 rounded-full border border-line mr-1" style="background: var(--color-yesterday);"></span> 昨日
+                        <span class="inline-block w-3 h-3 rounded-full border border-line mx-1 ml-3" style="background: var(--color-today);"></span> 今日
+                        <span class="inline-block w-3 h-3 rounded-full border border-line mx-1 ml-3" style="background: var(--color-tomorrow);"></span> 明日+
+                    </div>
+                </div>
+                <div id="chart_main" class="flex-1 p-2"></div>
+                <div class="border-t px-5 py-2.5 flex items-start gap-3 shrink-0" style="border-color: var(--color-line); background: color-mix(in srgb, var(--bg-body) 50%, transparent);">
+                    <i class="ph-fill ph-info text-main mt-0.5"></i>
+                    <p class="text-[11px] leading-relaxed" style="color: var(--text-dim);">
+                        <b style="color: var(--text-bright);">专业读数指南：</b> 
+                        <span class="text-main font-semibold">蓝实线</span> 为总负荷 (Gross)，<span class="text-solar font-semibold">橙实线</span> 为净负荷 (Net=Gross-PV)。
+                        请重点关注 <span class="text-danger font-bold">16:00-19:00</span> 的净负荷陡峭爬升段（即鸭脖子），这是全网备用容量最吃紧的时刻。概率带宽度基于该时段历史波动率动态计算，非均匀发散。
+                    </p>
+                </div>
+            </div>
+
+            <!-- Layer 3: 归因图 (修复：U型曲线) -->
+            <div class="glass overflow-hidden flex flex-col h-[280px]">
+                <div class="panel-header h-11 flex items-center justify-between px-5 shrink-0">
+                    <div class="section-title" id="subTitle">
+                        <i class="ph-fill ph-thermometer-cold mr-2 text-main"></i> 负荷-气温敏感性曲线 (U-Shape Model)
+                    </div>
+                    <div class="text-[11px]" id="subSubtitle" style="color: var(--text-dim);">含体感温度修正 · 供暖阈 12°C · 制冷阈 22°C</div>
+                </div>
+                <div id="chart_sub" class="flex-1 p-2"></div>
+            </div>
+        </div>
+
+        <!-- 右侧：可信度 & 数据字典 -->
+        <aside class="sidebar-aside w-[420px] flex flex-col shrink-0 overflow-y-auto p-4 gap-4">
+            <div class="glass overflow-hidden flex flex-col">
+                <div class="sidebar-header h-11 flex items-center justify-between px-4 shrink-0">
+                    <div class="section-title text-sm"><i class="ph-fill ph-shield-check mr-2 text-ok"></i>模型滚动回测 (Rolling Window)</div>
+                </div>
+                <div class="p-4 space-y-4">
+                    <div class="pt-2">
+                        <div class="text-xs mb-2" style="color: var(--text-dim);">过去 7 日 MAPE 误差走势 (阈值: 3%)</div>
+                        <div id="chart_backtest" class="h-28 w-full"></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 pt-4 border-t" style="border-color: var(--color-line);">
+                        <div class="p-2 rounded text-center" style="background: var(--bg-panel); border: 1px solid var(--color-border);">
+                            <div class="text-[10px]" style="color: var(--text-dim);">峰时误差</div>
+                            <div class="text-lg font-bold font-mono text-danger">2.1%</div>
+                        </div>
+                        <div class="p-2 rounded text-center" style="background: var(--bg-panel); border: 1px solid var(--color-border);">
+                            <div class="text-[10px]" style="color: var(--text-dim);">谷时误差</div>
+                            <div class="text-lg font-bold font-mono text-ok">1.0%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass overflow-hidden flex flex-col flex-1">
+                <div class="sidebar-header h-11 flex items-center justify-between px-4 shrink-0">
+                    <div class="section-title text-sm"><i class="ph-fill ph-microscope mr-2 text-warn"></i>AI 特征重要性 (SHAP)</div>
+                </div>
+                <div class="p-4 flex flex-col gap-4">
+                    <div id="chart_shap" class="h-48 w-full"></div>
+                    <div class="p-3 rounded flex gap-3 items-start" style="background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2);">
+                        <i class="ph-fill ph-lightbulb text-danger text-lg mt-0.5 shrink-0"></i>
+                        <div class="text-[11px] leading-relaxed" style="color: var(--text-dim);">
+                            <b class="text-danger">驱动因子解析：</b>
+                            当前正值夏季晚峰，<b>体感温度 (Apparent Temp)</b> 对负荷激增的贡献度达 68%。
+                            需警惕 17:00 后<span class="text-solar font-bold">光伏出力消退</span>（贡献 25%）与空调负荷的叠加效应。
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-4 gap-2 pt-2 border-t" style="border-color: var(--color-line);">
+                        <div class="text-center"><i class="ph ph-thermometer-hot text-warn text-xl"></i><div class="text-[10px] mt-1" style="color: var(--text-dim);">体感温度</div><div class="text-xs font-mono" style="color: var(--text-bright);">36°C</div></div>
+                        <div class="text-center"><i class="ph ph-drop text-main text-xl"></i><div class="text-[10px] mt-1" style="color: var(--text-dim);">湿度</div><div class="text-xs font-mono" style="color: var(--text-bright);">78%</div></div>
+                        <div class="text-center"><i class="ph-fill ph-sun text-solar text-xl"></i><div class="text-[10px] mt-1" style="color: var(--text-dim);">当前光伏</div><div class="text-xs font-mono" style="color: var(--text-bright);">2.8GW</div></div>
+                        <div class="text-center"><i class="ph ph-calendar-blank text-ok text-xl"></i><div class="text-[10px] mt-1" style="color: var(--text-dim);">工休</div><div class="text-xs font-mono" style="color: var(--text-bright);">工作日</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <details class="glass group">
+                <summary class="h-9 border-b flex items-center justify-between px-4 cursor-pointer list-none text-xs hover:text-bright rounded-t sidebar-header" style="color: var(--text-dim);">
+                    <span class="flex items-center gap-2"><i class="ph ph-database"></i> v8 专业修复日志</span>
+                    <span class="transition group-open:rotate-180">▾</span>
+                </summary>
+                <div class="p-4 text-[10px] leading-relaxed space-y-1.5" style="color: var(--text-dim);">
+                    <div>• <b style="color: var(--text-bright);">[时序]</b> 修正为真实双峰曲线，增加午谷与鸭子曲线凹陷。</div>
+                    <div>• <b style="color: var(--text-bright);">[概率]</b> 置信区间不再线性发散，改为基于日内负荷波动率动态建模。</div>
+                    <div>• <b style="color: var(--text-bright);">[气温]</b> 引入 U-Shape 模型：低于 12°C 供暖负荷，高于 22°C 制冷负荷。</div>
+                    <div>• <b style="color: var(--text-bright);">[爬坡]</b> 新增 16-18 点关键爬坡窗口指标 (Net Up-Ramp)。</div>
+                    <div>• <b style="color: var(--text-bright);">[评估]</b> 引入 Calibration (校准度) + Sharpness (锐度) 二元评估体系。</div>
+                </div>
+            </details>
+        </aside>
+    </main>
+
+<script>
+/* ==========================================================================
+   0. 双主题系统
+   ========================================================================== */
+const THEMES = {
+    dark: {
+        tip:{bg:'#1A1F2C', border:'#2A3140', text:'#F1F5F9'},
+        txt: '#8B949E', grid: '#2A3140', bg: 'transparent',
+        mask: '#11151C', band: 'rgba(239,68,68,0.05)', shapLb: '#F1F5F9'
+    },
+    light: {
+        tip:{bg:'#FFFFFF', border:'#E2E8F0', text:'#0F172A'},
+        txt: '#64748B', grid: '#F1F5F9', bg: 'transparent',
+        mask: '#FFFFFF', band: 'rgba(239,68,68,0.08)', shapLb: '#0F172A'
+    }
+};
+const STATE = { zone: 'AEP', theme: 'dark' };
+
+/* ==========================================================================
+   1. 物理级数据模拟引擎 (Physics-Based Simulation Engine)
+   ========================================================================== */
+const N = 72; const NOW = 24; // Now = End of Yesterday? No, NOW is index 24 which is start of "Today"
+// 实际上我们设定：0-23 Yesterday, 24-47 Today, 48-71 Tomorrow
+
+let rawTimes = []; 
+let baseDate = new Date(); baseDate.setDate(baseDate.getDate() - 1); baseDate.setHours(0,0,0,0); // Start from Yesterday 00:00
+
+for(let i=0; i<N; i++){
+    let t = new Date(baseDate.getTime() + i*3600*1000);
+    rawTimes.push(t);
+}
+
+/* --- 核心算法：生成真实的双峰总负荷 + 净负荷 (鸭子曲线) --- */
+function simulatePowerSystem(baseMW, volRatio, name){
+    let gross=[], net=[], pv=[], p50=[], p10=[], p90=[];
+    // 气象模拟：模拟一次高温热浪过程
+    let temps = [];
+    for(let i=0; i<N; i++){
+        let h = rawTimes[i].getHours();
+        let d = Math.floor(i/24); // 0=Yday, 1=Today, 2=Tmr
+        // 温度波形：最高温 15:00，最低温 05:00。逐日升温 (热浪)
+        let baseT = 24 + d * 1.5; // Today 25.5, Tmr 27
+        let wave = 6 * Math.sin((h - 9) / 24 * Math.PI * 2);
+        let temp = baseT + wave + (Math.random()*0.6-0.3);
+        temps.push(temp);
+    }
+
+    // 计算历史波动率 (用于修正置信区间：非发散型)
+    // 规则：早峰/晚峰时段波动大(带宽宽)，深夜波动小(带宽窄)
+    function getVolatility(h){
+        // 双峰波动核密度函数
+        const morningPeak = Math.exp(-Math.pow((h - 9)/2, 2)) * 0.04;
+        const eveningPeak = Math.exp(-Math.pow((h - 19)/3, 2)) * 0.06; // 晚峰更不确定
+        return 0.015 + morningPeak + eveningPeak;
+    }
+
+    for(let i=0; i<N; i++){
+        let h = rawTimes[i].getHours();
+        let isWeekend = (rawTimes[i].getDay() === 0 || rawTimes[i].getDay() === 6);
+        let temp = temps[i];
+        
+        // 1. 基础双峰负荷 (Gross Load Composition)
+        // Base: 工作日基底高，周末低。深夜最低。
+        let nightDip = (h<6 || h>23) ? 0.85 : 1.0;
+        let weekendFactor = isWeekend ? 0.9 : 1.0;
+        
+        // 双峰波函数：早峰(8-11点)，午谷(12-14点)，晚峰(18-21点)
+        const peak1 = Math.exp(-Math.pow((h - 9.5)/2.5, 2)) * 0.18; // 早峰 18%
+        const valley = Math.exp(-Math.pow((h - 13)/2, 2)) * 0.08; // 午谷回落 8%
+        const peak2 = Math.exp(-Math.pow((h - 19)/3.5, 2)) * 0.30; // 晚峰 30% (最大)
+        
+        // 2. U型气温敏感性附加
+        // 阈值: 冷 T<12, 热 T>22
+        let tempSens = 0;
+        if(temp < 12) tempSens = (12 - temp) * 0.012; // 供暖
+        if(temp > 22) tempSens = (temp - 22) * 0.020; // 制冷 (更敏感)
+
+        let baseLoad = baseMW * weekendFactor * nightDip * (1 + peak1 - valley + peak2 + tempSens);
+
+        // 3. 光伏出力 (PV Output)：影响净负荷 (鸭子脖子)
+        // 光伏出力区间 6:00 - 19:00，正午峰值 (12:30)
+        let pvOut = 0;
+        if(h >= 6 && h <= 19){
+            let solarCurve = Math.exp(-Math.pow((h - 12.5)/3.5, 2));
+            let solarCap = baseMW * 0.25; // 光伏渗透率 25%
+            pvOut = solarCurve * solarCap * (0.95 + Math.random()*0.1); 
+        }
+
+        // 最终结果
+        let grossVal = baseLoad * (1 + (Math.random()*0.01 - 0.005));
+        let netVal = grossVal - pvOut;
+        
+        // 分类：历史 (Actual) vs 未来 (Prediction w/ Bands)
+        if(i < NOW){
+            // 过去：记录实际值 (Actual)
+            gross.push(grossVal);
+            net.push(netVal);
+            pv.push(pvOut);
+            p50.push(null); p10.push(null); p90.push(null);
+        } else {
+            // 未来：只给预测系列 (Gross不再单独画历史，用Net表示)
+            gross.push(null); // GROSS 在未来不画具体点，我们只画 NET 的预测更有意义
+            net.push(null);   // 未来的 actual 置空
+            pv.push(pvOut);   // 光伏可以画预测
+            // 修正：置信区间非发散，而是基于该小时的波动率核密度
+            let vol = getVolatility(h); 
+            p50.push(netVal); // P50 预测的是净负荷 Net
+            p90.push(netVal + grossVal * vol); // 上行风险
+            p10.push(netVal - grossVal * vol * 0.8); // 下行
+        }
+    }
+
+    // 计算关键指标
+    // 1. 今日预测峰 (P90 Max)
+    let todayP90s = p90.slice(24, 48);
+    let peakVal = Math.max(...todayP90s);
+    let peakIdx = todayP90s.indexOf(peakVal);
+    let peakHour = (24 + peakIdx) % 24;
+
+    // 2. 关键爬坡 (16:00 - 18:00)
+    // 找 index 40 (16:00) to 42 (18:00) 
+    let rampStart = p50[24 + 16] || p50[40]; 
+    let rampEnd = p50[24 + 18] || p50[42];
+    let rampVal = Math.round(rampEnd - rampStart);
+
+    return {
+        name, temps, gross, net, pv, p50, p10, p90, peakVal: Math.round(peakVal), peakHour: peakHour, rampVal
+    };
+}
+
+const DS = {
+    AEP: simulatePowerSystem(13500, 0.02, 'AEP'),
+    DOM: simulatePowerSystem(12000, 0.025, 'DOM'),
+    DAYTON: simulatePowerSystem(2200, 0.04, 'DAYTON') // 小网波动大
+};
+
+/* ==========================================================================
+   2. 图表初始化
+   ========================================================================== */
+const instMain = echarts.init(document.getElementById('chart_main'));
+const instSub = echarts.init(document.getElementById('chart_sub'));
+const instBack = echarts.init(document.getElementById('chart_backtest'));
+const instShap = echarts.init(document.getElementById('chart_shap'));
+
+/* ==========================================================================
+   3. 渲染控制器
+   ========================================================================== */
+function Controller(zoneKey){
+    STATE.zone = zoneKey;
+    const theme = THEMES[STATE.theme];
+    const z = DS[zoneKey];
+
+    // 更新 KPI 文本
+    const netNow = z.net[NOW];
+    const grossNow = z.gross[NOW];
+    const pvNow = z.pv[NOW];
+    document.getElementById('kpiNet').innerText = Math.round(netNow).toLocaleString();
+    document.querySelector('#kpiNet').parentNode.parentNode.querySelector('.text-dim:last-child').innerHTML = 
+        `总负荷 ${Math.round(grossNow).toLocaleString()} - 光伏 ${Math.round(pvNow).toLocaleString()} <span class="text-solar ml-1"><i class="ph-fill ph-sun"></i></span>`;
+    
+    document.getElementById('kpiPeak').innerText = z.peakVal.toLocaleString();
+    document.getElementById('kpiPeakTime').innerText = ('0'+z.peakHour).slice(-2)+':00';
+    document.getElementById('kpiRamp').innerText = z.rampVal.toLocaleString();
+
+    // 顶部 Banner 更新
+    setBannerColor(z.rampVal > 3000 ? '#EF4444' : '#F59E0B');
+    document.getElementById('actionText').innerText = 
+        z.rampVal > 3000 
+        ? `警告: ${zoneKey} 区 ${z.rampVal/1000*2} GW/h 爬坡速率超限` 
+        : `${zoneKey} 态势平稳，备用容量充足。`;
+
+    renderMainChart(z, theme);
+    renderSubChart(z, theme);
+    renderSideCharts(z, theme);
+}
+
+function setBannerColor(hex){
+    const b = document.getElementById('actionBanner'); const t = document.getElementById('actionText');
+    t.style.color = hex; b.style.borderColor = hex+'66'; b.style.backgroundColor = hex+'11';
+}
+
+/* ---- 主图：专业版 (双峰 + 净负荷 + 光伏 + 修正置信区间 + 日期分界) ---- */
+function renderMainChart(z, theme){
+    const xAxisLabels = rawTimes.map(t => `${('0'+(t.getMonth()+1)).slice(-2)}-${('0'+t.getDate()).slice(-2)} ${('0'+t.getHours()).slice(-2)}:00`);
+    
+    // 日期背景色分块 MarkArea
+    const markAreas = [
+        [{xAxis: 0, itemStyle:{color: theme.mask === '#FFFFFF' ? 'rgba(203, 213, 225, 0.15)' : 'rgba(59,130,246,0.05)'}}, {xAxis: 23}], // Yesterday
+        [{xAxis: 48, itemStyle:{color: theme.mask === '#FFFFFF' ? 'rgba(16,185,129,0.08)' : 'rgba(16,185,129,0.03)'}}, {xAxis: 71}]  // Tomorrow+
+    ];
+
+    instMain.setOption({
+        backgroundColor: theme.bg,
+        tooltip:{ trigger:'axis', backgroundColor:theme.tip.bg, borderColor:theme.tip.border, textStyle:{color:theme.tip.text, fontSize:11}, axisPointer:{type:'cross', lineStyle:{color:theme.txt, type:'dashed'}} },
+        legend:{ data:['总负荷 Gross(实)','净负荷 Net(实)','光伏出力 PV','净峰预测 P50','P10-P90 概率带'], textStyle:{color:theme.txt, fontSize:11}, top:0, right:10, icon:'roundRect' },
+        grid:{left:60, right:30, top:40, bottom:30},
+        xAxis:[
+            {
+                type:'category', data: xAxisLabels, boundaryGap: false,
+                axisLine:{lineStyle:{color:theme.grid}}, axisLabel:{color:theme.txt, fontSize:9, interval: 5, rotate:0},
+                splitLine:{show:false}
+            }
+        ],
+        yAxis:{ type:'value', name:'MW', nameTextStyle:{color:theme.txt}, splitLine:{lineStyle:{color:theme.grid, type:'dashed'}}, axisLine:{show:false}, axisLabel:{color:theme.txt, fontSize:10, formatter: v=>(v/1000)+'k'} },
+        dataZoom: [{type:'inside', start: 30, end: 85}], // 默认聚焦在最近两天
+        series:[
+            // 1. 概率带 (P90) - 只渲染未来部分
+            { name:'P10-P90 概率带', type:'line', data: z.p90, showSymbol:false, lineStyle:{opacity:0}, symbol:'none', areaStyle:{color:theme.band}, z:1 },
+            { name:'Mask', type:'line', data: z.p10, showSymbol:false, lineStyle:{opacity:0}, symbol:'none', areaStyle:{color:theme.mask}, z:1 },
+            
+            // 2. 实际负荷 (过去 24h+)
+            { name:'总负荷 Gross(实)', type:'line', data: z.gross, showSymbol:false, smooth: true, lineStyle:{color:'#3B82F6', width:1.5, opacity:0.6}, z:2, areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'rgba(59,130,246,0.05)'},{offset:1,color:'rgba(59,130,246,0)'}]}} },
+            
+            // 3. 光伏出力 (填充图，显示被吃掉的部分)
+            { name:'光伏出力 PV', type:'line', data: z.pv.map((v,i)=> z.gross[i]!==null ? v : (i>=NOW ? v : null)), showSymbol:false, stack: 'PVStack',
+              lineStyle:{opacity:0}, areaStyle:{color:'#F59E0B', opacity:0.2}, z:1,
+              markArea:{silent: true, itemStyle:{opacity:0}, data: markAreas} // 利用 PV series 来挂载 Date MarkAreas，保证位置对
+            },
+            // 修正：MarkArea 应该单独画，这里为了简单直接叠在 Gross series 上
+            { type:'line', data: z.gross, showSymbol:false, lineStyle:{opacity:0}, symbol:'none', tooltip:{show:false},
+              markArea:{silent: true, label:{show:false}, data: [
+                [{xAxis:xAxisLabels[0], itemStyle:{color:STATE.theme==='dark'?'rgba(59,130,246,0.03)':'rgba(59,130,246,0.06)'}}, {xAxis:xAxisLabels[23]}],
+                [{xAxis:xAxisLabels[48], itemStyle:{color:STATE.theme==='dark'?'rgba(16,185,129,0.03)':'rgba(16,185,129,0.06)'}}, {xAxis:xAxisLabels[71]}]
+              ]}
+            },
+
+            // 4. 净负荷实际 (过去) - 核心指标，加粗实线
+            { name:'净负荷 Net(实)', type:'line', data: z.net, showSymbol:false, smooth:true, lineStyle:{color:'#0F172A', width: STATE.theme==='dark'?3:3, shadowColor:'#000', shadowBlur: STATE.theme==='dark'?8:0}, z:3, itemStyle:{color:STATE.theme==='dark'?'#F59E0B':'#F59E0B'} },
+            // 这里颜色冲突：净负荷是我们最关心的，在 dark 模式下要用亮橙色或者纯白？或者用 #8B5CF6 紫？
+            // 我们用橙色作为主色，因为 PV 也是橙色系但背景是填充的，净负荷线用实线橙色非常醒目
+            
+            // 修正配色：Net 用紫色系，保持区分
+            { name:'净峰预测 P50', type:'line', data: z.p50, showSymbol:false, smooth:true, lineStyle:{color:'#8B5CF6', width:2.5, type:'dashed'}, z:4,
+              markLine:{ silent:true, symbol:'none', label:{formatter:'Now', color:theme.txt, fontSize:10, position:'insideEndTop'}, lineStyle:{color:theme.txt}, data:[{xAxis:xAxisLabels[NOW]}] }
+            }
+        ]
+    }, {notMerge:true});
+
+    // 必须二次 setOption 强行修正 Net 颜色，上面写复杂了
+    setTimeout(() => {
+        instMain.setOption({
+            series: [
+                {},{},{},{},{},{},
+                { name:'净负荷 Net(实)', lineStyle:{color:'#F59E0B'} }
+            ]
+        });
+    }, 10);
+}
+
+/* ---- 副图：U型气温敏感性曲线 ---- */
+function renderSubChart(z, theme){
+    // 生成大量散点模拟 U 型分布
+    let scatter = [];
+    for(let t=-5; t<=40; t+=0.5){
+        // 基础敏感度：T<12 斜率正，12-22 平稳，T>22 斜率陡
+        let base = 0.8 * z.peakVal / 1.3; // 基准负荷
+        let factor = 1.0;
+        if(t < 12) factor = 1 + (12 - t) * 0.012;
+        if(t > 22) factor = 1 + (t - 22) * 0.02;
+        
+        let noise = (Math.random()*0.1 - 0.05);
+        let load = base * factor * (1 + noise);
+        let pointColor = '#3B82F6';
+        if(t < 12) pointColor = '#8B5CF6'; // 紫：冷负荷
+        if(t > 22) pointColor = '#EF4444'; // 红：热负荷
+        scatter.push({ value: [t.toFixed(1), load.toFixed(0)], itemStyle:{ color: pointColor, opacity: 0.5 } });
+    }
+
+    instSub.setOption({
+        backgroundColor: theme.bg,
+        tooltip:{ formatter: (p) => `气温: ${p.value[0]}°C<br/>模拟负荷: ${Number(p.value[1]).toLocaleString()} MW`, backgroundColor:theme.tip.bg, borderColor:theme.tip.border, textStyle:{color:theme.tip.text} },
+        grid:{left:60, right:30, top:30, bottom:50},
+        xAxis:{ type:'value', name:'室外干球温度 (°C)', nameLocation:'middle', nameGap:30, min:-5, max:40, splitLine:{show:false, lineStyle:{color:theme.grid}}, axisLine:{lineStyle:{color:theme.grid}}, axisLabel:{color:theme.txt},
+            // 绘制阈值分隔带
+            splitArea:{ show:true, areaStyle:{color:['#8B5CF610', '#10B98110', '#EF444410']}},
+            data: [-5, 12, 22, 40]
+        },
+        yAxis:{ type:'value', name:'MW (Net)', nameTextStyle:{color:theme.txt}, scale:true, axisLine:{show:false}, splitLine:{lineStyle:{color:theme.grid, type:'dashed'}}, axisLabel:{color:theme.txt, formatter:v=>(v/1000)+'k'} },
+        series:[
+            // 区域分界辅助线
+            { type:'line', markLine:{ silent:true, symbol:'none', lineStyle:{color:theme.txt, type:'dashed', opacity:0.3}, label:{color:theme.txt, position:'insideEndTop', fontSize:9}, data:[{xAxis:12, name:'供暖阈'}, {xAxis:22, name:'制冷阈'}]}, data:[] },
+            // 散点
+            { type:'scatter', data: scatter, symbolSize: 8 }
+        ]
+    }, {notMerge:true});
+}
+
+/* ---- 侧边栏图表 ---- */
+function renderSideCharts(z, theme){
+    // MAPE Backtest
+    instBack.setOption({
+        backgroundColor: theme.bg,
+        grid:{left:30,right:10,top:10,bottom:20},
+        xAxis:{ type:'category', data:['D-6','D-5','D-4','D-3','D-2','D-1','Now'], axisLabel:{color:theme.txt, fontSize:10}, axisLine:{show:false} },
+        yAxis:{ type:'value', min:0, max:5, splitLine:{show:false}, axisLabel:{show:false} },
+        series:[{ type:'bar', data:[2.1, 1.8, 3.2, 2.4, 2.0, 1.5, 1.8], itemStyle:{color:(p)=>p.value>3?'#EF4444':'#10B981', borderRadius:[2,2,0,0]}, barWidth:'40%',
+            markLine:{ silent:true, symbol:'none', lineStyle:{type:'dashed', color:theme.txt}, label:{formatter:'3% 及格线', color:theme.txt, fontSize:9, position:'insideEndTop'}, data:[{yAxis:3}] }
+        }]
+    }, {notMerge:true});
+
+    // SHAP (特征重要性)
+    instShap.setOption({
+        backgroundColor: theme.bg,
+        grid:{left:80, right:40, top:5, bottom:5, containLabel:true},
+        xAxis:{type:'value', show:false, max:100},
+        yAxis:{type:'category', data:['湿度 RH','周末效应','滞后负荷 L24','净负荷爬坡','光伏 PV','体感温度 AT'], inverse:true, axisLine:{show:false}, axisLabel:{color:theme.txt, fontSize:10}},
+        series:[{ type:'bar', data:[18, 12, 35, 52, 65, 88], barWidth:'55%',
+            label:{show:true, position:'right', formatter:'{c}%', color:theme.shapLb, fontSize:10, fontWeight:'bold'},
+            itemStyle:{ borderRadius:[0,2,2,0], color:(p)=>{
+                if(p.value>80) return '#EF4444';
+                if(p.value>50) return '#F59E0B';
+                return '#3B82F6';
+            }}
+        }]
+    }, {notMerge:true});
+}
+
+/* ==========================================================================
+   4. 事件绑定 (主题切换 & 区域切换)
+   ========================================================================== */
+document.getElementById('zoneNavigation').addEventListener('click', (e) => {
+    const tab = e.target.closest('.nav-tab'); if(!tab) return;
+    document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+    tab.classList.add('active');
+    Controller(tab.dataset.zone);
+});
+
+document.getElementById('themeSwitcher').addEventListener('click', () => {
+    const next = STATE.theme === 'dark' ? 'light' : 'dark';
+    STATE.theme = next;
+    document.documentElement.setAttribute('data-theme', next);
+    document.getElementById('themeIcon').className = next==='dark' ? 'ph-fill ph-moon-stars text-lg' : 'ph-fill ph-sun text-lg';
+    Controller(STATE.zone);
+});
+
+setInterval(()=>{
+    const d=new Date(); document.getElementById('sysClock').innerText = d.toISOString().replace('T',' ').substring(0,19)+' UTC';
+}, 1000);
+
+window.addEventListener('resize', () => { [instMain, instSub, instBack, instShap].forEach(i=>i.resize()); });
+
+// 启动
+Controller('AEP');
+</script>
+</body>
+</html>

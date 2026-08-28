@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>烛龙 负荷预测决策台 v9 (视觉修复版)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        :root {
+            --bg-body: #0B0F19; --bg-surface: #11151C; --bg-panel: #1A1F2C; --bg-elevated: rgba(26, 31, 44, 0.7);
+            --color-line: #2A3140; --color-border: #2A3140;
+            --text-bright: #F1F5F9; --text-dim: #8B949E; --text-muted: #5A6272;
+            --glass-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            --selection-bg: rgba(59,130,246,0.3);
+            --scroll-thumb: #374151;
+        }
+        [data-theme="light"] {
+            --bg-body: #F5F7FA; --bg-surface: #FFFFFF; --bg-panel: #FFFFFF; --bg-elevated: rgba(255, 255, 255, 0.9);
+            --color-line: #E5E7EB; --color-border: #E2E8F0;
+            --text-bright: #0F172A; --text-dim: #64748B; --text-muted: #94A3B8;
+            --glass-shadow: 0 4px 16px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
+            --selection-bg: rgba(59,130,246,0.15);
+            --scroll-thumb: #CBD5E1;
+        }
+        body { background: var(--bg-body); color: var(--text-bright); font-family: 'Inter', sans-serif; transition: all 0.4s ease; }
+        .glass { background: var(--bg-elevated); border: 1px solid var(--color-border); backdrop-filter: blur(12px); border-radius: 10px; box-shadow: var(--glass-shadow); transition: all 0.3s ease; }
+        .section-title { font-weight: 600; font-size: 14px; color: var(--text-bright); display: flex; align-items: center; }
+        .sub-info { font-size: 11px; color: var(--text-dim); }
+        .panel-header { border-bottom: 1px solid var(--color-line); transition: border-color 0.3s ease; }
+        .nav-tab { padding: 8px 16px; font-size: 13px; font-weight: 600; color: var(--text-dim); border-radius: 8px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; gap: 8px; border: 1px solid transparent; }
+        .nav-tab:hover { color: var(--text-bright); background: var(--bg-panel); border-color: var(--color-border); }
+        .nav-tab.active { background: var(--bg-panel); color: var(--text-bright); border: 1px solid #3B82F6; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15); }
+        .nav-tab .dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+        .app-header { background: color-mix(in srgb, var(--bg-surface) 85%, transparent); border-bottom: 1px solid var(--color-line); backdrop-filter: blur(12px); }
+        .sidebar-aside { border-left: 1px solid var(--color-line); background: color-mix(in srgb, var(--bg-surface) 60%, transparent); }
+        .sidebar-header { border-bottom: 1px solid var(--color-line); background: color-mix(in srgb, var(--bg-body) 50%, transparent); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 3px; }
+        .theme-toggle { width: 36px; height: 36px; border-radius: 999px; background: var(--bg-panel); border: 1px solid var(--color-border); color: var(--text-bright); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.3s ease; }
+        .theme-toggle:hover { transform: scale(1.05); color: #F59E0B; }
+        .alert-card { border-color: rgba(239, 68, 68, 0.4); background: color-mix(in srgb, var(--bg-elevated) 90%, rgba(239,68,68,0.1)); }
+    </style>
+</head>
+<body class="h-screen overflow-hidden flex flex-col">
+
+    <header class="app-header h-14 flex items-center justify-between px-5 shrink-0 z-20">
+        <div class="flex items-center gap-8 h-full">
+            <div class="font-bold tracking-wide text-base flex items-center gap-2 border-r pr-6 h-full" style="border-color: var(--color-line);">
+                <i class="ph-fill ph-lightning text-main"></i> 
+                <span style="color: var(--text-bright);">烛龙</span>
+                <span class="text-xs font-normal px-2 py-0.5 rounded" style="background: var(--bg-panel); color: var(--text-dim); border: 1px solid var(--color-border);">负荷预测决策台 · 睁眼为昼，闭眼为夜</span>
+            </div>
+            <div class="flex items-center gap-2" id="zoneNavigation">
+                <div class="nav-tab active" data-zone="AEP"><span class="dot bg-zones-aep"></span> AEP 控制区</div>
+                <div class="nav-tab" data-zone="DOM"><span class="dot bg-zones-dom"></span> DOM 控制区</div>
+                <div class="nav-tab" data-zone="DAYTON"><span class="dot bg-zones-dayton"></span> DAYTON 控制区</div>
+            </div>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="theme-toggle" id="themeSwitcher"><i class="ph-fill ph-moon-stars text-lg" id="themeIcon"></i></div>
+            <div class="flex items-center gap-3 text-xs">
+                <div id="actionBanner" class="px-3 py-1.5 rounded text-danger font-medium flex items-center gap-2 border border-danger/40 bg-danger/10">
+                    <i class="ph-fill ph-warning-circle animate-pulse"></i>
+                    <span id="actionText">傍晚爬坡危机：需投入 1200MW 备用容量。</span>
+                </div>
+                <div class="font-mono" id="sysClock" style="color: var(--text-dim);"></div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 flex overflow-hidden">
+        <div class="flex-1 p-4 space-y-4 overflow-y-auto">
+            
+            <div class="grid grid-cols-5 gap-4">
+                <div class="glass p-4 flex flex-col justify-between h-28">
+                    <div class="sub-info uppercase tracking-wider font-semibold flex items-center gap-1"><i class="ph-fill ph-waves"></i> 实时净负荷</div>
+                    <div class="flex items-end justify-between mt-1">
+                        <div class="text-3xl font-bold font-mono" style="color: var(--text-bright);" id="kpiNet">11,420</div>
+                        <span class="text-[11px] text-dim">MW</span>
+                    </div>
+                    <div class="mt-2 text-[11px]" style="color: var(--text-dim);">总负荷 14,235 - 光伏 2,815 <i class="text-warn ph-fill ph-sun ml-1"></i></div>
+                </div>
+                <div class="glass p-4 flex flex-col justify-between h-28">
+                    <div class="sub-info uppercase tracking-wider font-semibold flex items-center gap-1"><i class="ph-fill ph-flag-pennant text-warn"></i> 今日净峰预测 (P90)</div>
+                    <div class="flex items-end justify-between mt-1">
+                        <div class="text-3xl font-bold font-mono text-danger" id="kpiPeak">17,890</div>
+                        <span class="text-xs px-2 py-1 rounded" style="background: var(--bg-panel); color: var(--text-dim); border: 1px solid var(--color-border);" id="kpiPeakTime">19:00</span>
+                    </div>
+                    <div class="mt-2 text-[11px] text-warn font-mono"><i class="ph ph-caret-up"></i> 对比昨日: <b>+3.1%</b></div>
+                </div>
+                <div class="glass alert-card p-4 flex flex-col justify-between h-28">
+                    <div class="sub-info uppercase tracking-wider font-semibold text-danger flex items-center gap-1"><i class="ph-fill ph-trend-up"></i> 关键爬坡 (16-18点)</div>
+                    <div class="flex items-end justify-between mt-1">
+                        <div class="text-3xl font-bold font-mono text-danger" id="kpiRamp">4,250</div>
+                        <span class="text-[11px] text-dim">MW / 2h</span>
+                    </div>
+                    <div class="mt-2 text-[11px] text-danger font-semibold bg-danger/10 w-fit px-2 py-0.5 rounded">⚠ 机组调节能力预警</div>
+                </div>
+                <div class="glass p-4 flex flex-col justify-between h-28">
+                    <div class="sub-info uppercase tracking-wider font-semibold flex items-center gap-1"><i class="ph-fill ph-crosshair"></i> P90 校准度 (30D)</div>
+                    <div class="flex items-end justify-between mt-1">
+                        <div class="text-3xl font-bold font-mono text-warn" id="kpiCalib">92.4</div>
+                        <span class="text-[11px] text-dim">%</span>
+                    </div>
+                    <div class="mt-2 text-[11px]" style="color: var(--text-dim);"><span class="text-warn">略保守</span> (目标 90.0%)</div>
+                </div>
+                <div class="glass p-4 flex flex-col justify-between h-28">
+                    <div class="sub-info uppercase tracking-wider font-semibold flex items-center gap-1"><i class="ph-fill ph-ruler"></i> P90 平均带宽</div>
+                    <div class="flex items-end justify-between mt-1">
+                        <div class="text-3xl font-bold font-mono text-ok" id="kpiSharp">8.5</div>
+                        <span class="text-[11px] text-dim">%</span>
+                    </div>
+                    <div class="mt-2 text-[11px]" style="color: var(--text-dim);">区间紧凑度优秀 <i class="text-ok ph ph-check-circle"></i></div>
+                </div>
+            </div>
+
+            <!-- 主图：V9 视觉重构 -> 解决线条看不见问题 -->
+            <div class="glass overflow-hidden flex flex-col h-[460px]">
+                <div class="panel-header h-11 flex items-center justify-between px-5 shrink-0">
+                    <div class="section-title">
+                        <i class="ph-fill ph-chart-line-up mr-2 text-main"></i>
+                        净负荷超短期推演 (Net-Load Forecast)
+                        <span class="ml-3 text-[10px] px-2 py-0.5 rounded" style="background: var(--bg-panel); color: var(--text-dim); border: 1px solid var(--color-border);">T-24H ~ T+48H</span>
+                    </div>
+                    <div class="text-[11px] flex items-center gap-4" style="color: var(--text-dim);">
+                        <span><span class="inline-block w-3 h-1 mr-2 rounded" style="background:#3B82F6"></span>实际净负荷</span>
+                        <span><span class="inline-block w-3 h-1 mr-2 rounded border-t-2 border-dashed" style="border-color:#10B981"></span>预测净负荷 P50</span>
+                        <span><span class="inline-block w-3 h-3 mr-2 rounded" style="background:rgba(16,185,129,0.2)"></span>概率带 P10-P90</span>
+                    </div>
+                </div>
+                <div id="chart_main" class="flex-1"></div>
+            </div>
+
+            <div class="glass overflow-hidden flex flex-col h-[280px]">
+                <div class="panel-header h-11 flex items-center justify-between px-5 shrink-0">
+                    <div class="section-title" id="subTitle">
+                        <i class="ph-fill ph-thermometer-cold mr-2 text-main"></i> 负荷-气温敏感性曲线 (U-Shape Model)
+                    </div>
+                    <div class="text-[11px]" id="subSubtitle" style="color: var(--text-dim);">供暖阈 12°C · 制冷阈 22°C</div>
+                </div>
+                <div id="chart_sub" class="flex-1 p-2"></div>
+            </div>
+        </div>
+
+        <aside class="sidebar-aside w-[420px] flex flex-col shrink-0 overflow-y-auto p-4 gap-4">
+            <div class="glass overflow-hidden flex flex-col">
+                <div class="sidebar-header h-11 flex items-center justify-between px-4 shrink-0">
+                    <div class="section-title text-sm"><i class="ph-fill ph-shield-check mr-2 text-ok"></i>模型滚动回测 (Rolling Window)</div>
+                </div>
+                <div class="p-4 space-y-4">
+                    <div class="pt-2">
+                        <div class="text-xs mb-2" style="color: var(--text-dim);">过去 7 日 MAPE 误差走势</div>
+                        <div id="chart_backtest" class="h-28 w-full"></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 pt-4 border-t" style="border-color: var(--color-line);">
+                        <div class="p-2 rounded text-center" style="background: var(--bg-panel); border: 1px solid var(--color-border);">
+                            <div class="text-[10px]" style="color: var(--text-dim);">峰时误差</div>
+                            <div class="text-lg font-bold font-mono text-danger">2.1%</div>
+                        </div>
+                        <div class="p-2 rounded text-center" style="background: var(--bg-panel); border: 1px solid var(--color-border);">
+                            <div class="text-[10px]" style="color: var(--text-dim);">谷时误差</div>
+                            <div class="text-lg font-bold font-mono text-ok">1.0%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass overflow-hidden flex flex-col flex-1">
+                <div class="sidebar-header h-11 flex items-center justify-between px-4 shrink-0">
+                    <div class="section-title text-sm"><i class="ph-fill ph-microscope mr-2 text-warn"></i>AI 特征重要性 (SHAP)</div>
+                </div>
+                <div class="p-4 flex flex-col gap-4">
+                    <div id="chart_shap" class="h-48 w-full"></div>
+                    <div class="p-3 rounded flex gap-3 items-start" style="background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2);">
+                        <i class="ph-fill ph-lightbulb text-danger text-lg mt-0.5 shrink-0"></i>
+                        <div class="text-[11px] leading-relaxed" style="color: var(--text-dim);">
+                            <b class="text-danger">驱动因子解析：</b>
+                            当前正值夏季晚峰，<b>体感温度 (Apparent Temp)</b> 对负荷激增的贡献度达 68%。
+                            需警惕 17:00 后<span class="text-warn font-bold">光伏出力消退</span>（贡献 25%）与空调负荷的叠加效应。
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-4 gap-2 pt-2 border-t" style="border-color: var(--color-line);">
+                        <div class="text-center"><i class="ph ph-thermometer-hot text-warn text-xl"></i><div class="text-[10px] mt-1" style="color: var(--text-dim);">体感温度</div><div class="text-xs font-mono" style="color: var(--text-bright);">36°C</div></div>
+                        <div class="text-center"><i class="ph ph-drop text-main text-xl"></i><div class="text-[10px] mt-1" style="color: var(--text-dim);">湿度</div><div class="text-xs font-mono" style="color: var(--text-bright);">78%</div></div>
+                        <div class="text-center"><i class="ph-fill ph-sun text-warn text-xl"></i><div class="text-[10px] mt-1" style="color: var(--text-dim);">当前光伏</div><div class="text-xs font-mono" style="color: var(--text-bright);">2.8GW</div></div>
+                        <div class="text-center"><i class="ph ph-calendar-blank text-ok text-xl"></i><div class="text-[10px] mt-1" style="color: var(--text-dim);">工休</div><div class="text-xs font-mono" style="color: var(--text-bright);">工作日</div></div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+<script>
+/* 0. Theme System */
+const THEMES = {
+    dark: { tip:{bg:'#1A1F2C', border:'#2A3140', text:'#F1F5F9'}, txt:'#8B949E', grid:'#2A3140', bg:'transparent', mask:'#11151C', shapLb:'#F1F5F9' },
+    light:{ tip:{bg:'#FFFFFF', border:'#E2E8F0', text:'#0F172A'}, txt:'#64748B', grid:'#F1F5F9', bg:'transparent', mask:'#FFFFFF', shapLb:'#0F172A' }
+};
+const STATE = { zone:'AEP', theme:'dark' };
+
+/* 1. Simulation Engine */
+const N = 72; const NOW = 24; 
+let rawTimes = []; 
+let baseDate = new Date(); baseDate.setDate(baseDate.getDate() - 1); baseDate.setHours(0,0,0,0);
+for(let i=0; i<N; i++){ rawTimes.push(new Date(baseDate.getTime() + i*3600*1000)); }
+
+function simulate(baseMW, name){
+    let gross=[], net=[], pv=[], p50=[], p10=[], p90=[], temps=[];
+    
+    for(let i=0; i<N; i++){
+        let h = rawTimes[i].getHours(); let d = Math.floor(i/24);
+        let baseT = 24 + d * 1.5;
+        let wave = 6 * Math.sin((h - 9) / 24 * Math.PI * 2);
+        let temp = baseT + wave + (Math.random()*0.6-0.3);
+        temps.push(temp);
+    }
+
+    const getVol = (h) => 0.015 + Math.exp(-Math.pow((h-9)/2,2))*0.04 + Math.exp(-Math.pow((h-19)/3,2))*0.06;
+
+    for(let i=0; i<N; i++){
+        let h = rawTimes[i].getHours();
+        let isWknd = (rawTimes[i].getDay() === 0 || rawTimes[i].getDay() === 6);
+        let temp = temps[i];
+        
+        let night = (h<6 || h>23) ? 0.85 : 1.0;
+        let wknd = isWknd ? 0.9 : 1.0;
+        const p1 = Math.exp(-Math.pow((h-9.5)/2.5,2)) * 0.18;
+        const vl = Math.exp(-Math.pow((h-13)/2,2)) * 0.08;
+        const p2 = Math.exp(-Math.pow((h-19)/3.5,2)) * 0.30;
+        
+        let tSens = 0;
+        if(temp < 12) tSens = (12-temp)*0.012;
+        if(temp > 22) tSens = (temp-22)*0.020;
+
+        let g = baseMW * wknd * night * (1 + p1 - vl + p2 + tSens) * (1 + (Math.random()*0.01-0.005));
+        
+        let pOut = 0;
+        if(h>=6 && h<=19){
+            let s = Math.exp(-Math.pow((h-12.5)/3.5,2));
+            pOut = s * (baseMW*0.25) * (0.95+Math.random()*0.1);
+        }
+        let n = g - pOut;
+
+        // 关键修复：Now 点衔接
+        // 把 Now(24) 的最后一个实际值，作为预测的起始第一个点，保证曲线不断裂
+        let isPast = i <= NOW;
+        if (isPast) {
+            gross.push(g); net.push(n); pv.push(pOut);
+            p50.push(null); p10.push(null); p90.push(null);
+        } else {
+            gross.push(null); net.push(null); pv.push(pOut);
+            let vol = getVol(h);
+            p50.push(n);
+            p90.push(n + g * vol);
+            p10.push(n - g * vol * 0.8);
+        }
+    }
+
+    // 衔接修复：把 NOW 索引的 P50 设置为实际 NET 值，确保曲线从 NOW 点开始向右延伸
+    // 但注意 p50 在 NOW 是 null，所以我们要在这里强制给 p50[NOW] 赋值，让它成为连接线
+    p50[NOW] = net[NOW];
+    p10[NOW] = net[NOW];
+    p90[NOW] = net[NOW];
+
+    const todayP90 = p90.slice(NOW, NOW+24);
+    const peakV = Math.max(...todayP90);
+    const peakH = (NOW + todayP90.indexOf(peakV)) % 24;
+    
+    const rStart = p50[NOW + 16] || p50[NOW];
+    const rEnd = p50[NOW + 18] || p50[NOW];
+    return { name, temps, gross, net, pv, p50, p10, p90, peakV: Math.round(peakV), peakH, rampV: Math.round(rEnd - rStart) };
+}
+const DS = {
+    AEP: simulate(13500, 'AEP'),
+    DOM: simulate(12000, 'DOM'),
+    DAYTON: simulate(2200, 'DAYTON')
+};
+
+/* 2. Init Charts */
+const instMain = echarts.init(document.getElementById('chart_main'));
+const instSub = echarts.init(document.getElementById('chart_sub'));
+const instBack = echarts.init(document.getElementById('chart_backtest'));
+const instShap = echarts.init(document.getElementById('chart_shap'));
+
+/* 3. Controllers */
+function Controller(zoneKey){
+    STATE.zone = zoneKey;
+    const theme = THEMES[STATE.theme];
+    const z = DS[zoneKey];
+
+    const netNow = z.net[NOW];
+    const grossNow = z.gross[NOW];
+    const pvNow = z.pv[NOW];
+    document.getElementById('kpiNet').innerText = Math.round(netNow).toLocaleString();
+    document.getElementById('kpiPeak').innerText = z.peakV.toLocaleString();
+    document.getElementById('kpiPeakTime').innerText = ('0'+z.peakH).slice(-2)+':00';
+    document.getElementById('kpiRamp').innerText = z.rampV.toLocaleString();
+    
+    const b = document.getElementById('actionBanner'); const t = document.getElementById('actionText');
+    const col = z.rampV > 3000 ? '#EF4444' : '#10B981';
+    t.style.color = col; b.style.borderColor = col+'66'; b.style.backgroundColor = col+'11';
+    t.innerText = z.rampV > 3000 ? `警告: ${zoneKey} 区 16-18点爬坡超容` : `态势平稳: ${zoneKey} 备用充足`;
+    
+    renderMainChart(z, theme);
+    renderSubChart(z, theme);
+    renderSide(z, theme);
+}
+
+/* ========== 【核心修复 V9】主图：一眼看清预测曲线 ========== */
+function renderMainChart(z, theme){
+    const xLabels = rawTimes.map(t => `${('0'+(t.getMonth()+1)).slice(-2)}-${('0'+t.getDate()).slice(-2)} ${('0'+t.getHours()).slice(-2)}:00`);
+    
+    // 颜色对比度拉满
+    const C_HISTORY = '#3B82F6';  // 历史净负荷：蓝 (沉稳)
+    const C_FORECAST = '#10B981'; // 预测净负荷：翠绿 (醒目)
+    const C_BAND = 'rgba(16, 185, 129, 0.15)'; // 概率带：半透明翠绿 (不抢视角)
+
+    instMain.setOption({
+        backgroundColor: theme.bg,
+        tooltip:{ 
+            trigger:'axis', 
+            backgroundColor: theme.tip.bg, borderColor: theme.tip.border, textStyle:{color: theme.tip.text, fontSize: 11, fontWeight: 500},
+            formatter: (params) => {
+                let html = `<div style="font-weight:bold; font-size:12px; margin-bottom:6px; color:${theme.tip.text};">${params[0].axisValue}</div>`;
+                // 手动组合数据：Net(历史) vs P50(预测)
+                let netVal = params[0]?.value;
+                let fcVal  = params[3]?.value;
+                let p10Val = params[1]?.value;
+                let p90Val = params[2]?.value;
+                let idx = params[0].dataIndex;
+                
+                html += `<div style="display:flex; justify-content:space-between; width:200px; color:${theme.tip.text}"><span style="color:${C_HISTORY}; margin-right:10px;"><b>■</b> 实际净负荷:</span> <b>${netVal!==null&&netVal!==undefined?Math.round(netVal).toLocaleString()+' MW':'--'}</b></div>`;
+                if(idx > NOW){
+                    html += `<div style="display:flex; justify-content:space-between; width:200px; color:${theme.tip.text}"><span style="color:${C_FORECAST}; margin-right:10px;"><b>◈</b> 预测净负荷(P50):</span> <b>${fcVal!==null&&fcVal!==undefined?Math.round(fcVal).toLocaleString()+' MW':'--'}</b></div>`;
+                    if(p90Val!==null && p90Val!==undefined) html += `<div style="display:flex; justify-content:space-between; width:200px; color:${theme.txt}; font-size:10px;"><span>▤ 风险区间(P10-P90):</span> <span>${Math.round(p10Val)} ~ ${Math.round(p90Val)}</span></div>`;
+                }
+                return html;
+            },
+            axisPointer:{ type:'cross', lineStyle:{ color:'#94a3b8', type:'dashed', width:1 } }
+        },
+        grid:{ left:50, right:20, top:20, bottom: 30 },
+        xAxis:{ 
+            type:'category', data: xLabels, boundaryGap: false,
+            axisLine:{ lineStyle:{color:theme.grid} }, 
+            axisLabel:{ color: theme.txt, fontSize:9, interval: 5, fontFamily:'monospace' },
+            splitLine:{ show:false }
+        },
+        yAxis:{ 
+            type:'value', 
+            splitLine:{ lineStyle:{color:theme.grid, type:'dashed', opacity:0.6} },
+            axisLine:{show:false}, axisTick:{show:false},
+            axisLabel:{ color: theme.txt, fontSize:10, formatter: v=>(v/1000)+'k', fontFamily:'monospace' }
+        },
+        dataZoom:[{type:'inside', start:35, end:90}],
+        series:[
+            // 1. 概率带：必须放在最底层(z=1)，且颜色极淡
+            { name:'P90', type:'line', data: z.p90, showSymbol:false, lineStyle:{opacity:0}, symbol:'none', areaStyle:{color: C_BAND}, z:1 },
+            { name:'P10', type:'line', data: z.p10, showSymbol:false, lineStyle:{opacity:0}, symbol:'none', areaStyle:{color: theme.mask}, z:1 },
+            
+            // 2. 分隔线：NOW 垂直线 (加粗虚线，橙色，用来一眼区分过去与未来)
+            {
+                type:'line', data: z.net, showSymbol:false, lineStyle:{opacity:0},
+                markLine:{
+                    silent:false, symbol:['none','none'],
+                    lineStyle:{color:'#F59E0B', type:'solid', width:1.5, opacity:0.8},
+                    label:{
+                        formatter:'『 现在 NOW 』', 
+                        color:'#F59E0B', 
+                        fontSize:11, 
+                        fontWeight:'bold',
+                        backgroundColor: theme.bg,
+                        padding:[2,5],
+                        borderColor:'#F59E0B',
+                        borderWidth:1,
+                        position:'insideEndTop'
+                    },
+                    data:[{ xAxis: xLabels[NOW] }]
+                }
+            },
+
+            // 3. 历史实际净负荷：蓝色粗实线 (z=4, 保证在顶层)
+            { 
+                name:'实际净负荷', 
+                type:'line', 
+                data: z.net, 
+                showSymbol:false, 
+                smooth: true,
+                z: 4, 
+                lineStyle:{
+                    color: C_HISTORY, 
+                    width: 3,
+                    shadowColor: C_HISTORY,
+                    shadowBlur: 6,
+                    opacity: 1
+                }
+            },
+
+            // 4. 预测净负荷 P50：绿色虚粗线 (最顶层 z=5)
+            { 
+                name:'预测净负荷 (P50)', 
+                type:'line', 
+                data: z.p50, 
+                showSymbol:false, 
+                smooth:true,
+                z: 5,
+                lineStyle:{
+                    color: C_FORECAST,
+                    width: 3.5,
+                    type: [6, 5], // dash array, 虚线更明显
+                    shadowColor: C_FORECAST,
+                    shadowBlur: 10
+                },
+                // 给预测点加个极小的空心圆点，增强“未来感”
+                itemStyle:{ color: C_FORECAST, borderColor:'#fff', borderWidth:1 },
+                symbol:'circle',
+                symbolSize: 4,
+                showSymbol: (value, params) => (params.dataIndex % 3 === 0 && params.dataIndex > NOW)
+            }
+        ]
+    }, {notMerge:true});
+}
+
+/* U-Curve */
+function renderSubChart(z, theme){
+    let scatter = [];
+    for(let t=-5; t<=40; t+=0.5){
+        let base = 0.8 * z.peakV / 1.3;
+        let f = 1.0;
+        if(t < 12) f = 1 + (12-t) * 0.012;
+        if(t > 22) f = 1 + (t-22) * 0.02;
+        let load = base * f * (1 + (Math.random()*0.1-0.05));
+        let col = '#3B82F6'; if(t<12) col='#8B5CF6'; if(t>22) col='#EF4444';
+        scatter.push({value:[t.toFixed(1), load.toFixed(0)], itemStyle:{color:col, opacity:0.55}});
+    }
+    instSub.setOption({
+        backgroundColor: theme.bg,
+        tooltip:{ formatter: p=>`气温: ${p.value[0]}°C<br/>负荷: ${Number(p.value[1]).toLocaleString()} MW`, backgroundColor:theme.tip.bg, borderColor:theme.tip.border, textStyle:{color:theme.tip.text}},
+        grid:{left:60, right:30, top:30, bottom:50},
+        xAxis:{type:'value', name:'干球温度 (°C)', nameLocation:'middle', nameGap:30, min:-5, max:40, axisLine:{lineStyle:{color:theme.grid}}, axisLabel:{color:theme.txt}, splitArea:{show:true, areaStyle:{color:['#8B5CF608','#10B98108','#EF444408']}}},
+        yAxis:{type:'value', name:'MW', scale:true, axisLine:{show:false}, splitLine:{lineStyle:{color:theme.grid, type:'dashed'}}, axisLabel:{color:theme.txt, formatter:v=>(v/1000)+'k'}},
+        series:[
+            {type:'line', markLine:{silent:true, symbol:'none', lineStyle:{color:theme.txt, type:'dashed', opacity:0.3}, label:{color:theme.txt, fontSize:9, position:'insideEndTop'}, data:[{xAxis:12, name:'供暖'},{xAxis:22, name:'制冷'}]}, data:[]},
+            {type:'scatter', data:scatter, symbolSize: 8}
+        ]
+    }, {notMerge:true});
+}
+
+/* Side Charts */
+function renderSide(z, theme){
+    instBack.setOption({
+        backgroundColor: theme.bg, grid:{left:30,right:10,top:10,bottom:20},
+        xAxis:{type:'category', data:['D-6','D-5','D-4','D-3','D-2','D-1','Now'], axisLabel:{color:theme.txt, fontSize:10}, axisLine:{show:false}},
+        yAxis:{type:'value', min:0, max:5, splitLine:{show:false}, axisLabel:{show:false}},
+        series:[{type:'bar', data:[2.1, 1.8, 3.2, 2.4, 2.0, 1.5, 1.8], itemStyle:{color:p=>p.value>3?'#EF4444':'#10B981', borderRadius:[2,2,0,0]}, barWidth:'40%',
+            markLine:{silent:true, symbol:'none', lineStyle:{type:'dashed', color:theme.txt}, label:{formatter:'3% 阈值', color:theme.txt, fontSize:9, position:'insideEndTop'}, data:[{yAxis:3}]}
+        }]
+    }, {notMerge:true});
+
+    instShap.setOption({
+        backgroundColor: theme.bg, grid:{left:80, right:40, top:5, bottom:5, containLabel:true},
+        xAxis:{type:'value', show:false, max:100},
+        yAxis:{type:'category', data:['湿度 RH','周末效应','滞后负荷 L24','净负荷爬坡','光伏 PV','体感温度 AT'], inverse:true, axisLine:{show:false}, axisLabel:{color:theme.txt, fontSize:10}},
+        series:[{type:'bar', data:[18, 12, 35, 52, 65, 88], barWidth:'55%',
+            label:{show:true, position:'right', formatter:'{c}%', color:theme.shapLb, fontSize:10, fontWeight:'bold'},
+            itemStyle:{ borderRadius:[0,2,2,0], color:p=>p.value>80?'#EF4444':(p.value>50?'#F59E0B':'#3B82F6') }
+        }]
+    }, {notMerge:true});
+}
+
+/* Events */
+document.getElementById('zoneNavigation').addEventListener('click', (e)=>{
+    const t = e.target.closest('.nav-tab'); if(!t) return;
+    document.querySelectorAll('.nav-tab').forEach(el=>el.classList.remove('active'));
+    t.classList.add('active');
+    Controller(t.dataset.zone);
+});
+document.getElementById('themeSwitcher').addEventListener('click', ()=>{
+    const n = STATE.theme === 'dark' ? 'light' : 'dark';
+    STATE.theme = n;
+    document.documentElement.setAttribute('data-theme', n);
+    document.getElementById('themeIcon').className = n==='dark' ? 'ph-fill ph-moon-stars text-lg' : 'ph-fill ph-sun text-lg';
+    Controller(STATE.zone);
+});
+setInterval(()=>{ const d=new Date(); document.getElementById('sysClock').innerText=d.toISOString().replace('T',' ').substring(0,19)+' UTC'; }, 1000);
+window.addEventListener('resize', () => { [instMain, instSub, instBack, instShap].forEach(i=>i.resize()); });
+
+Controller('AEP');
+</script>
+</body>
+</html>
