@@ -32,20 +32,20 @@
   "hotPaths": [
     {
       "path": "zhulong.html",
-      "accessCount": 187,
-      "lastAccessed": 1787940129325,
+      "accessCount": 196,
+      "lastAccessed": 1787940592733,
       "type": "file"
     },
     {
       "path": "docs/zhulong-design.md",
-      "accessCount": 30,
-      "lastAccessed": 1787939917983,
+      "accessCount": 33,
+      "lastAccessed": 1787940762319,
       "type": "file"
     },
     {
       "path": "docs/zhulong-handoff.md",
-      "accessCount": 12,
-      "lastAccessed": 1787939948851,
+      "accessCount": 16,
+      "lastAccessed": 1787940848945,
       "type": "file"
     },
     {
@@ -220,6 +220,24 @@
       "path": ".shots/v17_strip_dark.jpeg",
       "accessCount": 1,
       "lastAccessed": 1787939874400,
+      "type": "file"
+    },
+    {
+      "path": ".shots/v18_quad_check.jpeg",
+      "accessCount": 1,
+      "lastAccessed": 1787940403081,
+      "type": "file"
+    },
+    {
+      "path": ".shots/v18_quad_final_light.jpeg",
+      "accessCount": 1,
+      "lastAccessed": 1787940622338,
+      "type": "file"
+    },
+    {
+      "path": ".shots/v18_quad_final_dark.jpeg",
+      "accessCount": 1,
+      "lastAccessed": 1787940641503,
       "type": "file"
     }
   ],

@@ -71,7 +71,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--actual);outline-off
 .db-strip{display:flex;align-items:center;gap:14px;padding:9px 16px;min-width:0}
 .db-tag{font-size:11px;font-weight:800;color:var(--ink2);letter-spacing:.04em;white-space:nowrap;flex-shrink:0}
 .db-msg{font-size:15px;font-weight:650;color:var(--ink);white-space:nowrap;overflow:hidden;
-  text-overflow:ellipsis;min-width:0;flex:1}
+  text-overflow:ellipsis;min-width:0;flex:1;text-align:center}
 .db-msg .win{font-family:var(--mono);font-weight:800}
 .db-msg .num{font-size:27px;font-weight:800;color:var(--fc-hi);letter-spacing:-.01em;line-height:1;margin:0 3px}
 .db-msg small{font-size:12px;font-weight:700;color:var(--fc-hi);margin-left:1px}
@@ -124,6 +124,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--actual);outline-off
 .sq:last-child{border-right:0}
 .sq-l{font-size:12px;font-weight:700;color:var(--ink2);display:flex;align-items:center;gap:7px;white-space:nowrap}
 .sq-l .ref{font-weight:500;color:var(--ink3)}
+.sq-l .db-q{width:12px;height:12px;font-size:8.5px;vertical-align:0;margin-left:3px;flex-shrink:0}
 .sq-v{font-size:24px;font-weight:750;letter-spacing:-.01em;line-height:1.25;white-space:nowrap}
 .sq-v small{font-size:11.5px;font-weight:600;color:var(--ink3);margin-left:4px;letter-spacing:0}
 .sq-v small.at{margin-left:7px;font-weight:650;font-family:var(--mono)}
@@ -287,11 +288,11 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--actual);outline-off
 #optPopover label{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink2);padding:6px 8px;border-radius:6px;cursor:pointer}
 #optPopover label:hover{background:var(--bg2)}
 #optPopover input{accent-color:var(--actual)}
-#basisPopover{position:fixed;z-index:60;width:332px;background:var(--bg1);border:1px solid var(--line2);border-radius:10px;
+#basisPopover,#sqTip{position:fixed;z-index:60;width:332px;background:var(--bg1);border:1px solid var(--line2);border-radius:10px;
   padding:12px 15px;font-size:11.5px;color:var(--ink2);line-height:1.85;display:none;box-shadow:0 12px 40px rgba(15,23,42,.14)}
-#basisPopover h3{font-size:12px;color:var(--ink);margin-bottom:4px}
-#basisPopover b{color:var(--ink)}
-#basisPopover .num{color:var(--ink)}
+#basisPopover h3,#sqTip h3{font-size:12px;color:var(--ink);margin-bottom:4px}
+#basisPopover b,#sqTip b{color:var(--ink)}
+#basisPopover .num,#sqTip .num{color:var(--ink)}
 
 /* ============ 演示模式 ============ */
 #demoLayer{position:fixed;inset:0;z-index:50;pointer-events:none;display:none}
@@ -475,6 +476,8 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--actual);outline-off
 </div>
 <!-- 弹层：建议依据（决策层按需展开，不常驻屏上） -->
 <div id="basisPopover" role="dialog" aria-label="建议依据"></div>
+<!-- 弹层：状态格指标解释（四格标签 ⓘ 共用一个） -->
+<div id="sqTip" role="dialog" aria-label="指标解释"></div>
 
 <!-- 演示模式 -->
 <div id="demoLayer">
@@ -938,29 +941,46 @@ function renderStatusQuad(){
   const devOk=dev!=null&&Math.abs(dev)<1.5;
   const recGap=(peak90.p90-RECORD[z].v)/RECORD[z].v*100;
   const mapeShow=live?mape:replayBT().mape;
+  $('sqTip').style.display='none'; /* 重渲即关：防悬空 */
   $('statusQuad').innerHTML=`
     <div class="sq" title="${WD_ZH[etP(org).wd]} ${fmtHM(org)}（美东）${live?'':' · 重演中，拖动胶片回放任一天'}">
-      <div class="sq-l">${live?'现在负荷':'现在 · 重演起点'}${live?'':'<span class="rp">↺</span>'}</div>
+      <div class="sq-l">${live?'现在负荷':'现在 · 重演起点'}${live?'':'<span class="rp">↺</span>'}<span class="db-q sq-i" data-sq="0" role="button" tabindex="0">i</span></div>
       <div class="sq-v num">${fmt(nowV)}<small>MW</small></div>
       <div class="sq-s">${live?`<span class="${dPct>=0?'up':'down'}">${dPct>=0?'▲ +':'▼ '}${dPct.toFixed(1)}%</span> 较昨日`
         :`${WD_ZH[etP(org).wd]} ${fmtHM(org)} · 拖动胶片回放`}</div>
     </div>
     <div class="sq" title="实际 − 昨日起点预测 · 近 6 小时加权平均（越近越重）· ±1.5% 内为正常">
-      <div class="sq-l">预测偏差</div>
+      <div class="sq-l">预测偏差<span class="db-q sq-i" data-sq="1" role="button" tabindex="0">i</span></div>
       <div class="sq-v num" style="color:${dev==null?C.ink3:devOk?C.ink:C.warn}">${dev==null?'—':(dev>=0?'+':'')+dev.toFixed(2)+'%'}</div>
       <div class="sq-s">${dev==null?'重演模式无昨日预测':`<span class="badge ${devOk?'ok':'warn'}">${devOk?'正常':'关注'}</span>`}</div>
     </div>
     <div class="sq" title="未来 24h 预测日峰（P50）· 最坏 P90 距历史纪录 ${recGap>=0?'+':''}${recGap.toFixed(1)}% · 预备窗 ${fmtHM(peak.ts-3*HOUR)}–${peakEt}">
-      <div class="sq-l">今日峰值 · 预测</div>
+      <div class="sq-l">今日峰值 · 预测<span class="db-q sq-i" data-sq="2" role="button" tabindex="0">i</span></div>
       <div class="sq-v num" style="color:${C.fcHi}">${fmt(peak.p50)}<small>MW</small><small class="at">@${peakEt}</small></div>
       <div class="sq-s">最坏 P90 <b class="num">${fmt(peak90.p90)}</b></div>
     </div>
     <div class="sq" title="MAPE = 日前 48h 预测平均绝对百分比误差 · 行业优良 &lt;3% · ${live?'近 28 起点回测':'本段重演 · 48h'}">
-      <div class="sq-l">预测误差${live?'':' · 本段重演'}</div>
+      <div class="sq-l">预测误差${live?'':' · 本段重演'}<span class="db-q sq-i" data-sq="3" role="button" tabindex="0">i</span></div>
       <div class="sq-v num">${mapeShow.toFixed(2)}<small>%</small></div>
       <div class="sq-s">${mapeShow<3?'<span class="badge ok">✓ 优于 3%</span>':'<span class="badge warn">劣于 3%</span>'} P90 命中 <b class="num">${cov90.toFixed(1)}%</b></div>
     </div>`;
 }
+/* 四格 ⓘ 解释（共用 sqTip 弹层） */
+const SQ_TIPS=[
+  '<h3>现在负荷</h3>当前小时的实际负荷（估算平均功率，MW）。子行为与昨日同一时刻的涨跌幅。',
+  '<h3>预测偏差</h3>实际 − 昨日起点的日前预测，近 6 小时加权平均（越近权重越大）；±1.5% 内为正常。',
+  '<h3>今日峰值 · 预测</h3>未来 24 小时预测日峰（P50 最可能路径），@ 为预计达到时刻；最坏 P90 = 90% 分位上界。距历史纪录与预备窗见格子悬停。',
+  '<h3>预测误差（MAPE）</h3>日前 48h 预测的平均绝对百分比误差，近 28 个滚动起点回测；行业优良 &lt;3%。P90 命中率标称 90%。',
+];
+$('statusQuad').addEventListener('click',e=>{
+  const ic=e.target.closest('.sq-i');if(!ic)return;
+  e.stopPropagation();
+  ['calPopover','optPopover','basisPopover'].forEach(id=>$(id).style.display='none');
+  const tip=$('sqTip');
+  if(tip.style.display==='block'&&tip.dataset.sq===ic.dataset.sq){tip.style.display='none';return}
+  tip.innerHTML=SQ_TIPS[+ic.dataset.sq];tip.dataset.sq=ic.dataset.sq;
+  togglePop(tip,ic,'left');
+});
 
 /* =====================================================================
    渲染 · 时光机
@@ -1055,7 +1075,7 @@ function renderDecision(){
     <div>建议容量 = P90 上界 − 97%×P50，向上取整至 50 MW；预备窗 = 峰前 3 小时（主图琥珀段）</div>
     <div style="margin-top:4px"><span class="db-link" id="dbAuditLink">查看完整审计 ↗</span>　<span style="color:var(--ink3)">完整口径见主图右上 ⓘ</span></div>`;
   $('dbQMark').onclick=e=>{e.stopPropagation();
-    $('calPopover').style.display='none';$('optPopover').style.display='none';
+    $('calPopover').style.display='none';$('optPopover').style.display='none';$('sqTip').style.display='none';
     const p=$('basisPopover');
     p.style.display==='none'?togglePop(p,$('dbQMark'),'left'):p.style.display='none'};
   $('dbAuditLink').onclick=()=>{
@@ -1310,14 +1330,15 @@ function togglePop(pop,btn,anchor){
     window.innerWidth-pop.offsetWidth-10))+'px';
   pop.style.top=(r.bottom+8)+'px';
 }
-$('calBtn').onclick=e=>{e.stopPropagation();$('optPopover').style.display='none';$('basisPopover').style.display='none';const p=$('calPopover');
+$('calBtn').onclick=e=>{e.stopPropagation();$('optPopover').style.display='none';$('basisPopover').style.display='none';$('sqTip').style.display='none';const p=$('calPopover');
   p.style.display==='none'?togglePop(p,$('calBtn')):p.style.display='none'};
-$('optBtn').onclick=e=>{e.stopPropagation();$('calPopover').style.display='none';$('basisPopover').style.display='none';const p=$('optPopover');
+$('optBtn').onclick=e=>{e.stopPropagation();$('calPopover').style.display='none';$('basisPopover').style.display='none';$('sqTip').style.display='none';const p=$('optPopover');
   p.style.display==='none'?togglePop(p,$('optBtn')):p.style.display='none'};
 document.addEventListener('click',e=>{
   if(!e.target.closest('#calPopover')&&!e.target.closest('#calBtn'))$('calPopover').style.display='none';
   if(!e.target.closest('#optPopover')&&!e.target.closest('#optBtn'))$('optPopover').style.display='none';
   if(!e.target.closest('#basisPopover')&&!e.target.closest('#dbQMark'))$('basisPopover').style.display='none';
+  if(!e.target.closest('#sqTip')&&!e.target.closest('.sq-i'))$('sqTip').style.display='none';
 });
 /* CSV 导出 */
 $('csvBtn').onclick=()=>{
