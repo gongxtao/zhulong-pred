@@ -927,7 +927,7 @@ function renderMain(){
   ];
   mainC.setOption({
     animationDuration:650,animationDurationUpdate:350,
-    grid:{left:58,right:46,top:44,bottom:40},
+    grid:{left:58,right:46,top:44,bottom:52}, /* bottom 容纳双行轴标签 */
     legend:{show:false},
     tooltip:{trigger:'axis',
       axisPointer:{type:'line',lineStyle:{color:C.axisLine,width:1}},
@@ -952,8 +952,8 @@ function renderMain(){
       }},
     xAxis:{type:'time',min:org-back*HOUR,max:tMax,
       axisLine:{lineStyle:{color:C.axisLine}},axisTick:{show:false},
-      axisLabel:{color:C.ink3,fontSize:10.5,fontFamily:'JetBrains Mono',hideOverlap:true,
-        formatter:v=>etP(v).h===0?fmtMD(v):fmtHM(v)},
+      axisLabel:{color:C.ink3,fontSize:10,fontFamily:'JetBrains Mono',hideOverlap:true,lineHeight:13,
+        formatter:v=>{const p=etP(v);return p2(p.mo)+'/'+p2(p.da)+'\n'+p2(p.h)+':00'}}, /* 双行：日期+时间，任何缩放都看得出哪天 */
       splitLine:{show:false}},
     yAxis:{type:'value',scale:true,
       max:v=>(rec.v>0&&rec.v<=v.max*1.4)?Math.max(v.max,rec.v*1.005):v.max,
