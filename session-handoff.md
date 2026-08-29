@@ -19,8 +19,12 @@
   - 链路：`/api/chat`（web/src/app/api/chat/route.ts，SSE 透传+限流 20/分+500 字上限）
     → QwenPaw `:8088` Agent `zhulong` → Python 查 Supabase(anon 只读) 算指标再答
   - **env 三条（不进仓库）**：`QWENPAW_URL` / `QWENPAW_AGENT_ID` / `QWENPAW_TOKEN`。
-    **已固化进 `web/.env.local`（gitignored）——`npm run dev` 直接自带烛龙助手，无需手动带 env**；
-    删掉该段则回降级态（提示未连接，主页面不受影响）。Vercel 线上默认未配=降级态。
+    已固化进 `web/.env.local`（gitignored）。**2026-08-29 晚起指向云端 QwenPaw 2.1.0：
+    `http://43.166.132.250:8088`**（本机实例不再是依赖，关掉本地也能演示）；删掉该段回降级态。
+    云端已验证：版本探针 200、数据问答对账逐位一致（2.94/3.23，720 行）、web E2E 38s 流式。
+    ⚠️ **云端未开认证（公网裸奔）**——上 Vercel 线上前必须：QwenPaw 开 `QWENPAW_AUTH_ENABLED`
+    + 注册拿 token + web env 配 `QWENPAW_TOKEN`（顺序见 qwenpaw/README 安全红线）。
+    Vercel 线上目前未配 env=聊天降级态；要开线上聊天在 Vercel 配 URL/AGENT_ID(/TOKEN) 即可。
     助手品牌=「烛龙助手」，UI/回答不出现 QwenPaw 字样（SOUL 自称+中文表达纪律）。
   - QwenPaw 配置 = 工作区文件模型（非 system prompt）：`~/.qwenpaw/workspaces/zhulong/`
     下 `skills/zhulong_analysis/SKILL.md`（分析手册，仓库 qwenpaw/ 同步）+ SOUL.md 末尾
