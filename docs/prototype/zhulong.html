@@ -4,9 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>烛龙 ZHULONG · 负荷预测决策台</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 26'%3E%3Cpath d='M2.5 13 C6 7.5 20 7.5 23.5 13 C20 18.5 6 18.5 2.5 13 Z' fill='none' stroke='%230E7490' stroke-width='1.6'/%3E%3Ccircle cx='13' cy='13' r='3.4' fill='none' stroke='%230E7490' stroke-width='1.6'/%3E%3Ccircle cx='13' cy='13' r='1.2' fill='%230E7490'/%3E%3C/svg%3E">
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
-<!-- 真数据快照（scripts/build-snapshot.mjs 生成；缺文件时页面自动回退内置仿真） -->
-<script src="data/zhulong-data.js"></script>
 <style>
 /* ============ 设计令牌 · 浅色（色板经 CVD 六项验证） ============ */
 :root{
@@ -296,6 +295,20 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--actual);outline-off
 #basisPopover b,#sqTip b{color:var(--ink)}
 #basisPopover .num,#sqTip .num{color:var(--ink)}
 
+/* ============ 数据加载遮罩（在线拉取 Supabase） ============ */
+#loader{position:fixed;inset:0;z-index:90;background:var(--bg0);display:flex;align-items:center;justify-content:center;
+  transition:opacity .45s ease}
+#loader.off{opacity:0;pointer-events:none}
+.ld-box{text-align:center;max-width:420px;padding:0 24px}
+.ld-title{font-family:var(--serif);font-size:26px;font-weight:700;letter-spacing:.3em;margin:14px 0 6px;color:var(--ink)}
+.ld-sub{font-size:12.5px;color:var(--ink2);margin-bottom:18px}
+.ld-bar{height:5px;border-radius:3px;background:var(--bg3);overflow:hidden;margin:0 6px}
+.ld-bar .fill{height:100%;width:0%;border-radius:3px;background:linear-gradient(90deg,var(--actual),var(--actual-hi));transition:width .3s ease}
+.ld-detail{font-family:var(--mono);font-size:10.5px;color:var(--ink3);margin-top:10px;min-height:16px;letter-spacing:.02em}
+#ldSkip{margin-top:16px;font-size:11.5px;color:var(--ink3);background:var(--bg1);border:1px solid var(--line);
+  border-radius:7px;padding:6px 14px;visibility:hidden}
+#ldSkip:hover{color:var(--actual-hi);border-color:var(--actual)}
+
 /* ============ 演示模式 ============ */
 #demoLayer{position:fixed;inset:0;z-index:50;pointer-events:none;display:none}
 #demoLayer.on{display:block}
@@ -482,6 +495,21 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--actual);outline-off
 <!-- 弹层：状态格指标解释（四格标签 ⓘ 共用一个） -->
 <div id="sqTip" role="dialog" aria-label="指标解释"></div>
 
+<!-- 数据加载遮罩 -->
+<div id="loader">
+  <div class="ld-box">
+    <svg width="44" height="44" viewBox="0 0 26 26" fill="none" style="margin:0 auto;display:block">
+      <path d="M2.5 13 C6 7.5 20 7.5 23.5 13 C20 18.5 6 18.5 2.5 13 Z" stroke="#0E7490" stroke-width="1.4"/>
+      <circle cx="13" cy="13" r="3.4" stroke="#0E7490" stroke-width="1.4"/>
+      <circle cx="13" cy="13" r="1.1" fill="#0E7490"/>
+    </svg>
+    <div class="ld-title">烛龙 ZHULONG</div>
+    <div class="ld-sub">正在实时查询生产数据库（Supabase）</div>
+    <div class="ld-bar"><div class="fill" id="ldFill"></div></div>
+    <div class="ld-detail" id="ldDetail">准备中…</div>
+    <button id="ldSkip">跳过，使用内嵌快照</button>
+  </div>
+</div>
 <!-- 演示模式 -->
 <div id="demoLayer">
   <div class="veil"></div>
@@ -537,15 +565,23 @@ const ZONES = {
   DOM:   {label:'DOM · 多米尼恩（弗吉尼亚）',   base:11900, amp:3300, seas:.15, wtr:.10, cool:40, heat:120, wknd:.92,  tOff:.6},
 };
 const HOUR=3600e3, DAY=86400e3;
-/* ===== 数据源：本地真数据快照（PJM+ERA5）→ 内置仿真兜底 ===== */
-const ZD=(typeof window!=='undefined'&&window.ZL_DATA)||null;
+/* ===== 数据源（三级，启动时异步解析）：在线 Supabase → 内嵌快照 → 内置仿真 ===== */
+let ZD=null, REAL=null;
 let T_MIN = Date.UTC(2004,9,1,5);
 let T_MAX = Date.UTC(2018,7,3,9);
 let NOW_DEFAULT = Date.UTC(2018,7,1,5);      // 演示锚点（仿真口径）
-if(ZD){ /* 真数据：时间锚从快照推导；NOW=2018-07-31 05:00 EST（峰前清晨，留足 48h 预测窗） */
-  T_MIN=Math.min(...Object.values(ZD.zones).map(x=>x.t0));
-  T_MAX=Math.max(...Object.values(ZD.zones).map(x=>x.t0+(x.n-1)*HOUR));
-  NOW_DEFAULT=Math.min(Date.UTC(2018,6,31,10),T_MAX-49*HOUR);
+function applyData(zd){ /* 数据就位后初始化查表层与时间锚 */
+  ZD=zd||null;
+  window.ZL_DATA=ZD; /* 同步到 window 便于断言/调试 */
+  REAL=ZD?{
+    idx(z,ts){const zz=ZD.zones[z];if(!zz)return -1;const i=Math.round((ts-zz.t0)/HOUR);return i>=0&&i<zz.n?i:-1},
+  }:null;
+  if(ZD){ /* NOW=2018-07-31 05:00 EST（峰前清晨，留足 48h 预测窗） */
+    T_MIN=Math.min(...Object.values(ZD.zones).map(x=>x.t0));
+    T_MAX=Math.max(...Object.values(ZD.zones).map(x=>x.t0+(x.n-1)*HOUR));
+    NOW_DEFAULT=Math.min(Date.UTC(2018,6,31,10),T_MAX-49*HOUR);
+    state.origin=NOW_DEFAULT;state.mode='live';
+  }
 }
 const H_FC = 48;
 
@@ -612,10 +648,7 @@ function simLoadAt(zone,ts){
   L*=1+(rnd2(zone,ts)-.5)*0.045;
   return L;
 }
-/* 真数据查表（O(1)；缺测已在快照生成时线性插值；区间外回退仿真——仅 DOM 2005-05 前的回放会触及） */
-const REAL=ZD?{
-  idx(z,ts){const zz=ZD.zones[z];if(!zz)return -1;const i=Math.round((ts-zz.t0)/HOUR);return i>=0&&i<zz.n?i:-1},
-}:null;
+/* 真数据查表 REAL 在 applyData() 中初始化（O(1)；缺测已插值；区间外回退仿真——仅 DOM 2005-05 前回放会触及） */
 function tempAt(ts,tOff=0){ /* 真模式下 tOff 无效（真温度即区域加权实测）；所有调用方均针对当前区 */
   if(REAL){const i=REAL.idx(state.zone,ts);if(i>=0)return ZD.zones[state.zone].temps[i]}
   return simTempAt(ts,tOff);
@@ -1542,22 +1575,153 @@ function setTheme(t){
 $('themeBtn').onclick=()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');
 
 /* =====================================================================
-   启动
+   启动：三级数据源异步解析（在线 Supabase → 内嵌快照 → 仿真）
    ===================================================================== */
-buildDaily();
 const BT={};
-for(const z of Object.keys(ZONES)){
-  buildCal(z);
-  FC_CACHE.clear(); /* buildCal 期间缓存的是未标定结果，backtest 前必须作废 */
-  BT[z]=backtest(z);
-  buildPers(z);
+function startEngine(src){
+  buildDaily();
+  for(const z of Object.keys(ZONES)){
+    buildCal(z);
+    FC_CACHE.clear(); /* buildCal 期间缓存的是未标定结果，backtest 前必须作废 */
+    BT[z]=backtest(z);
+    buildPers(z);
+  }
+  renderLegendTable();
+  renderCaliber();
+  renderAll();
+  $('srcText').textContent=src==='live'?'在线 · Supabase':src==='snapshot'?'真数据 · 快照':'演示数据 · 仿真';
+  $('srcBadge').title=src==='live'?'实时查询生产库：energy_hourly（292,914 行）∪ energy_hourly_future（68,055）+ pred_static（41,688）+ 模型元数据'
+    :src==='snapshot'?'PJM 负荷 + ERA5 天气真值快照（2004-10 → 2018-08），内嵌本页、断网可用'
+    :'形态校准的仿真数据';
 }
-renderLegendTable();
-renderCaliber();
-renderAll();
-/* 数据源徽章 */
-$('srcText').textContent=REAL?'真数据 · PJM+ERA5':'演示数据 · 仿真';
-$('srcBadge').title=REAL?'PJM 负荷 + ERA5 天气真值快照（2004-10 → 2018-08），内嵌本页、断网可用':'形态校准的仿真数据（未找到 data/zhulong-data.js）';
+
+/* ---------- 在线拉取器（与 scripts/build-snapshot.mjs 同算法） ---------- */
+const SB={URL:'https://guhooxzoitrexucnxvew.supabase.co/rest/v1',
+  KEY:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd1aG9veHpvaXRyZXh1Y254dmV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4OTk5MjMsImV4cCI6MjEwMzQ3NTkyM30.mRnANC3mIqof3syzYOQKZRBuKlGmtHCT7Vzd7EJb1EA'};
+let LD_ABORT=false;
+function ldSet(pct,detail){$('ldFill').style.width=(pct*100).toFixed(1)+'%';if(detail)$('ldDetail').textContent=detail}
+async function sbPage(table,params,onRows){
+  const rows=[];let off=0;
+  for(;;){
+    if(LD_ABORT)throw new Error('用户跳过在线拉取');
+    const q=new URLSearchParams({limit:1000,offset:off,...params});
+    const r=await fetch(`${SB.URL}/${table}?${q}`,{headers:{apikey:SB.KEY}});
+    if(!r.ok)throw new Error(`${table} HTTP ${r.status}`);
+    const page=await r.json();
+    rows.push(...page);onRows&&onRows(rows.length);
+    if(page.length<1000)break;
+    off+=1000;
+  }
+  return rows;
+}
+const r1=(v,d=1)=>Math.round(v*10**d)/10**d;
+function gridFrom(map){ /* 列式网格 + 缺测线性插值（首尾前向/后向填充） */
+  const tss=[...map.keys()].sort((a,b)=>a-b);
+  const t0=tss[0],n=Math.round((tss[tss.length-1]-t0)/HOUR)+1;
+  const mk=f=>{
+    const a=new Float64Array(n).fill(NaN);
+    for(const ts of tss)a[Math.round((ts-t0)/HOUR)]=map.get(ts)[f];
+    let last=-1;
+    for(let i=0;i<n;i++){
+      if(Number.isFinite(a[i])){
+        if(last>=0&&i>last+1){const L=a[last],R=a[i];for(let k=last+1;k<i;k++)a[k]=L+(R-L)*(k-last)/(i-last)}
+        if(last<0)for(let k=0;k<i;k++)a[k]=a[i];
+        last=i;
+      }
+    }
+    for(let k=last+1;k<n;k++)a[k]=a[last];
+    return a;
+  };
+  return {t0,n,loads:mk('load_mw'),temps:mk('temperature_2m_c'),hum:mk('relative_humidity_2m_pct'),wind:mk('wind_speed_10m_kmh'),prec:mk('precipitation_mm')};
+}
+async function fetchLiveData(){
+  const ZS=['AEP','DAYTON','DOM'];
+  const COLS='interval_end_utc,load_mw,temperature_2m_c,relative_humidity_2m_pct,wind_speed_10m_kmh,precipitation_mm';
+  const EXPECT=402657; /* 360,969 小时 + 41,688 回测行 */
+  const counts={};
+  const prog=()=>{const t=Object.values(counts).reduce((s,v)=>s+v,0);
+    ldSet(Math.min(t/EXPECT,.98),`已查询 ${t.toLocaleString('en-US')} / ${EXPECT.toLocaleString('en-US')} 行 · 生产库`)};
+  const jobs=[];
+  for(const z of ZS){
+    jobs.push(sbPage('energy_hourly',{zone:`eq.${z}`,order:'interval_end_utc.asc',select:COLS},n=>{counts['h'+z]=n;prog()}));
+    jobs.push(sbPage('energy_hourly_future',{zone:`eq.${z}`,order:'interval_end_utc.asc',select:COLS},n=>{counts['f'+z]=n;prog()}));
+  }
+  const all=await Promise.all(jobs);
+  ldSet(.985,'构建网格（去重∪插值）…');
+  const zones={};
+  ZS.forEach((z,zi)=>{
+    const map=new Map();
+    for(const row of all[zi*2])map.set(Date.parse(row.interval_end_utc),row);
+    for(const row of all[zi*2+1]){const ts=Date.parse(row.interval_end_utc);if(!map.has(ts))map.set(ts,row)}
+    const g=gridFrom(map);
+    zones[z]={t0:g.t0,n:g.n,
+      loads:[...g.loads].map(v=>r1(v,1)),temps:[...g.temps].map(v=>r1(v,1)),
+      hum:[...g.hum].map(v=>Math.round(v)),wind:[...g.wind].map(v=>r1(v,1)),prec:[...g.prec].map(v=>r1(v,1))};
+  });
+  const H={apikey:SB.KEY};
+  ldSet(.99,'拉取模型元数据与回测…');
+  const [mv,tt,psRows]=await Promise.all([
+    fetch(`${SB.URL}/model_versions?select=model_id,status,created_at&status=eq.active`,{headers:H}).then(r=>r.ok?r.json():[]),
+    fetch(`${SB.URL}/training_trials?select=trial_number,mean_zone_wape,mean_zone_mae_mw,validation_metrics`,{headers:H}).then(r=>r.ok?r.json():[]),
+    sbPage('pred_static',{order:'forecast_origin_utc.asc',select:'zone,forecast_origin_utc,forecast_horizon_hour,actual_load_mw,predicted_load_mw'},n=>{counts.ps=n;prog()}),
+  ]);
+  const winner=tt[0],vm=(winner&&winner.validation_metrics&&winner.validation_metrics.zones)||{};
+  const model={modelId:(mv[0]&&mv[0].model_id)||null,status:(mv[0]&&mv[0].status)||null,createdAt:(mv[0]&&mv[0].created_at)||null,
+    trials:tt.map(t=>({n:t.trial_number,wape:r1(t.mean_zone_wape*100,2),mae:Math.round(t.mean_zone_mae_mw)})),
+    zones:Object.fromEntries(Object.entries(vm).map(([z,v])=>[z,{wape:r1(v.overall.wape*100,2),
+      lastDayWape:r1(v.last_day_same_hour_baseline.wape*100,2),lastWeekWape:r1(v.last_week_same_hour_baseline.wape*100,2)}]))};
+  const pred={};
+  for(const z of ZS)pred[z]={origins:[],preds:[],cal:[],mape:null,n:0};
+  const byZO={};
+  for(const r of psRows){(byZO[r.zone]??={})[r.forecast_origin_utc]??=[];byZO[r.zone][r.forecast_origin_utc].push(r)}
+  for(const z of ZS){
+    const orgs=Object.keys(byZO[z]||{}).sort();
+    const relByH=Array.from({length:24},()=>[]);let se=0,n=0;
+    for(const o of orgs){
+      pred[z].origins.push(Date.parse(o));
+      const rows=byZO[z][o].sort((a,b)=>a.forecast_horizon_hour-b.forecast_horizon_hour);
+      const row=[];
+      for(const rr of rows){
+        row.push(r1(rr.predicted_load_mw,1));
+        const rel=(rr.predicted_load_mw-rr.actual_load_mw)/rr.actual_load_mw;
+        relByH[rr.forecast_horizon_hour-1].push(rel);se+=Math.abs(rel);n++;
+      }
+      while(row.length<24)row.push(null);
+      pred[z].preds.push(row);
+    }
+    for(let h=0;h<24;h++){
+      const arr=relByH[h].sort((a,b)=>a-b);
+      const mean=arr.reduce((s,v)=>s+v,0)/arr.length;
+      const abs=arr.map(v=>Math.abs(v-mean)).sort((a,b)=>a-b);
+      pred[z].cal.push({z50:r1(quantile(abs,.50),4),z90:r1(quantile(abs,.90),4)});
+    }
+    pred[z].mape=r1(se/n*100,2);pred[z].n=n;
+  }
+  return {v:1,generated:new Date().toISOString(),live:true,zones,model,pred};
+}
+function loadSnapshot(){
+  return new Promise((res,rej)=>{
+    const s=document.createElement('script');
+    s.src='data/zhulong-data.js';
+    s.onload=()=>window.ZL_DATA?res(window.ZL_DATA):rej(new Error('快照为空'));
+    s.onerror=()=>rej(new Error('快照缺失'));
+    document.head.appendChild(s);
+  });
+}
+(async function boot(){
+  const t0=performance.now();
+  setTimeout(()=>$('ldSkip').style.visibility='visible',4000);
+  $('ldSkip').onclick=()=>{LD_ABORT=true};
+  let zd=null,src='sim';
+  try{zd=await fetchLiveData();src='live'}
+  catch(e){console.warn('在线拉取未完成：',e.message);
+    try{zd=await loadSnapshot();src='snapshot'}catch(e2){zd=null;src='sim'}}
+  document.getElementById('loader').classList.add('off');
+  setTimeout(()=>{const l=document.getElementById('loader');l&&l.remove()},500);
+  applyData(zd);
+  startEngine(src);
+  console.info(`[烛龙] 数据源=${src} · 启动 ${(performance.now()-t0)/1000|0}s`);
+})();
 function renderLegendTable(){
   $('legendTable').innerHTML=[
     ['<span class="sw"></span>','实际负荷','截至 NOW'],

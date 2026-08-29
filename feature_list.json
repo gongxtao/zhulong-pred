@@ -39,6 +39,14 @@
       "dependencies": ["feat-003", "feat-004"],
       "status": "done",
       "evidence": "回归零失败（三区/拖拽/极涡重演[真数据：持久性17.02→相似日23.14 落后，话术成立]/热力图/六幕/主题/弹层互斥）；handoff §3/§5/§6 已更新；截图 .shots/v19_realdata_{light,dark}.jpeg"
+    },
+    {
+      "id": "feat-006",
+      "name": "在线数据模式（实时查询 Supabase）",
+      "description": "异步 boot：loader 遮罩+进度条+跳过按钮 → fetchLiveData 在线拉五表（与快照同算法）→ 回退动态快照 → 回退仿真；徽章三级",
+      "dependencies": ["feat-005"],
+      "status": "done",
+      "evidence": "http://127.0.0.1:4173 实测：24.4s、249 个 Supabase 请求、live=true、3.64/88.8/52.2 与快照一致；modelLine/极涡话术/三区/六幕/拖拽/主题全过；快照兜底路径验证可用"
     }
   ]
 }

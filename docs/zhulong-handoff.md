@@ -60,9 +60,12 @@ v14–v18 完成五轮重审并实测通过：主体化→减密→时光机并�
 ```
 CSS :root + html[data-theme="dark"]   全部视觉令牌（改色只动这里）
 THEMES = {light, dark}                 图表调色板（改图表色动这里）
-数据源：<script src="data/zhulong-data.js"> → window.ZL_DATA（真数据快照，7.1MB）
-        REAL/ZD 探测 → loadAt/tempAt 真值查表（O(1)），无快照回退 simLoadAt/simTempAt
-        时间锚 T_MIN/T_MAX/NOW_DEFAULT 真模式下从快照推导（NOW=2018-07-31 05:00 EST）
+启动（异步 boot，页面底部）：#loader 遮罩 → fetchLiveData()（在线拉 Supabase，249 请求 ≈25s，
+      进度条+跳过按钮）→ 失败回退 loadSnapshot()（动态 script 标签读 data/zhulong-data.js）
+      → 再失败回退内置仿真；applyData(zd) 初始化 ZD/REAL/时间锚 → startEngine(src)（buildDaily/
+      buildCal/FC_CACHE.clear/BT/PERS/renderAll，徽章：在线·Supabase｜真数据·快照｜演示数据·仿真）
+在线拉取器：SB.URL/SB.KEY（anon）+ sbPage(limit/offset 分页) + gridFrom(去重∪线性插值)
+      + model 元数据 + pred_static 聚合（与 scripts/build-snapshot.mjs 同算法）
 预测：forecastAt = 真模型注入（≤24h 内最近 pred_static 日起点，偏移重索引 mh=off+h，
       p50+真残差分位带）+ 相似日基线兜底（25–48h/2017 前）+ CAL + FC_CACHE(memo)
 评估：backtest(28起点×24h，审计=模型契约视界) + buildPers(24h 同视界) + replayBT(24h)
@@ -70,8 +73,7 @@ THEMES = {light, dark}                 图表调色板（改图表色动这里�
 交互：setZone/setOrigin/jumpTo/胶片拖拽(rAF轻量刷新)/抽屉tabs/弹层四件套(互斥+重渲即关)/CSV
 演示：DEMO 六幕数组 + demoToggle（D键/Esc/←→）
 主题：setTheme + localStorage('zl-theme')
-快照：scripts/build-snapshot.mjs（ZL_SKEY=<service_role> 环境变量运行，产出 data/zhulong-data.js；
-      含 3 区全量小时序列+天气、model 元数据、pred_static 579 起点聚合）
+快照再生成：ZL_SKEY=<service_role> node scripts/build-snapshot.mjs（密钥只走环境变量）
 ```
 
 ## 4. 已踩过的坑（红线清单）
@@ -91,6 +93,8 @@ THEMES = {light, dark}                 图表调色板（改图表色动这里�
 ## 5. 验证基线（真数据 v2 口径：审计 = 日前 24h，改完必须对上）
 
 **先决**：`bash init.sh` 全绿（快照在位、脚本语法、无 service_role 泄漏）。
+**在线模式（主路径）**：HTTP 服务后打开（`python3 -m http.server 4173` 于 docs/prototype），首载 ≈25s
+实时查询 Supabase（249 请求）；徽章「在线 · Supabase」；可点「跳过」用快照。网络面板可向评委展示真实查询。
 
 - BT.AEP：MAPE **3.64** / cov90 **88.8** / cov50 **52.2**（DAYTON **5.58/81.1/42.9**，DOM **5.47/87.2/48.5**）
 - 基线对比：持久性 5.84% → 3.64% ↓38%（DAYTON 8.94→5.58 ↓38%，DOM 7.62→5.47 ↓28%）

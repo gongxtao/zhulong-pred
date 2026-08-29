@@ -30,5 +30,14 @@
 2. forecastAt 偏移重索引使重演到 2017+ 任意时刻都能对质真模型预测
 3. 快照走 `<script>` 标签避开 file:// fetch CORS；service_role 只走环境变量（init.sh 扫泄漏）
 
-**下一步（可选）**：在线刷新模式（anon 拉 Supabase，需补 model_versions/training_trials 的 GRANT）；
-提交 git；8/30 路演。赛后 Next.js 移植（原型当 spec）。
+**下一步（可选）**：8/30 路演；赛后 Next.js 移植（原型当 spec）。
+
+## 2026-08-29 05:00 · feat-006 在线数据模式（用户裁决："要真实数据，不然结果太假"）
+
+- 启动改为异步 boot：`#loader` 遮罩（进度条 + 4s 后出现「跳过，使用内嵌快照」）→ `fetchLiveData()`
+  在线拉 Supabase（249 请求 ≈25s，与快照同算法同数值）→ 失败回退动态 script 标签加载快照 → 再回退仿真
+- 徽章三级：**在线 · Supabase**｜真数据 · 快照｜演示数据 · 仿真
+- 修复：在线拉取器 modelId 字段名（API 是 model_id）；applyData 同步 window.ZL_DATA 便于断言
+- 验证：24.4s 加载、live=true、3.64/88.8/52.2 与快照一致、模型行/极涡话术/三区/六幕/拖拽/主题全过；
+  快照兜底路径可用；anon key 嵌入页面（RLS 只读策略为安全边界）
+- 提交：见 git log
