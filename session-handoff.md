@@ -22,8 +22,8 @@
     已固化进 `web/.env.local`（gitignored）。**2026-08-29 晚起指向云端 QwenPaw 2.1.0：
     `http://43.166.132.250:8088`**（本机实例不再是依赖，关掉本地也能演示）；删掉该段回降级态。
     云端已验证：版本探针 200、数据问答对账逐位一致（2.94/3.23，720 行）、web E2E 38s 流式。
-    ⚠️ **云端未开认证（公网裸奔）**——上 Vercel 线上前必须：QwenPaw 开 `QWENPAW_AUTH_ENABLED`
-    + 注册拿 token + web env 配 `QWENPAW_TOKEN`（顺序见 qwenpaw/README 安全红线）。
+    **云端认证已开启（2026-08-29 晚）**：无 token 401 / 带 token 200 实测；`QWENPAW_TOKEN`
+    已入 Vercel Production（重部署 zhulong-6zfa3d97r）+ 本地 .env.local（三条齐）。
     **线上聊天已开启（2026-08-29 晚）**：Vercel Production 已加 `QWENPAW_URL`/`QWENPAW_AGENT_ID`
     并重新部署（Ready，zhulong-achg63ofj）。⚠️ 本机网络对 \*.vercel.app 是 IP 级阻断（DoH/强解均 000），
     线上链路最终验证需换网络（手机热点/评委网络）——已验证的等价链路段：部署 Ready+env 在列+
