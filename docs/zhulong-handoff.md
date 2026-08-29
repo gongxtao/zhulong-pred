@@ -1,7 +1,7 @@
 # 烛龙 ZHULONG · 交接文档
 
 > 写给下一个开发会话。框架已与用户对齐锁定，继续优化前**必读本文**。
-> 最后更新：2026-08-29（凌晨定稿 → v14–v18 五轮用户重审）· 提交截止：8/29 24:00
+> 最后更新：2026-08-29 05:40（feat-006 在线模式已提交，feat-007 懒加载待实现——**规格在 progress.md**）· 提交截止：8/29 24:00
 
 ## 0. 一句话现状
 
@@ -108,10 +108,12 @@ THEMES = {light, dark}                 图表调色板（改图表色动这里�
 
 ## 6. 待办（按优先级）
 
-1. ~~接 Supabase 真数据~~ ✅ **已完成（v2）**：快照三级数据源（本地真值快照→内置仿真兜底）+ 真模型注入 + 审计卡生产模型行
-2. 可选增强：在线刷新模式（anon key 直接拉 Supabase，RLS 已开 energy_hourly/pred_static/energy_hourly_future；model_versions/training_trials 还需 GRANT）；energy_forecasts 管道跑起来后切真前瞻
-3. 赛后：Next.js + Tailwind 工程化移植（本原型当 spec，断言基线照搬）
-4. 用户自己的优化方向（框架内微调即可）
+1. **feat-007 拆分式懒加载（当前活跃，规格见 progress.md 对应节）**：首屏只拉近 120 天 + `energy_daily`
+   视图（**用户已建好并授权**，14,953 行：zone/est_day/peak_mw/peak_ts_utc）+ 近 60 天 pred_static ≈4s；
+   跳转按需 range 查询 + toast；消灭首载全量 25s。实现后重测基线写入 §5
+2. ~~接 Supabase 真数据~~ ✅ v2 完成并已上线在线模式（feat-005/006）
+3. 可选：energy_forecasts 管道跑起来后切真前瞻；模拟器 cron 开启（"活的 NOW"）
+4. 赛后：Next.js + Tailwind 工程化移植（本原型当 spec，断言基线照搬）
 
 ## 7. 演示剧本（按 D）
 

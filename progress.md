@@ -38,6 +38,47 @@
   在线拉 Supabase（249 请求 ≈25s，与快照同算法同数值）→ 失败回退动态 script 标签加载快照 → 再回退仿真
 - 徽章三级：**在线 · Supabase**｜真数据 · 快照｜演示数据 · 仿真
 - 修复：在线拉取器 modelId 字段名（API 是 model_id）；applyData 同步 window.ZL_DATA 便于断言
-- 验证：24.4s 加载、live=true、3.64/88.8/52.2 与快照一致、模型行/极涡话术/三区/六幕/拖拽/主题全过；
-  快照兜底路径可用；anon key 嵌入页面（RLS 只读策略为安全边界）
-- 提交：见 git log
+- 验证：24.4s 加载、live=true、3.64/88.8/52.2 与快照一致、模型行/极涡话术/三区/六幕/拖拽/主题全过
+- 提交：225b921
+
+## 2026-08-29 05:40 · feat-007 拆分式懒加载（用户裁决，**未实现，下一会话执行**）
+
+**用户诉求**：不要首载全量 25s；拆分 + 实时拉取（看哪儿拉哪儿）。
+**前置已完成**：用户已建 `public.energy_daily` 视图（日峰聚合，14,953 行，anon 可读，
+字段 `zone / est_day / peak_mw / peak_ts_utc`，含 2004→2018 并集去重）。
+
+### 架构（已与用户对齐）
+
+| 层 | 内容 | 请求 | 时机 |
+|---|---|---|---|
+| 首屏 boot (~4s) | 近 120 天小时明细×3 区（预测/回测/决策够用）+ energy_daily 全量（胶片/热力图/极值/RECORD/last30）+ 近 60 天 pred_static（残差分位 CAL 用）+ model 元数据 | ~32 | 打开 |
+| 按需 ensureWindow | 跳转窗 ±80 天小时明细（range 查询 gte/lte）+ 该区该起点附近 pred_static | 2–3，~1s | 拖胶片松手/极端日/热力图点周 |
+| 兜底 | 断网→内嵌快照（populating 同一 store）；再不行仿真 | 0 | 仅失败 |
+
+### 实现规格（关键决策已定，照做）
+
+1. **统一 store（消灭 ZD/REAL 双后端）**：
+   `store.hours: Map<zone, Map<di, {L,T,H,W,P}各Float64Array(24)>>`；`store.daily: Map<zone,{ts,peak,ph,di}[]>`；
+   `store.pred: Map<zone, Map<originTs, p[24]>>` + `store.cal[zone][h]`（boot 时由近 60 天残差算，全局用）；
+   `store.model`。loadAt/tempAt 查 store，缺→NaN（**live 模式禁用 sim 兜底，防假数据**）；sim 仅 src='sim'。
+   快照回退：loadSnapshot() 的 ZD 数组**转写进 store**（121k×3 转换毫秒级），daily 用现有 buildDaily REAL 分支算。
+2. **视图行转换**（口径对齐现有 daily[] 约定）：`di = locDay(peak_ts_utc)`；`ts = Date.parse(peak_ts_utc) - HOUR`
+   （视图给的是区间右端，现有约定是小时起点 dayTs+ph*HOUR）；`ph = etP(ts).h`。
+   视图 est_day 即 locDay 口径（date_trunc(ts+5h)），已核对。
+3. **boot Layer-1**（替代现有 fetchLiveData 全量）：近 120 天用 `interval_end_utc=gte.<ts>` 分页；
+   daily 视图分页 15 页；pred_static 用 `forecast_origin_utc=gte.<D1-70d>` 只拉尾部（~60 起点）。
+   CAL 语义变化：残差分位来自近 60 天而非全 579 起点（方法论更好：近期残差更相关）→ **指标基线会小幅漂移，测完更新 §5**。
+4. **ensureWindow(zone, originTs)**：缺的小时日集 [d0-80d, d0+2d] 一次 range 请求（可合并成区间 gte/lte）；
+   2017+ 时补 `pred_static?zone=&forecast_origin_utc=gte.<origin-24h>&lte.<origin>`。
+   返回 Promise；期间右下角 toast「⇄ 查询生产库 2014-01 …」。
+5. **交互接线**：`setOrigin/jumpTo` → 先 toast + await ensureWindow 再 renderAll（避免 NaN 闪烁）；
+   胶片拖拽 rAF 阶段**不发请求**（用已缓存数据预览，可出空洞），pointerup 走 setOrigin 路径；
+   `setZone` → ensure 该区近窗（首次切区 ~1s）；演示六幕的 jumpTo 天然走同路径。
+6. **backtest/buildPers/buildCal**：基于 boot 近窗即可（28 起点候选日最深 origin-70d，120 天窗覆盖 ✓）。
+7. **保留**：loader 遮罩（首屏）、4s 跳过按钮（跳到快照路径）、`window.ZL_DATA` 断言钩子、
+   极涡话术、弹层四件套、CSV（窗口已 ensure）。
+8. **验收**：首屏 <6s 出全部内容；拖到 2014 松手 ≤2s 出图；网络面板可见按需请求；
+   指标新基线写入 handoff §5；回归清单全过；双主题截图 v20。
+
+**会话恢复**：bash init.sh → 读 CLAUDE.md + docs/zhulong-handoff.md → 本文件本节 → feature_list feat-007。
+**本地服务**：python3 http.server 4173 已随本会话结束而停，重启：`cd docs/prototype && python3 -m http.server 4173 --bind 127.0.0.1`（或 0.0.0.0 局域网）。

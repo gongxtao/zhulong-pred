@@ -43,10 +43,18 @@
     {
       "id": "feat-006",
       "name": "在线数据模式（实时查询 Supabase）",
-      "description": "异步 boot：loader 遮罩+进度条+跳过按钮 → fetchLiveData 在线拉五表（与快照同算法）→ 回退动态快照 → 回退仿真；徽章三级",
+      "description": "异步 boot：loader 遷罩+进度条+跳过按钮 → fetchLiveData 在线拉五表（与快照同算法）→ 回退动态快照 → 回退仿真；徽章三级",
       "dependencies": ["feat-005"],
       "status": "done",
       "evidence": "http://127.0.0.1:4173 实测：24.4s、249 个 Supabase 请求、live=true、3.64/88.8/52.2 与快照一致；modelLine/极涡话术/三区/六幕/拖拽/主题全过；快照兜底路径验证可用"
+    },
+    {
+      "id": "feat-007",
+      "name": "拆分式懒加载（首屏秒开 + 按需实时拉取）",
+      "description": "统一 store 架构：boot 只拉近 120 天小时 + energy_daily 视图全量 + 近 60 天 pred_static + 模型元数据（~32 请求 ≈4s）；跳转按需 ensureWindow（±80 天 range 查询 + 起点预测，2–3 请求）+ 右下角查询 toast；快照/仿真仅作失败兜底。详细实现规格见 progress.md「feat-007」节（含视图行口径转换、CAL 近期残差语义、拖拽不发请求等关键决策）",
+      "dependencies": ["feat-006"],
+      "status": "not-started",
+      "evidence": ""
     }
   ]
 }
