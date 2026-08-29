@@ -354,6 +354,11 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--actual);outline-off
 .chat-msg.user{align-self:flex-end;background:var(--bg3);color:var(--ink);border-bottom-right-radius:3px}
 .chat-msg.bot{align-self:flex-start;background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-bottom-left-radius:3px}
 .chat-msg.bot.err{color:var(--ink2);border-style:dashed}
+.chat-msg code{font-family:var(--mono);font-size:11px;background:var(--bg3);padding:1px 4px;border-radius:4px}
+.chat-tb{border-collapse:collapse;margin:6px 0;font-size:11.5px}
+.chat-tb th,.chat-tb td{border:1px solid var(--line);padding:3px 8px;text-align:right;white-space:nowrap}
+.chat-tb th:first-child,.chat-tb td:first-child{text-align:left}
+.chat-tb th{color:var(--ink2);background:var(--bg2);font-weight:600}
 .chat-typing{align-self:flex-start;color:var(--ink3);font-size:11.5px;display:flex;gap:6px;align-items:center}
 .chat-typing .spin{width:10px;height:10px}
 #chatChips{display:flex;gap:6px;padding:0 14px 8px;flex-wrap:wrap;flex-shrink:0}

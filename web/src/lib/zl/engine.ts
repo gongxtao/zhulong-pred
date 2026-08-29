@@ -1049,6 +1049,28 @@ function bindInteractions() {
   onMount(() => $('themeBtn')?.removeEventListener('click', themeBtnFn));
 
   /* ===== feat-023 ChatBI 数据问答（互斥家族第五件） ===== */
+  /* 迷你 markdown 渲染（Agent 回答含表格/加粗/标题）：先转义防注入，再白名单变换 */
+  const chatMd = (s: string): string => {
+    const esc = s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const out: string[] = [];
+    let table: string[][] = [];
+    const flush = () => {
+      if (!table.length) return;
+      const body = table.slice(1).filter(r => !r.every(c => /^[-:\s]*$/.test(c)));
+      out.push('<table class="chat-tb"><thead><tr>' + table[0].map(c => `<th>${c}</th>`).join('')
+        + '</tr></thead><tbody>' + body.map(r => '<tr>' + r.map(c => `<td>${c}</td>`).join('') + '</tr>').join('') + '</tbody></table>');
+      table = [];
+    };
+    for (const ln of esc.split('\n')) {
+      if (/^\s*\|.*\|\s*$/.test(ln)) { table.push(ln.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim())); continue }
+      flush();
+      let h = ln.replace(/^#{2,4}\s*(.+)$/, '<b>$1</b>').replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/`([^`]+)`/g, '<code>$1</code>');
+      if (/^\s*[-*]\s+/.test(h)) h = '• ' + h.replace(/^\s*[-*]\s+/, '');
+      out.push(h);
+    }
+    flush();
+    return out.join('<br>');
+  };
   let chatSessionId = '';
   const closeChatLayer = () => $('chatLayer').classList.remove('on');
   const openChat = () => {
@@ -1079,9 +1101,11 @@ function bindInteractions() {
     log.scrollTop = log.scrollHeight;
     ($('chatSend') as HTMLButtonElement).disabled = true;
     ($('chatInput') as HTMLTextAreaElement).value = '';
+    let cur = '';
     const r = await streamChat(ctx + text, chatSessionId, {
       onText: full => {
-        typing.remove(); bubble.style.display = ''; bubble.textContent = full;
+        cur = full;
+        typing.remove(); bubble.style.display = ''; bubble.innerHTML = chatMd(full);
         log.scrollTop = log.scrollHeight;
       },
       onStatus: s => {
@@ -1091,8 +1115,8 @@ function bindInteractions() {
         }
       },
     });
-    if (!r.ok && bubble.textContent && !bubble.classList.contains('err')) {
-      bubble.classList.add('err'); bubble.textContent += '\n[中断：' + (r.error ?? '未知') + ']';
+    if (!r.ok && cur && !bubble.classList.contains('err')) {
+      bubble.classList.add('err'); bubble.innerHTML = chatMd(cur + '\n[中断：' + (r.error ?? '未知') + ']');
     }
     typing.remove();
     ($('chatSend') as HTMLButtonElement).disabled = false;
