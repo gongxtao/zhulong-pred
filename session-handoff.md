@@ -9,11 +9,18 @@
 2. 本文件（当前状态 + 待办）
 3. `bash init.sh`
 4. `feature_list.json`（活跃特性，一次一个）
-5. `cd web && npx next dev -p 3100` 然后 `node scripts/verify.mjs`（51 项断言；
+5. `cd web && npx next dev -p 3100` 然后 `node scripts/verify.mjs`（52 项断言；
    §2 在线基线 8/30 凌晨已回绿——8/29 深夜的"数据漂移"实为 pred 双表内容对调，已修复）
 
 ## 当前状态（2026-08-30 凌晨更新）
 
+- **P50 线 25–48h 缝纫已上线（feat-026，verify 52/52）**：契约视界外小时不再回退相似日
+  基线，逐小时缝入展示轨「当时生效」的次日日前预测（`store.predSewAt`，静态线同款铺法）
+  ——P50 线全程真模型值，重演视图右半段从"基线 vs 模型"变"双模型对照"。h1–24 审计路径
+  逐字节不动（基线 3.39/88.8/54.2 逐位还原）；CAL 标定用无缝纫形态（SEW 开关，防 ±2h
+  池化渗染——两轮 verify 抓回归详见 progress 2026-08-30 II）。口径/图例已注明
+  「0–24h 模型 / 25–48h 逐日拼接」。逐点胜率背景：公平段持续学习 53~63% 小时更近、
+  平均低 0.2~0.3pp（探针 /tmp 脚本已废弃，可按 progress 记录复写）。
 - **🔴 pred 双表内容对调·前端换读修复（2026-08-30 凌晨，verify 51/51）**：生产库
   `pred_dynamic`/`pred_static` 两表内容 8/29 晚被管线交叉写入（dyn 表实为初始静态批回测、
   static 表实为持续学习回放；证据链 5 路见 progress.md 2026-08-30 条）。用户裁决：
@@ -107,8 +114,10 @@
 
 ## 指针
 
-- 特性状态：`feature_list.json`（feat-014~024 全 done；023 = ChatBI；024 = 聊天新建会话）
-- 会话日志：`progress.md`；验证：`web/scripts/verify.mjs`（51 项）；
-  截图：`.shots/web_v10_chatbi_*`、`.shots/web_v11_trackswap_fix_live.png`（双表对调修复后 live 态）
+- 特性状态：`feature_list.json`（feat-014~026 全 done；023 = ChatBI；024 = 聊天新建会话；
+  026 = P50 线 25–48h 缝纫）
+- 会话日志：`progress.md`；验证：`web/scripts/verify.mjs`（52 项）；
+  截图：`.shots/web_v10_chatbi_*`、`.shots/web_v11_trackswap_fix_live.png`（双表对调修复后 live 态）、
+  `.shots/web_v12_p50_sewn_replay.png`（feat-026 缝纫后重演态）
 - ChatBI 设计/计划：`docs/superpowers/specs/2026-08-29-chatbi-design.md`、`docs/superpowers/plans/2026-08-29-chatbi.md`
 - QwenPaw 配置材料：`qwenpaw/`（README + skills/zhulong_analysis）

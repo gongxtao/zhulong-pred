@@ -100,7 +100,22 @@ export function dbgHook() { /* window.ZL_DATA 断言钩子（懒加载形态） 
     daily: { AEP: store.daily.get('AEP')?.length || 0, DAYTON: store.daily.get('DAYTON')?.length || 0, DOM: store.daily.get('DOM')?.length || 0 },
     anchors: { tMin: T_MIN, tMax: T_MAX, nowDefault: NOW_DEFAULT },
     model: store.model,
+    predSew: predSewAt, /* feat-026 断言钩子：展示轨缝纫查询 */
   };
+}
+/* feat-026 展示轨缝纫查询：某小时的「当时生效」日前预测（覆盖它的最近展示轨起点，mh∈[1,24]）——
+   P50 线契约视界外（>24h）小时与静态对照线（feat-022）同款铺法；无覆盖起点返回 null */
+export function predSewAt(zone: Zone, ts: number): number | null {
+  const pm = store.pred.get(zone);
+  if (!pm || !pm.size) return null;
+  const O = store.predOrigins.get(zone) || [];
+  let lo = 0, hi = O.length - 1, best = -1;
+  while (lo <= hi) { const m = (lo + hi) >> 1; if (O[m] < ts) { best = m; lo = m + 1 } else hi = m - 1 }
+  if (best < 0) return null;
+  const mh = Math.round((ts - O[best]) / HOUR);
+  if (mh < 1 || mh > 24) return null;
+  const v = pm.get(O[best])?.[mh - 1];
+  return v != null && v > 0 ? v : null;
 }
 
 /* 查表（store 为唯一后端；live/snapshot 缺数据=NaN——禁止仿真填充，防假数据；sim 模式走公式） */

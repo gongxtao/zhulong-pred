@@ -5,7 +5,7 @@
    评估：backtest(28起点×24h，审计=模型契约视界) + buildPers(24h) + replayBT(24h)
    ===================================================================== */
 import { H_FC, type Zone } from './const';
-import { candsFor, D1, dayMean, loadAt, store, state } from './store';
+import { candsFor, D1, dayMean, loadAt, predSewAt, store, state } from './store';
 import { dayTs, HOUR, locDay, LOC, quantile } from './util';
 
 export interface ForecastPt { ts: number; p50: number; p10: number; p90: number; p25: number; p75: number }
@@ -16,8 +16,12 @@ export const FC_CACHE = new Map<string, ForecastPt[]>();
 /* 残差标定表：CAL[zone] = 逐 horizon（1..48h）的残差分位（相对误差，±2h 池化平滑） */
 export const CAL: Partial<Record<Zone, { z50: number; z90: number }[]>> = {};
 
+/* feat-026：缝纫开关——CAL 标定（buildCal）用无缝纫形态，保证分位带沿用原基线残差标定
+   （偏保守）且与已录基线逐位一致；缓存键带缝纫态防两种形态互撞 */
+let SEW = true;
+
 export function forecastAt(zone: Zone, originTs: number): ForecastPt[] {
-  const key = zone + '@' + originTs;
+  const key = zone + '@' + originTs + (SEW ? '' : '|nosew');
   if (FC_CACHE.has(key)) return FC_CACHE.get(key)!;
   const d0 = locDay(originTs);
   const out: ForecastPt[] = [];
@@ -47,6 +51,7 @@ export function forecastAt(zone: Zone, originTs: number): ForecastPt[] {
      生产模型 p50 + 真残差分位带；超出模型 24h 视界的部分回退相似日基线（口径注明）。
      审计卡回测因此审计的正是页面展示的预测路径。 */
   {
+    const inj = new Array<boolean>(H_FC).fill(false);
     const O = store.predOrigins.get(zone);
     if (O && O.length) {
       let lo = 0, hi = O.length - 1, best = -1;
@@ -60,12 +65,22 @@ export function forecastAt(zone: Zone, originTs: number): ForecastPt[] {
           if (mh < 1 || mh > 24) continue;
           const p = out[h - 1], mp = row && row[mh - 1];
           if (mp != null && mp > 0) {
-            p.p50 = mp;
+            p.p50 = mp; inj[h - 1] = true;
             const c = cal[mh - 1];
             p.p10 = mp * (1 - c.z90); p.p90 = mp * (1 + c.z90); p.p25 = mp * (1 - c.z50); p.p75 = mp * (1 + c.z50);
           }
         }
       }
+    }
+    /* feat-026 缝纫：契约视界外（h>24）的小时逐小时缝入展示轨「当时生效」的日前预测——
+       次日起点的持续学习值已入库，与静态对照线（feat-022）同款铺法。
+       ⚠️ 只缝 h>24：审计口径（28 起点 × 24h）的 h1–24 路径必须保持原样——dayTs 锚 05:00Z 与
+       pred 日起点 03:00/04:00Z 错位 1–2h，h23–24 的基线回退是既有行为，已录基线（3.39 等）含它；
+       无覆盖起点的小时保留相似日基线（线保持连续）；分位带维持原标定（基线残差，偏保守） */
+    for (let h = 25; h <= H_FC; h++) {
+      if (!SEW || inj[h - 1]) continue;
+      const p = out[h - 1], v = predSewAt(zone, p.ts);
+      if (v != null) p.p50 = v;
     }
   }
   FC_CACHE.set(key, out);
@@ -93,14 +108,17 @@ export function staticLineAt(zone: Zone, originTs: number): [number, number][] {
 /* 残差标定：最近 14 个起点的裸预测残差 → 逐 horizon 经验分位（±2h 邻域池化） */
 export function buildCal(zone: Zone) {
   const per = Array.from({ length: H_FC }, () => [] as number[]);
-  for (let i = 1; i <= 14; i++) {
-    const origin = dayTs(D1 - 6 - i);
-    const fc = forecastAt(zone, origin); // CAL 未填 → 走相似日裸分位
-    for (let h = 1; h <= H_FC; h++) {
-      const p = fc[h - 1], a = loadAt(zone, p.ts);
-      per[h - 1].push((p.p50 - a) / a);
+  SEW = false; /* feat-026：标定残差取无缝纫形态（h25–48=基线），分位带沿用原口径，防池化渗染 */
+  try {
+    for (let i = 1; i <= 14; i++) {
+      const origin = dayTs(D1 - 6 - i);
+      const fc = forecastAt(zone, origin); // CAL 未填 → 走相似日裸分位
+      for (let h = 1; h <= H_FC; h++) {
+        const p = fc[h - 1], a = loadAt(zone, p.ts);
+        per[h - 1].push((p.p50 - a) / a);
+      }
     }
-  }
+  } finally { SEW = true; }
   CAL[zone] = per.map((_, i) => {
     const pool: number[] = [];
     for (let j = Math.max(0, i - 2); j <= Math.min(H_FC - 1, i + 2); j++) pool.push(...per[j]);

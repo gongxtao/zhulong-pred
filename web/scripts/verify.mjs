@@ -263,6 +263,24 @@ try {
      diffPts>0 = 静态对照线与学习线分叉，持续学习效果肉眼可见 */
   check('纪元门放开：2016-06 重演窗 dyn 轨入店', duotrack.dyn > 0, `predDyn.AEP=${duotrack.dyn}`);
   check('持续学习分叉：静态线偏离学习线', duotrack.stPts >= 40 && duotrack.diffPts > 0, JSON.stringify(duotrack));
+  /* feat-026：P50 线 25–48h 段缝纫——契约视界外小时逐小时取展示轨「当时生效」日前预测（次日起点），
+     不再回退相似日基线；与 ZL_DATA.predSew 逐点对账（修复前该段=相似日基线，此断言必红） */
+  const sewn = await page.evaluate(() => {
+    const opt = window.__zlCharts.mainC.getOption();
+    const p50 = opt.series.find(s => s.name === '持续学习 P50');
+    if (!p50 || !p50.data.length) return { match: -1, total: -1 };
+    const t0 = p50.data[0][0];
+    let match = 0, total = 0;
+    for (const [ts, v] of p50.data) {
+      if (ts <= t0 + 24 * 3600e3) continue; /* 只验 25–48h 段 */
+      const sv = window.ZL_DATA.predSew('AEP', ts);
+      if (sv == null) continue;
+      total++;
+      if (Math.abs(v - sv) <= 0.11) match++;
+    }
+    return { match, total };
+  });
+  check('P50 缝纫：25–48h 段逐点=持续学习真值', sewn.total >= 15 && sewn.match === sewn.total, JSON.stringify(sewn));
   /* feat-022：整点对齐 + 重演视图 tooltip 必须有数据行（此前小数时戳致只剩时间头） */
   const dbox = await page.locator('#mainChart').boundingBox();
   await page.mouse.move(dbox.x + dbox.width * 0.6, dbox.y + dbox.height * 0.5);
