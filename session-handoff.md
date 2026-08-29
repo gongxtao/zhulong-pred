@@ -27,7 +27,7 @@
   **数据侧冻结不动，方案3 前端换读为稳定终态**——`web/src/lib/zl/supabase.ts` 头部
   `SRC_STATIC/SRC_DYN` 常量换读两表（分位标定随静态源），下游零改动；§2 基线
   3.39/88.8/54.2 无需重录即回绿。🔴 若管线将来把两表归位：恢复常量为直读表名+复跑 verify。
-  ChatBI skill 已加「数据现状」节（repo+本地工作区已同步；**云端未同步，见待办**）。
+  ChatBI skill 已加「数据现状」节（repo+本地工作区+云端三处均已同步）。
 - **聊天新建会话已上线（feat-024，专项 E2E 8/8）**：聊天抽屉头部「＋ 新会话」→
   换 session_id（QwenPaw 旧上下文随 id 作废）+ 清空记录 + 系统提示；流式中按钮与发送
   同锁禁用（防旧流污染新会话）。mock SSE 双 gate 确定性 E2E 验证（busy 禁用/重置/二次
@@ -75,8 +75,11 @@
 - **数据链路（data/README.md 权威）**：energy_hourly 模拟实时表（已加速释放至 2018-06-30+）；
   pred_dynamic 回放 15:27 至 2017-01-31、~8 起点/分加速（全程 945 起点）。
 - **部署（并行会话）**：Vercel https://zhulong-seven.vercel.app；GitHub gongxtao/zhulong-pred。
-  本机 \*.vercel.app DNS 污染，演示兜底 = 本地 dev。**git 已 push（8/30 凌晨，用户裁决）：gongxtao=c5d9fd5、
-  main=e43d5cb（merge 含修复）**——git 自动部署随 push 触发，Ready 与否换网络后核。
+  本机 \*.vercel.app DNS 污染，演示兜底 = 本地 dev。**git 已 push（8/30 凌晨）：gongxtao=main=e77964e
+  （feat-026 P50 缝纫）——生产+preview 双部署 API 实证 READY**（e77964e production r4xxzalkj + preview
+  jnd8ofjb9）。🔑 **部署状态查询不再需要热点**：api.vercel.com 不在阻断名单，凭据在
+  `~/Library/Application Support/com.vercel.cli/auth.json` 的 token（curl Bearer
+  /v6/deployments?projectId=prj_SzlQ7YM8z0tpTT4dLsYn5edbPRPo&teamId=team_IoJooUi9f0zRIyOl3FsE2KMG）。
 - 路演故事线：「负荷档案 14 年 → 2016 预测纪元（静态模型）→ 持续学习模型逐日推送（pred_dynamic），
   页面 SWR 实时吸收——拖胶片看双线分叉收窄；WAPE 4.39→4.23%（2016-02 实测，AEP -7.7%）」。
 
@@ -85,9 +88,9 @@
 - **✅ 已结案：8/29 深夜「在线基线数据漂移」（8/30 凌晨）**：真因 = pred 双表内容对调
   （见「当前状态」首条），非漂移非回归；17:10 基线 3.39/88.8/54.2 本身没变。前端换读后
   verify §2 无需重录即回绿（51/51）。原 (a)(b) 回绿路线作废。
-- **🔴 云端 QwenPaw SKILL.md 未同步（路演前必办）**：43.166.132.250 SSH 不通，需用户把
-  repo 版 `qwenpaw/skills/zhulong_analysis/SKILL.md`（已加「数据现状·两表内容对调」节）
-  传到云上 agent 工作区——否则聊天答案的表名口径与页面相反。
+- ✅ **云端 QwenPaw SKILL.md 已同步（用户 8/30 凌晨完成）**：repo 版（含「数据现状·两表
+  内容对调」节）已传云上工作区——聊天口径与页面一致。路演前用 chip「双轨对比」抽验一句
+  （答案应为持续学习 ≈2.75 / 静态 ≈3.00）。
 - **快照重建暂缓**：`scripts/build-snapshot.mjs` 仍直读 pred_static——两表归位前重建快照
   会把持续学习内容嵌成静态轨（离线兜底语义错）。归位后再重建，或在脚本里同款换读。
 - 🔴 **若管线将来把两表归位**：`web/src/lib/zl/supabase.ts` 头部恢复 `SRC_STATIC/SRC_DYN`
