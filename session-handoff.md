@@ -24,7 +24,10 @@
     云端已验证：版本探针 200、数据问答对账逐位一致（2.94/3.23，720 行）、web E2E 38s 流式。
     ⚠️ **云端未开认证（公网裸奔）**——上 Vercel 线上前必须：QwenPaw 开 `QWENPAW_AUTH_ENABLED`
     + 注册拿 token + web env 配 `QWENPAW_TOKEN`（顺序见 qwenpaw/README 安全红线）。
-    Vercel 线上目前未配 env=聊天降级态；要开线上聊天在 Vercel 配 URL/AGENT_ID(/TOKEN) 即可。
+    **线上聊天已开启（2026-08-29 晚）**：Vercel Production 已加 `QWENPAW_URL`/`QWENPAW_AGENT_ID`
+    并重新部署（Ready，zhulong-achg63ofj）。⚠️ 本机网络对 \*.vercel.app 是 IP 级阻断（DoH/强解均 000），
+    线上链路最终验证需换网络（手机热点/评委网络）——已验证的等价链路段：部署 Ready+env 在列+
+    云端 QwenPaw 公网可达+dev 同代码对云 200 流式。push 仍未做（CLI 直部不含 git 历史）。
     助手品牌=「烛龙助手」，UI/回答不出现 QwenPaw 字样（SOUL 自称+中文表达纪律）。
   - QwenPaw 配置 = 工作区文件模型（非 system prompt）：`~/.qwenpaw/workspaces/zhulong/`
     下 `skills/zhulong_analysis/SKILL.md`（分析手册，仓库 qwenpaw/ 同步）+ SOUL.md 末尾
