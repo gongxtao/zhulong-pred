@@ -52,10 +52,8 @@
   任何"稳定即读"窗口都会锁死 static 旧值）。
 
 - **三线对比 + 预测纪元分割已上线（feat-016~020，verify 41/41）**：
-  - 主图三线 = 实际负荷 + 预测双线（**8/29 深夜 feat-025 用户裁决名字互换**：橙虚线=展示轨
-    fc P50 数据，现名「静态预测」线尾「静态」；灰细虚线=predStatic 数据，现名「持续学习 P50」
-    线尾「P50」；tooltip 两行/图例表两行同步对调，线色/数据/层级不动）；线尾标签
-    labelLayout 入图（右缘裁剪曾吞掉二者）；昨日同时刻线已删（审计卡持久性数字保留）
+  - 主图三线 = 实际负荷 + 持续学习 P50（展示轨 dyn 优先/static 填充）+ 静态预测灰虚线；线尾标签
+    「静态/P50」labelLayout 入图（右缘裁剪曾吞掉二者）；昨日同时刻线已删（审计卡持久性数字保留）
   - **PRED_EPOCH=2016-01-01 04:00**：胶片画「▎预测纪元 2016」分割虚线；纪元前=档案模式
     （预测层全隐、四格降档案语义、重演横幅改文案、杀手锏话术改标「相似日基线——2016 起接入持续学习的论据」）
   - 纪元门放开：2016 全年重演窗实时拉双轨真预测（06/15 视窗分叉 1-2k MW 实测可见）
@@ -89,7 +87,7 @@
 
 ## 指针
 
-- 特性状态：`feature_list.json`（feat-014~025 全 done；023 = ChatBI；024 = 聊天新建会话；025 = 主图双线名字互换）
+- 特性状态：`feature_list.json`（feat-014~024 全 done；023 = ChatBI；024 = 聊天新建会话）
 - 会话日志：`progress.md`；验证：`web/scripts/verify.mjs`（51 项）；截图：`.shots/web_v10_chatbi_*`
 - ChatBI 设计/计划：`docs/superpowers/specs/2026-08-29-chatbi-design.md`、`docs/superpowers/plans/2026-08-29-chatbi.md`
 - QwenPaw 配置材料：`qwenpaw/`（README + skills/zhulong_analysis）

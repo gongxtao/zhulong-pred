@@ -108,10 +108,10 @@ function renderMain() {
     { name: '实际·后续', type: 'line', data: god, showSymbol: false, z: 3,
       lineStyle: { color: C.actual, type: 'dotted', width: 1.7, opacity: .7 }, itemStyle: { color: C.actual },
       endLabel: { show: god.length > 0, formatter: '真实', color: C.ink3, fontSize: 10, distance: 4 } },
-    ...(preEpoch ? [] : [{ name: '持续学习 P50', type: 'line', data: stat, showSymbol: false, z: 4, silent: true,
+    ...(preEpoch ? [] : [{ name: '静态预测', type: 'line', data: stat, showSymbol: false, z: 4, silent: true,
       lineStyle: { color: C.yday, width: 1.7, type: 'dashed', opacity: .95 }, itemStyle: { color: C.yday },
-      endLabel: { show: stat.length > 0, formatter: 'P50', color: C.yday, fontSize: 10, fontWeight: 600, distance: 4 },
-      /* 线尾标签左下入图（右缘裁剪修复）+ 与静态线错位（重合段两线同值，标签须避让不叠字） */
+      endLabel: { show: stat.length > 0, formatter: '静态', color: C.yday, fontSize: 10, fontWeight: 600, distance: 4 },
+      /* 线尾标签左下入图（右缘裁剪修复）+ 与学习线错位（重合段两线同值，标签须避让不叠字） */
       labelLayout: stat.length ? { dx: -16, dy: 14 } : undefined,
       tooltip: { show: false } }]),
     { name: '实际负荷', type: 'line', data: hist, showSymbol: false, z: 6,
@@ -130,10 +130,10 @@ function renderMain() {
           { coord: [hist[hist.length - 1][0], hist[hist.length - 1][1]], symbolSize: 15,
             itemStyle: { color: 'transparent', borderColor: C.actual, borderWidth: 1.5, opacity: .55 } }] },
     },
-    ...(preEpoch ? [] : [{ name: '静态预测', type: 'line', data: fc.map(p => [p.ts, p.p50]), showSymbol: false, z: 5,
+    ...(preEpoch ? [] : [{ name: '持续学习 P50', type: 'line', data: fc.map(p => [p.ts, p.p50]), showSymbol: false, z: 5,
       lineStyle: { color: C.fc, width: 1.8, type: 'dashed' }, itemStyle: { color: C.fc }, emphasis: { focus: 'series' },
-      endLabel: { show: true, formatter: '静态', color: C.fcHi, fontSize: 10, fontWeight: 600, distance: 4 },
-      labelLayout: { dx: -14, dy: -10 }, /* 线尾标签移入图内（右缘裁剪修复，与「P50」上下错开 */
+      endLabel: { show: true, formatter: 'P50', color: C.fcHi, fontSize: 10, fontWeight: 600, distance: 4 },
+      labelLayout: { dx: -14, dy: -10 }, /* 线尾标签移入图内（右缘裁剪修复，与「静态」上下错开 */
       markLine: { symbol: 'none', silent: true,
         lineStyle: { color: C.fcHi, width: 1, type: 'dashed', opacity: .7 },
         /* 文字标注移至 title 组件（图右上固定，永不裁切）；此线仅指示峰时刻 */
@@ -166,12 +166,12 @@ function renderMain() {
         if (g) h += `<div><span style="color:${C.actual};opacity:.7">○</span> 真实后续　<b style="font-family:JetBrains Mono">${fmt(g[1])}</b> MW</div>`;
         const p = fc.find(q => q.ts === ts);
         if (p) {
-          h += `<div><span style="color:${C.fcHi}">▤</span> 静态预测　<b style="font-family:JetBrains Mono">${fmt(p.p50)}</b> MW</div>`;
+          h += `<div><span style="color:${C.fcHi}">▤</span> P50　<b style="font-family:JetBrains Mono">${fmt(p.p50)}</b> MW</div>`;
           h += `<div style="color:${C.ink2};font-size:11px">P10–P90　${fmt(p.p10)} – ${fmt(p.p90)}</div>`;
           h += `<div style="color:${C.ink2};font-size:11px">P25–P75　${fmt(p.p25)} – ${fmt(p.p75)}</div>`;
         }
-        const s = stat.find(q => q[0] === ts); /* 持续学习对照值（feat-021：悬停须可见，含重合段） */
-        if (s) h += `<div><span style="color:${C.yday}">▤</span> 持续学习 P50　<b style="font-family:JetBrains Mono">${fmt(s[1])}</b> MW</div>`;
+        const s = stat.find(q => q[0] === ts); /* 静态预测对照值（feat-021：悬停须可见，含与学习线重合段） */
+        if (s) h += `<div><span style="color:${C.yday}">▤</span> 静态预测　<b style="font-family:JetBrains Mono">${fmt(s[1])}</b> MW</div>`;
         const t = temps.find(q => q[0] === ts);
         if (t) h += `<div style="color:${C.ink3};font-size:11px">气温　${t[1].toFixed(1)} °C</div>`;
         return h;
@@ -659,8 +659,8 @@ function renderLegendTable() {
   $('legendTable').innerHTML = [
     ['<span class="sw"></span>', '实际负荷', '截至 NOW'],
     ['<span class="sw band"></span>', 'P10–P90 区间', '90% 可能落入'],
-    ['<span class="sw dash"></span>', '静态预测', '初始模型对照；与学习线重合处=持续学习尚未覆盖该段'],
-    ['<span class="sw thin"></span>', '持续学习 P50', '中位路径 · 学习模型'],
+    ['<span class="sw dash"></span>', '持续学习 P50', '中位路径 · 学习模型'],
+    ['<span class="sw thin"></span>', '静态预测', '初始模型对照；与学习线重合处=持续学习尚未覆盖该段'],
     ['<span class="sw dot"></span>', '实际 · 后续', '上帝视角'],
   ].map(([sw, nm, d]) => `<span class="lg" title="${nm} · ${d}">${sw}<span>${nm}</span></span>`).join('');
 }

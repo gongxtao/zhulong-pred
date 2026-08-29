@@ -218,16 +218,6 @@
       ],
       "status": "done",
       "evidence": "mock SSE 确定性 E2E（page.route 拦 /api/chat，双 gate）8 项全绿：流式中 chatNew 禁用 ✓、完成后点击清空(.chat-msg=0)+.chat-sys 提示 ✓、焦点回输入框 ✓、新会话二次发送正常且收到独立回答 ✓；verify 增「ChatBI：新会话按钮清空记录并提示」断言（流式中=禁用分支/已结束=重置分支）——因 §2 在线基线数据漂移（见 progress 8/29 深夜条）套件在断言前中断，本特性以专项 E2E 为验证依据"
-    },
-    {
-      "id": "feat-025",
-      "name": "主图双线图例名字互换（用户裁决）",
-      "description": "时空推演主图：橙色虚线（展示轨 fc P50 数据/样式不变）改名「静态预测」线尾标「静态」；灰细虚线（predStatic 数据不变）改名「持续学习 P50」线尾标「P50」；tooltip 两行、图例表两行（名字+说明随名字走）同步对调——线的颜色/数据/宽度/层级全不动",
-      "dependencies": [
-        "feat-017"
-      ],
-      "status": "done",
-      "evidence": "浏览器实测：series 持续学习 P50={#5A6C8C,1.7px,stat 48点}、静态预测={#D97706,1.8px,fc 48点}；endLabel 映射 持续学习 P50→P50 / 静态预测→静态；图例表 3/4 行=静态预测、持续学习 P50；悬停 tooltip '▤ 静态预测 …MW'（橙轨值）+ '▤ 持续学习 P50 …MW'（静态轨值）；tsc 0 错；截图 .shots/web_v12_legendswap_dark.png"
     }
   ]
 }
