@@ -17,6 +17,17 @@ export const SB = {
   KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
 };
 export const SB_CONFIGURED = !!(SB.URL && SB.KEY);
+/* ⚠️ 2026-08-30 表内容对调·临时换读（用户裁决：数据侧冻结不动，前端换读为稳定终态）
+   生产库 pred_dynamic / pred_static 两表内容于 8/29 晚被管线交叉写入：
+   pred_dynamic 表实为「初始静态模型批回测」（68,040 行=945 起点×72 整，与 8/28 快照逐值一致），
+   pred_static 表实为「持续学习回放」（68,043 行/946 起点，形状=8/29 17:10 时 dyn 表）。
+   证据链见 progress.md 2026-08-30「pred 双表内容对调根因」条。
+   前端在此换读恢复语义：「静态源」读 pred_dynamic 表、「持续学习源」读 pred_static 表；
+   分位标定随静态源（同换前口径：初始静态模型残差）。
+   🔴 管线若将来把两表归位：恢复下方常量为表名直读（SRC_STATIC='pred_static' /
+   SRC_DYN='pred_dynamic'）并复跑 web/scripts/verify.mjs。 */
+const SRC_STATIC = 'pred_dynamic';
+const SRC_DYN = 'pred_static';
 export let LD_ABORT = false;
 export function ldAbort() { LD_ABORT = true; }
 export function ldReset() { LD_ABORT = false; }
@@ -160,11 +171,12 @@ export async function bootLayer1(preserveView = false) {
   const lo = D1 - 119;
   await Promise.all(ZONE_KEYS.map(z => fetchHoursRange(z, lo, D1 + 1, prog('h' + z))));
   ldSet(.99, '模型回测与元数据…');
-  /* 3) 近 70 天 pred_static（模型注入 + 近期残差分位）＋ 同窗 pred_dynamic（运营推送值，失败/空静默回退 static） */
+  /* 3) 近 70 天静态源（模型注入 + 近期残差分位）＋ 同窗持续学习源（运营推送值，失败/空静默回退 static）。
+     表名经 SRC_STATIC/SRC_DYN 换读（见文件头注释：库内两表内容对调） */
   const predWin = { order: 'zone.asc,forecast_origin_utc.asc', select: PRED_COLS, forecast_origin_utc: `gte.${new Date(dayTs(D1 - 70)).toISOString()}` };
   const [psRows, pdRows] = await Promise.all([
-    sbPage<PredRow>('pred_static', predWin, prog('ps')),
-    sbPage<PredRow>('pred_dynamic', predWin).catch(() => [] as PredRow[]),
+    sbPage<PredRow>(SRC_STATIC, predWin, prog('ps')),
+    sbPage<PredRow>(SRC_DYN, predWin).catch(() => [] as PredRow[]),
   ]);
   ingestPred(psRows, 'static'); calFrom(psRows); /* 分位标定保持 static-only（dynamic 真值滞后且混模型污染残差带） */
   ingestPred(pdRows, 'dyn'); /* 展示轨 dyn 优先、static 填充（持续学习模型） */
@@ -218,8 +230,8 @@ export function ensureWindow(zone: Zone, originTs: number): Promise<void> {
         sbToast(true, `查询生产库 · 模型在 ${fmtMD(originTs)} 起点的日前预测`);
         const params = { zone: `eq.${zone}`, and, order: 'forecast_origin_utc.asc', select: PRED_COLS };
         const [sta, dyn] = await Promise.all([
-          sbPage<PredRow>('pred_static', params),
-          sbPage<PredRow>('pred_dynamic', params).catch(() => [] as PredRow[]), /* 运营表失败/空不阻塞校准 */
+          sbPage<PredRow>(SRC_STATIC, params),
+          sbPage<PredRow>(SRC_DYN, params).catch(() => [] as PredRow[]), /* 运营表失败/空不阻塞校准 */
         ]);
         ingestPred(sta, 'static'); ingestPred(dyn, 'dyn'); /* 双轨各自保留；展示轨 dyn 优先 */
         sbToast(false);
