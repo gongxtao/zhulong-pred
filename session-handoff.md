@@ -19,8 +19,9 @@
   - 链路：`/api/chat`（web/src/app/api/chat/route.ts，SSE 透传+限流 20/分+500 字上限）
     → QwenPaw `:8088` Agent `zhulong` → Python 查 Supabase(anon 只读) 算指标再答
   - **env 三条（不进仓库）**：`QWENPAW_URL` / `QWENPAW_AGENT_ID` / `QWENPAW_TOKEN`。
-    **dev server 必须带 env 重启才有聊天**：`QWENPAW_URL=http://localhost:8088 QWENPAW_AGENT_ID=zhulong npm run dev`；
-    未配时聊天优雅降级（提示未连接，主页面不受影响）。Vercel 线上默认未配=降级态。
+    **已固化进 `web/.env.local`（gitignored）——`npm run dev` 直接自带烛龙助手，无需手动带 env**；
+    删掉该段则回降级态（提示未连接，主页面不受影响）。Vercel 线上默认未配=降级态。
+    助手品牌=「烛龙助手」，UI/回答不出现 QwenPaw 字样（SOUL 自称+中文表达纪律）。
   - QwenPaw 配置 = 工作区文件模型（非 system prompt）：`~/.qwenpaw/workspaces/zhulong/`
     下 `skills/zhulong_analysis/SKILL.md`（分析手册，仓库 qwenpaw/ 同步）+ SOUL.md 末尾
     「烛龙数据纪律」锚点 + skill.json 注册。备份后缀 `.bak-174929`。

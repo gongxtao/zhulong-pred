@@ -194,7 +194,7 @@ export default function Home() {
           <button data-q="分析 pred_dynamic 表 AEP 区：按 forecast_origin_utc 起点日聚合当日 MAPE，列出最差的 5 天（日期+MAPE），并指出各自误差集中在哪个时距段">哪些天预测得最差？</button>
         </div>
         <div className="chat-input">
-          <textarea id="chatInput" rows={2} maxLength={500} placeholder="问 pred_dynamic 的任何问题…（Enter 发送 · Shift+Enter 换行）" autoComplete="off"></textarea>
+          <textarea id="chatInput" rows={2} maxLength={500} placeholder="用中文问任何问题：持续学习效果、双轨对比、某天的预测…" autoComplete="off"></textarea>
           <button id="chatSend" title="发送" aria-label="发送">
             <svg viewBox="0 0 16 16"><path d="M2 8.2 L14 2.4 L9.4 14 L7.4 9.4 Z M7.4 9.4 L14 2.4" /></svg>
           </button>

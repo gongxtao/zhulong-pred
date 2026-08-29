@@ -337,7 +337,8 @@ try {
     document.getElementById('chatSend').click();
     await new Promise(r => setTimeout(r, 1500));
     out.afterSend = document.querySelectorAll('#chatLog .chat-msg').length >= 2
-      && document.getElementById('chatLog').textContent.includes('未连接');
+      && (document.getElementById('chatLog').textContent.includes('未连接')
+        || !!document.querySelector('#chatLog .chat-typing')); /* 无 env=降级气泡；.env.local 已固化 QWENPAW_*（聊天默认开）=思考态/流式 */
     document.getElementById("chatClose").click();
     await new Promise(r => setTimeout(r, 100));
     out.closed = !document.getElementById('chatLayer').classList.contains('on');
@@ -348,9 +349,9 @@ try {
   check('ChatBI：弹层可开', chat7.open === true);
   check('ChatBI：预设 chips 5 个', chat7.chips === 5, String(chat7.chips));
   check('ChatBI：与口径弹层互斥', chat7.mutex === true);
-  check('ChatBI：发送→降级气泡（未连接）', chat7.afterSend === true);
+  check('ChatBI：发送→响应（流式回复或降级）', chat7.afterSend === true);
   check('ChatBI：关闭按钮生效', chat7.closed === true);
-  check('ChatBI：/api/chat 无 env 返回 503', chat7.route === 503, String(chat7.route));
+  check('ChatBI：/api/chat 契约（无 env 503 / 已配置 200）', chat7.route === 503 || chat7.route === 200, String(chat7.route));
 
   const failed = results.filter(r => !r.ok);
   console.log(`\n==== ${results.length - failed.length}/${results.length} 通过 ====`);
