@@ -676,7 +676,8 @@ async function setZone(z: Zone) {
   renderAll(); dbgHook();
 }
 async function setOrigin(ts: number, mode?: 'live' | 'replay') {
-  state.origin = clamp(ts, T_MIN + 72 * HOUR, T_MAX - 48 * HOUR);
+  state.origin = clamp(Math.floor(ts / HOUR) * HOUR, T_MIN + 72 * HOUR, T_MAX - 48 * HOUR); /* 对齐整点：拖拽松手的小数时戳会打碎 tooltip 轴匹配（feat-022） */
+  ts = state.origin;
   state.mode = mode || (state.origin === NOW_DEFAULT ? 'live' : 'replay');
   const tok = nextToken();
   if (SRC !== 'sim') await ensureWindow(state.zone, state.origin);

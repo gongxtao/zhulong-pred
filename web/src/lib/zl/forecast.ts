@@ -71,21 +71,22 @@ export function forecastAt(zone: Zone, originTs: number): ForecastPt[] {
   FC_CACHE.set(key, out);
   return out;
 }
-/* 静态对照线：与 forecastAt 同起点选择逻辑，但从 predStatic 原始轨取值；
-   只画静态模型实际覆盖的 0–24h 段（无相似日延伸——对照线不造数） */
+/* 静态对照线（feat-022 缝纫式）：对预测窗每小时，取「当时生效」的日前预测（最近一个覆盖该小时的
+   静态起点）——日起点×h1-24 无缝平铺，故每小时都有归属；无静态起点的段留空（对照线不造数） */
 export function staticLineAt(zone: Zone, originTs: number): [number, number][] {
   const pm = store.predStatic.get(zone);
   if (!pm || !pm.size) return [];
   const O = [...pm.keys()].sort((a, b) => a - b);
-  let lo = 0, hi = O.length - 1, best = -1;
-  while (lo <= hi) { const m = (lo + hi) >> 1; if (O[m] <= originTs) { best = m; lo = m + 1 } else hi = m - 1 }
-  if (best < 0 || originTs - O[best] >= 24 * HOUR) return [];
-  const off = Math.round((originTs - O[best]) / HOUR);
-  const row = pm.get(O[best])!;
   const out: [number, number][] = [];
   for (let h = 1; h <= H_FC; h++) {
-    const mh = off + h; if (mh < 1 || mh > 24) continue;
-    const v = row[mh - 1]; if (v != null && v > 0) out.push([originTs + h * HOUR, v]);
+    const ts = originTs + h * HOUR;
+    let lo = 0, hi = O.length - 1, best = -1;
+    while (lo <= hi) { const m = (lo + hi) >> 1; if (O[m] < ts) { best = m; lo = m + 1 } else hi = m - 1 }
+    if (best < 0) continue;
+    const mh = Math.round((ts - O[best]) / HOUR);
+    if (mh < 1 || mh > 24) continue;
+    const v = pm.get(O[best])?.[mh - 1];
+    if (v != null && v > 0) out.push([ts, v]);
   }
   return out;
 }

@@ -260,7 +260,16 @@ try {
   /* dyn>0 即门已放开铁证：快照不含 dyn 轨，2016-06（原纪元 2016-12 之前）的 dyn 数据只能来自实时查询；
      diffPts>0 = 静态对照线与学习线分叉，持续学习效果肉眼可见 */
   check('纪元门放开：2016-06 重演窗 dyn 轨入店', duotrack.dyn > 0, `predDyn.AEP=${duotrack.dyn}`);
-  check('持续学习分叉：静态线偏离学习线', duotrack.stPts > 0 && duotrack.diffPts > 0, JSON.stringify(duotrack));
+  check('持续学习分叉：静态线偏离学习线', duotrack.stPts >= 40 && duotrack.diffPts > 0, JSON.stringify(duotrack));
+  /* feat-022：整点对齐 + 重演视图 tooltip 必须有数据行（此前小数时戳致只剩时间头） */
+  const dbox = await page.locator('#mainChart').boundingBox();
+  await page.mouse.move(dbox.x + dbox.width * 0.6, dbox.y + dbox.height * 0.5);
+  await sleep(700);
+  const replayTip = await page.evaluate(() => ({
+    originMin: document.getElementById('originDate').textContent.slice(11, 16),
+    tip: ([...document.querySelectorAll('#mainChart div')].map(e => e.textContent).find(t => t && (t.includes('MW') || t.includes('°C'))) || '').replace(/\s+/g, ' ').slice(0, 90),
+  }));
+  check('重演视图 tooltip 有数据行（整点对齐修复）', replayTip.tip.includes('MW') || replayTip.tip.includes('°C'), replayTip.tip || '(无)');
   await page.evaluate(() => document.getElementById('bnBackLive').click());
   await sleep(600);
 

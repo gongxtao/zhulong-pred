@@ -340,3 +340,12 @@ boot 窗 dyn>0 → NOW 锚点两线开始分叉、首屏 MAPE/cov 基线将变�
 学习线=pred_dynamic.predicted_load_mw 且 dyn 缺时回填 static.predicted（NOW 重合即回填语义，非接线错）；
 actual≠predicted 是预测误差，画在实线上）；②胶片纪元标记增强：1.5px 实线+加粗标签「预测纪元 2016 ▸」
 +bg 描边防混底。verify 42/42（新增悬停断言：tooltip 须含静态预测数值）。
+
+## 2026-08-29 16:45 · feat-022 重演 tooltip 修复 + 静态线缝纫铺满
+
+用户实测两 bug（皆复现确认为真）：①时光机 2016 年初悬停只剩时间——根因：胶片拖拽松手 origin 落在
+10:29:xx.xxx 小数时戳，ECharts 轴指针取整后与数据点精确相等失败，formatter 四个 find 全 miss
+（NOW 视图正常是因为 NOW_DEFAULT 本就整点）；②静态线 13 点大量缺口。修复：setOrigin 统一 floor 到
+整点；staticLineAt 改缝纫式（每小时取「当时生效」的日前静态预测，日起点×h1-24 无缝平铺故每小时有归属）；
+ensureWindow pred 拉取窗 ±48h（含未来起点，冻结回测表无实时语义冲突）。verify 43/43。
+坑追加：#17 胶片拖拽 x→ts 映射与指针时戳必须整点对齐，否则 tooltip/轴匹配连锁碎裂。

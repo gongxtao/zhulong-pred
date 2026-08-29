@@ -209,12 +209,12 @@ export function ensureWindow(zone: Zone, originTs: number): Promise<void> {
       sbToast(false);
       notifyLiveMerge();
     }
-    if (originTs >= PRED_EPOCH) { /* pred 纪元=PRED_EPOCH 首起点（feat-018 放开原 2016-12 门：2016 全年重演窗也实时拉双轨真预测）；更早无 pred 数据，走相似日 */
+    if (originTs >= PRED_EPOCH) { /* pred 纪元=PRED_EPOCH 首起点（feat-018 放开原 2016-12 门）；±48h 窗含未来起点——静态对照线缝纫式取「当时生效」的日前预测铺满预测区（feat-022） */
       const og = store.predOrigins.get(zone) || [];
-      const has = og.some(o => o > originTs - 48 * HOUR && o <= originTs);
-      const hasLive = hasLivePredIn(zone, originTs - 48 * HOUR, originTs);
+      const has = og.some(o => o > originTs - 48 * HOUR && o <= originTs + 48 * HOUR);
+      const hasLive = hasLivePredIn(zone, originTs - 48 * HOUR, originTs + 48 * HOUR);
       if (!has || !hasLive) {
-        const and = `(forecast_origin_utc.gte.${new Date(originTs - 48 * HOUR).toISOString()},forecast_origin_utc.lte.${new Date(originTs).toISOString()})`;
+        const and = `(forecast_origin_utc.gte.${new Date(originTs - 48 * HOUR).toISOString()},forecast_origin_utc.lte.${new Date(originTs + 48 * HOUR).toISOString()})`;
         sbToast(true, `查询生产库 · 模型在 ${fmtMD(originTs)} 起点的日前预测`);
         const params = { zone: `eq.${zone}`, and, order: 'forecast_origin_utc.asc', select: PRED_COLS };
         const [sta, dyn] = await Promise.all([

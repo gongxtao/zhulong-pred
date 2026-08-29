@@ -151,6 +151,14 @@
       "dependencies": ["feat-020"],
       "status": "done",
       "evidence": "悬停 DOM 实证：tooltip 含「▤ 静态预测 18,213 MW」（与 P50 同值=回填段同源，截图 web_v7_tooltip_static.png）；verify 42/42（第 42 项=悬停断言）；tsc+eslint 零错"
+    },
+    {
+      "id": "feat-022",
+      "name": "重演视图 tooltip 修复（整点对齐）+ 静态对照线缝纫式铺满",
+      "description": "用户实测两 bug：①时光机 2016 年初悬停只剩时间头无数据——根因胶片拖拽 origin 落在小数时戳（如 10:29:xx.xxx），轴指针与数据点精确匹配失败；②静态线大量缺点（最近起点偏移吃掉半窗，24h 外全空）。修复：setOrigin floor 到整点；staticLineAt 改缝纫式（每小时取当时生效的日前静态预测）；ensureWindow pred 拉取窗扩到 org+48h（含未来起点）",
+      "dependencies": ["feat-021"],
+      "status": "done",
+      "evidence": "复现探针：修复前 origin=10:29 小数时戳/tooltip 空/静态 13 点 → 修复后 origin 整点/tooltip 有数据行（实际 17,646 MW）/静态 48 点；verify 43/43（分叉断言升级 stPts≥40，实测 48/47；新增重演 tooltip 数据行断言）；tsc+eslint 零错"
     }
   ]
 }
