@@ -103,6 +103,30 @@
       "dependencies": ["feat-014"],
       "status": "done",
       "evidence": "verify 31/31 全绿；口径两处更新后「杀手锏话术/极涡话术」断言保持；lint+tsc 零错"
+    },
+    {
+      "id": "feat-016",
+      "name": "store 预测双轨化（predStatic/predDyn/展示轨）",
+      "description": "三轨结构：predStatic/predDyn 保留原始模型值（对照线数据源），store.pred 为展示轨（同起点 dyn 优先、static 填充，消费方零改动）。ingestPred 改按轨写入+起点级展示重算（取代 feat-014 的 override 参数）；快照只嵌静态轨且与展示轨隔离副本防串轨。纯结构重构，页面零可见变化",
+      "dependencies": ["feat-014"],
+      "status": "done",
+      "evidence": "verify 31/31 逐位零漂移（MAPE 3.57/cov 85.6/49.0/三区不变——dyn 当日无数据入轨，重构无副作用）；tsc+eslint 零错；dbgHook 新增 predStatic/predDyn 计数供后续断言"
+    },
+    {
+      "id": "feat-017",
+      "name": "主图三线（真实/静态预测/持续学习预测）",
+      "description": "用户裁决：删「昨日同时刻」参照线与图例（审计卡持久性对比数字保留——杀手锏话术载体）；新增「静态预测」灰虚线（store.predStatic）；「预测 P50」更名「持续学习 P50」（展示轨 dyn 优先）；P10-P90 带仍挂主线",
+      "dependencies": ["feat-016"],
+      "status": "in-progress",
+      "evidence": ""
+    },
+    {
+      "id": "feat-018",
+      "name": "纪元门放开 + 双轨分叉断言 + 收口",
+      "description": "ensureWindow 的 pred 查询放开 2016-12-01 纪元限制（2016-01 起重演窗均可拉双轨真预测，此前为相似日基线——行为变化经用户确认）；verify 增断言：2016-02 重演窗两预测线张开（学习效果可见）+NOW 锚点两线重合（兜底生效）；progress/session-handoff 收口",
+      "dependencies": ["feat-017"],
+      "status": "not-started",
+      "evidence": ""
     }
   ]
 }

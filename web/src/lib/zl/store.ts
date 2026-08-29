@@ -26,7 +26,9 @@ export interface ModelMeta {
 export const store = {
   hours: new Map<Zone, Map<number, DayPack>>(),
   daily: new Map<Zone, DailyRow[]>(),
-  pred: new Map<Zone, Map<number, (number | null)[]>>(),
+  pred: new Map<Zone, Map<number, (number | null)[]>>(), /* 展示轨：dyn 优先、static 填充（消费方只读这轨） */
+  predStatic: new Map<Zone, Map<number, (number | null)[]>>(), /* 静态模型原始轨（对照线） */
+  predDyn: new Map<Zone, Map<number, (number | null)[]>>(), /* 持续学习模型原始轨 */
   predOrigins: new Map<Zone, number[]>(),
   cal: {} as Partial<Record<Zone, CalPt[]>>,
   model: null as ModelMeta | null,
@@ -88,10 +90,13 @@ export function applyAnchors(preserveView = false) { /* T_MIN/T_MAX/NOW/D0/D1 �
 export function dbgHook() { /* window.ZL_DATA 断言钩子（懒加载形态） */
   const n = (z: Zone) => store.hours.get(z)?.size || 0;
   const nl = (z: Zone) => liveDays.get(z)?.size || 0;
+  const np = (m: Map<Zone, Map<number, unknown>>, z: Zone) => m.get(z)?.size || 0;
   (window as unknown as Record<string, unknown>).ZL_DATA = {
     src: SRC, live: SRC === 'live',
     hours: { AEP: n('AEP'), DAYTON: n('DAYTON'), DOM: n('DOM') },
     liveHours: { AEP: nl('AEP'), DAYTON: nl('DAYTON'), DOM: nl('DOM') },
+    predStatic: { AEP: np(store.predStatic, 'AEP'), DAYTON: np(store.predStatic, 'DAYTON'), DOM: np(store.predStatic, 'DOM') },
+    predDyn: { AEP: np(store.predDyn, 'AEP'), DAYTON: np(store.predDyn, 'DAYTON'), DOM: np(store.predDyn, 'DOM') },
     daily: { AEP: store.daily.get('AEP')?.length || 0, DAYTON: store.daily.get('DAYTON')?.length || 0, DOM: store.daily.get('DOM')?.length || 0 },
     anchors: { tMin: T_MIN, tMax: T_MAX, nowDefault: NOW_DEFAULT },
     model: store.model,

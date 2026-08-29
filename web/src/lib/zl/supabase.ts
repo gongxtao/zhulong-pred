@@ -99,23 +99,26 @@ export async function fetchHoursRange(zone: Zone, diLo: number, diHi: number, on
   putHours(a); putHours(b);
   markLiveDays(zone, diLo, diHi); /* 该窗小时已实时查询校准（含空窗=核实为空） */
 }
-export function ingestPred(rows: PredRow[], override = false) { /* override=true（pred_dynamic 运营值）：同起点无条件覆盖；默认（pred_static）：首写优先 */
+export function ingestPred(rows: PredRow[], track: 'static' | 'dyn') { /* feat-016 双轨：原始值入各自轨；展示轨 pred 同起点重算（dyn 优先、static 填充） */
   const byZO: Record<string, Record<string, PredRow[]>> = {};
   for (const r of rows) { (byZO[r.zone] ??= {})[r.forecast_origin_utc] ??= []; byZO[r.zone][r.forecast_origin_utc].push(r) }
   for (const z in byZO) {
-    if (!store.pred.has(z as Zone)) store.pred.set(z as Zone, new Map());
-    const pm = store.pred.get(z as Zone)!;
+    const Z = z as Zone;
+    if (!store.predStatic.has(Z)) store.predStatic.set(Z, new Map());
+    if (!store.predDyn.has(Z)) store.predDyn.set(Z, new Map());
+    if (!store.pred.has(Z)) store.pred.set(Z, new Map());
+    const st = store.predStatic.get(Z)!, dy = store.predDyn.get(Z)!, pm = store.pred.get(Z)!;
     const liveOrigins: number[] = [];
     for (const o in byZO[z]) {
       const ts = Date.parse(o);
       liveOrigins.push(ts);
-      if (!override && pm.has(ts)) continue;
       const row: (number | null)[] = new Array(24).fill(null);
       for (const rr of byZO[z][o]) row[rr.forecast_horizon_hour - 1] = r1(rr.predicted_load_mw, 1);
-      pm.set(ts, row);
+      (track === 'static' ? st : dy).set(ts, row); /* 同轨重写 = 幂等（重放/重查安全） */
+      pm.set(ts, (dy.get(ts) ?? st.get(ts))!); /* 展示轨：该起点取 dyn，缺则 static 填充 */
     }
-    markLivePred(z as Zone, liveOrigins); /* 实时查询到的 pred 起点已校准 */
-    store.predOrigins.set(z as Zone, [...pm.keys()].sort((x, y) => x - y));
+    markLivePred(Z, liveOrigins); /* 实时查询到的 pred 起点已校准 */
+    store.predOrigins.set(Z, [...pm.keys()].sort((x, y) => x - y));
   }
 }
 export function calFrom(rows: PredRow[]) { /* 近期残差分位（boot 尾窗计算；全局共用） */
@@ -163,8 +166,8 @@ export async function bootLayer1(preserveView = false) {
     sbPage<PredRow>('pred_static', predWin, prog('ps')),
     sbPage<PredRow>('pred_dynamic', predWin).catch(() => [] as PredRow[]),
   ]);
-  ingestPred(psRows); calFrom(psRows); /* 分位标定保持 static-only（dynamic 真值滞后且混模型污染残差带） */
-  ingestPred(pdRows, true); /* 同起点 dynamic 覆盖 static（运营模型优先） */
+  ingestPred(psRows, 'static'); calFrom(psRows); /* 分位标定保持 static-only（dynamic 真值滞后且混模型污染残差带） */
+  ingestPred(pdRows, 'dyn'); /* 展示轨 dyn 优先、static 填充（持续学习模型） */
   /* 4) 模型元数据 */
   const H = { apikey: SB.KEY };
   const [mv, tt] = await Promise.all([
@@ -218,7 +221,7 @@ export function ensureWindow(zone: Zone, originTs: number): Promise<void> {
           sbPage<PredRow>('pred_static', params),
           sbPage<PredRow>('pred_dynamic', params).catch(() => [] as PredRow[]), /* 运营表失败/空不阻塞校准 */
         ]);
-        ingestPred(sta); ingestPred(dyn, true); /* static 先入、dynamic 同起点覆盖 */
+        ingestPred(sta, 'static'); ingestPred(dyn, 'dyn'); /* 双轨各自保留；展示轨 dyn 优先 */
         sbToast(false);
         notifyLiveMerge();
       }
@@ -265,7 +268,8 @@ export function storeFromSnapshot(zd: Snapshot) { /* 快照兜底：一次性灌
   for (const z in predZones) {
     const P = predZones[z], pm = new Map<number, (number | null)[]>();
     P.origins.forEach((o: number, i: number) => pm.set(o, P.preds[i]));
-    store.pred.set(z as Zone, pm);
+    store.predStatic.set(z as Zone, pm); /* 快照只嵌静态轨（2017-01 起）；dyn 轨由在线查询补 */
+    store.pred.set(z as Zone, new Map(pm)); /* 展示轨独立副本：起点级 dyn 优先覆盖（不共享对象防串轨） */
     store.predOrigins.set(z as Zone, P.origins.slice());
     store.cal[z as Zone] = P.cal;
   }
