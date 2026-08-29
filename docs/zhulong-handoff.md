@@ -1,15 +1,17 @@
 # 烛龙 ZHULONG · 交接文档
 
 > 写给下一个开发会话。框架已与用户对齐锁定，继续优化前**必读本文**。
-> 最后更新：2026-08-29 12:15（feat-008 完成：原型 v3 已平移到 web/ 正式工程并通过全部断言）· 提交截止：8/29 24:00
+> 最后更新：2026-08-29 13:50（feat-010 完成：web 秒开 SWR 架构 + 上帝视角退出修复 + 默认深色）· 提交截止：8/29 24:00
 
 ## 0. 一句话现状
 
-**web/ 正式工程已就绪并通过 handoff §5 全部断言（feat-008，8/29 12:15）**——原型 v3 的完整平移：
-`web/src/lib/zl/`（util/const/sim/store/supabase/forecast/engine，算法逐行照抄 TS 化）+ React 静态骨架
-（page.tsx 的 id/class 与原型逐一对齐，命令式引擎接管渲染）+ globals.css（原型样式原样平移）。
-dev：`cd web && npm run dev -- --port 3100`；快照在 `web/public/data/`（与原型同 blob）。
-原型 `zhulong.html` 冻结为 spec 与提交兜底。剩余：feat-009 全量回归收口 + 提交。
+**web/ 正式工程已就绪并通过 handoff §5 全部断言（feat-008 平移 + feat-010 秒开改造）**：
+`web/src/lib/zl/`（util/const/sim/store/supabase/forecast/engine）+ React 静态骨架 + globals.css。
+**boot = 快照秒开（~1s 全量 14 年渲染）→ 后台静默同步生产库（SWR，~12s）→ 徽章切「在线 · Supabase」
+并重算指标收敛到 §5 基线**；离线保持快照可用；默认深色主题；时光机重演可经 决策条「↩ 回到实时」/
+重演 chip ✕ / 拖到轴最右段松手磁吸 三入口退出。断言脚本：`web/scripts/verify.mjs`（playwright-core 有头，
+21 项）。dev：`cd web && npm run dev -- --port 3100`。原型冻结为 spec 与兜底（另一线在做原型上帝视角联动，
+web 侧尚未同步其图例 chip/横幅文案细节，收口时对齐）。
 
 ## 1. 文件地图（只看这些）
 

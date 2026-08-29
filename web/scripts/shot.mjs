@@ -1,0 +1,13 @@
+import { chromium } from 'playwright-core';
+const browser = await chromium.launch({ channel: 'chrome', headless: false });
+const page = await browser.newPage({ viewport: { width: 1680, height: 1050 } });
+await page.goto('http://localhost:3100/', { waitUntil: 'domcontentloaded' });
+await page.waitForFunction(() => window.ZL_DATA && !document.getElementById('loader'), null, { timeout: 30000 });
+await page.waitForFunction(() => window.ZL_DATA.src === 'live', null, { timeout: 45000 });
+await new Promise(r => setTimeout(r, 800));
+await page.screenshot({ path: '../.shots/web_v4_swr_dark.jpeg', fullPage: true, quality: 80, type: 'jpeg' });
+await page.evaluate(() => document.getElementById('themeBtn').click());
+await new Promise(r => setTimeout(r, 800));
+await page.screenshot({ path: '../.shots/web_v4_swr_light.jpeg', fullPage: true, quality: 80, type: 'jpeg' });
+console.log('shots saved');
+await browser.close();

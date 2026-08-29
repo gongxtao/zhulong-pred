@@ -182,3 +182,32 @@ globals.css = 原型 <style> 原样平移（无 Tailwind 注入，避免 preflig
 
 **遗留**：feat-009 全量回归收口（本会话已覆盖大部分，剩余：CSV 文件下载实检、多窗口并排对照走查）；
 ~20:00 决策点：web 已过基线，可直接以 web 提交，原型兜底仍在 HEAD。
+
+## 2026-08-29 13:50 · feat-010 web boot 改造——秒开 SWR + 上帝视角退出 + 默认深色（用户裁决）
+
+**问题**（用户实测反馈）：①每次刷新阻塞等待 ~12s 在线 Layer-1 才出内容，体验差；
+②时光机进入重演后无法关闭上帝视角，必须刷新页面。
+
+**boot 改造（stale-while-revalidate，替代原型 v3 阻塞式 Layer-1）**：
+- 快路径：内嵌快照先行（layout `<link rel=preload>` 预取 + loadSnapshot）→ **~1s 全量 14 年渲染**
+  （四格/MAPE 立即就位，cov 为快照口径 87.9/53.3）→ 徽章「同步生产库…」
+- 后台静默 bootLayer1(preserveView=true)：完成 → SRC=live + startEngine 重算 → 徽章「在线 · Supabase」、
+  cov 收敛 §5 基线 **85.6/49.0**；失败（离线）→ 保持快照可用，徽章「真数据 · 快照」
+- 慢路径仅剩快照缺失时：在线 Layer-1（保留 4s 跳过按钮）→ 再失败 sim；loader 文案随路径动态化
+- bootLayer1 daily 改替换式写入（同步路径防重复行）；applyAnchors(preserveView) 不打断用户浏览位置
+
+**上帝视角退出（三入口 + 联动）**：
+- 重演 chip 变按钮「重演 ✕」点击回实时；决策条重演态加「↩ 回到实时」按钮
+- 胶片松手磁吸：拖到轴最右段（NOW−5d 内；轴右端=T_MAX≈NOW+4.2d，±24h 窗够不着右缘）→ 回实时
+- opts 切换一律走 renderAll（坑 11；决策条「上帝视角 开/关」随之同步）
+
+**默认深色**（用户裁决）：无 localStorage 记录时 data-theme=dark，手动切换过则尊重。
+
+**验证（scripts/verify.mjs，playwright-core 系统 Chrome 有头独立实例——与并行会话的浏览器隔离，
+21/21 通过）**：秒开 1.08s；后台同步后 12,926/−2.03%/18,261@16:00/3.57、cov 85.6/49.0、预备 2,450、
+三区 5.43/5.40；极涡 17.02→23.14 落后话术；上帝视角三入口退出+点线移除(series 48→0)+决策条同步；
+磁吸回实时/远处保持重演；离线保持快照；控制台零错误。lint+tsc+build 零错。
+截图 .shots/web_v4_swr_{dark,light}.jpeg。
+
+**已知差异**：原型线（另一会话）新增上帝视角全联动（图例 chip 退场/横幅文案/审计口径切换），
+web 暂未同步——收口时对齐。window.ZL_DATA 增加 anchors 字段（tMin/tMax/nowDefault，磁吸诊断用）。

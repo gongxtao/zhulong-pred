@@ -32,7 +32,10 @@ type AxisExtent = { max: number; min: number };
 /* CSV 导出行单元格 */
 type CsvCell = { a?: number; g?: number; t?: number; f?: ReturnType<typeof forecastAt>[0] };
 /* window 上的断言钩子 */
-interface ZLWindow { __renderLog?: { z: string; err?: string }[] }
+interface ZLWindow {
+  __renderLog?: { z: string; err?: string }[];
+  __zlCharts?: { mainC: echarts.ECharts };
+}
 const zlWindow = () => window as unknown as ZLWindow;
 
 /* ---------- 主题调色板（C 在 mount 时按持久化主题选定） ---------- */
@@ -317,7 +320,7 @@ function positionHandle(animate: boolean) {
 function renderOriginDate() {
   $('originDate').textContent = fmtFull(state.origin);
   const mc = $('modeChip');
-  mc.textContent = state.mode === 'live' ? '实时' : '重演';
+  mc.textContent = state.mode === 'live' ? '实时' : '重演 ✕'; /* ✕ 提示可点击回到实时 */
   mc.classList.toggle('replay', state.mode !== 'live');
 }
 
@@ -335,7 +338,9 @@ function renderDecision() {
         <span class="db-tag">↺ 时光机 · 重演</span>
         <span class="db-msg">起点 <b class="win">${fmtFull(org)}</b>——此刻之后的预测，正与真实历史对质</span>
         <span class="sevTag" style="background:#E0F2FE;color:#0E7490">上帝视角 ${state.opts.god ? '开' : '关'}</span>
+        <button type="button" class="sevTag" id="bnBackLive" style="background:var(--chipOkBg);color:var(--okInk);border:1px solid var(--chipOkBd);cursor:pointer">↩ 回到实时</button>
       </div>`;
+    $('bnBackLive').onclick = () => setOrigin(NOW_DEFAULT, 'live');
     return;
   }
   const fc = forecastAt(z, org).filter(p => p.ts <= org + 24 * HOUR);
@@ -743,14 +748,25 @@ function startEngine(src: string) {
 async function boot() {
   const t0 = performance.now();
   zlWindow().__renderLog = [{ z: 'boot' }];
-  const skipT = setTimeout(() => { const b = $('ldSkip'); if (b) b.style.visibility = 'visible' }, 4000);
-  onMount(() => clearTimeout(skipT));
-  const skipBtn = $('ldSkip');
-  if (skipBtn) skipBtn.onclick = () => { ldAbort() };
-  try { await bootLayer1(); setSrc('live') } catch (e) {
-    console.warn('在线拉取未完成：', (e as Error).message);
-    ldReset();
-    try { const zd = await loadSnapshot(); storeFromSnapshot(zd); setSrc('snapshot') } catch { setSrc('sim') }
+  /* 快路径：内嵌真数据快照秒开（全量 14 年，~1s）→ 后台静默同步生产库（stale-while-revalidate） */
+  let fastBoot = false;
+  try {
+    const sub = document.querySelector('#loader .ld-sub');
+    if (sub) sub.textContent = '载入内嵌真数据快照（14 年 · 3 区 · 秒开）';
+    const zd = await loadSnapshot();
+    storeFromSnapshot(zd); setSrc('snapshot'); fastBoot = true;
+  } catch {
+    /* 快照缺失 → 慢路径：在线 Layer-1（保留 4s 跳过按钮，原型行为） */
+    const sub = document.querySelector('#loader .ld-sub');
+    if (sub) sub.textContent = '正在实时查询生产数据库（Supabase）';
+    const skipT = setTimeout(() => { const b = $('ldSkip'); if (b) b.style.visibility = 'visible' }, 4000);
+    onMount(() => clearTimeout(skipT));
+    const skipBtn = $('ldSkip');
+    if (skipBtn) skipBtn.onclick = () => { ldAbort() };
+    try { await bootLayer1(); setSrc('live') } catch (e) {
+      console.warn('在线拉取未完成：', (e as Error).message);
+      ldReset(); setSrc('sim');
+    }
   }
   const loader = document.getElementById('loader');
   loader?.classList.add('off');
@@ -758,8 +774,23 @@ async function boot() {
   applyAnchors();
   try { startEngine(SRC) } catch (e) { console.error('[startEngine]', e) }
   dbgHook();
-  if (SRC === 'live') { ensureWindow('AEP', EVENTS[0].c); ensureWindow('AEP', EVENTS[1].c) } /* 演示事件窗预热（补钉 5c） */
   console.info(`[烛龙] 数据源=${SRC} · 启动 ${(performance.now() - t0) / 1000 | 0}s`);
+  if (!fastBoot) {
+    if (SRC === 'live') { ensureWindow('AEP', EVENTS[0].c); ensureWindow('AEP', EVENTS[1].c) } /* 演示事件窗预热（慢路径） */
+    return;
+  }
+  /* 后台同步：成功 → live 模式重算指标（对齐 §5 在线基线）；失败 → 保持快照（页面已可用） */
+  $('srcText').textContent = '同步生产库…';
+  ldReset();
+  bootLayer1(true /* preserveView：不打断用户当前浏览位置 */).then(() => {
+    setSrc('live');
+    try { startEngine('live') } catch (e) { console.error('[startEngine-sync]', e) }
+    dbgHook();
+    console.info('[烛龙] 后台同步完成 → 在线模式');
+  }).catch(e => {
+    console.warn('[烛龙] 后台同步失败，保持快照：', (e as Error).message);
+    $('srcText').textContent = '真数据 · 快照';
+  });
 }
 
 /* =====================================================================
@@ -778,6 +809,7 @@ export function mountEngine(): () => void {
   mapeC = echarts.init($('mapeSpark'));
   mainC.group = 'stage'; tempC.group = 'stage'; devC.group = 'stage';
   echarts.connect([mainC, tempC, devC]);
+  zlWindow().__zlCharts = { mainC }; /* 断言钩子：npm 版 echarts 不挂 window.echarts */
 
   bindInteractions();
   startClock();
@@ -840,7 +872,7 @@ function bindInteractions() {
     const el = $(id) as HTMLInputElement;
     const fn = () => {
       state.opts[id.slice(3).toLowerCase() as keyof typeof state.opts] = el.checked;
-      renderMain(); renderStatusQuad();
+      renderAll(); /* 坑 11：状态切换一律走 renderAll 标准路径，手工罗列渲染函数必漏 */
     };
     el.addEventListener('change', fn);
     onMount(() => el.removeEventListener('change', fn));
@@ -885,6 +917,11 @@ function bindInteractions() {
   $('stepNext').addEventListener('click', stepNextFn);
   onMount(() => $('stepNext')?.removeEventListener('click', stepNextFn));
 
+  /* 重演 chip 可点击回到实时（关闭上帝视角的显式入口之一） */
+  const modeChipFn = () => { if (state.mode !== 'live') setOrigin(NOW_DEFAULT, 'live') };
+  $('modeChip').addEventListener('click', modeChipFn);
+  onMount(() => $('modeChip')?.removeEventListener('click', modeChipFn));
+
   /* 胶片拖拽：rAF 轻量刷新——已加载区实时预览；未加载区冻结主图（补钉：防空洞），松手统一 setOrigin */
   const filmWrap = $('filmWrap');
   const pd = (e: PointerEvent) => {
@@ -907,7 +944,13 @@ function bindInteractions() {
       }
     });
   };
-  const pu = () => { if (!dragging) return; dragging = false; setOrigin(state.origin) };
+  const pu = () => {
+    if (!dragging) return; dragging = false;
+    /* 磁吸：拖到时间轴最右段（NOW 前 5 天内；轴右端=T_MAX≈NOW+4.2 天）松手 → 回到实时。
+       拖到「最右边」的自然语义就是「回到现在」，免像素级对位 */
+    if (state.origin >= NOW_DEFAULT - 5 * DAY) setOrigin(NOW_DEFAULT, 'live');
+    else setOrigin(state.origin);
+  };
   filmWrap.addEventListener('pointerdown', pd);
   filmWrap.addEventListener('pointermove', pm);
   filmWrap.addEventListener('pointerup', pu);

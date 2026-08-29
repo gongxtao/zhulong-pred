@@ -71,6 +71,14 @@
       "dependencies": ["feat-008"],
       "status": "not-started",
       "evidence": ""
+    },
+    {
+      "id": "feat-010",
+      "name": "web boot 改造：秒开 SWR + 上帝视角退出 + 默认深色",
+      "description": "用户裁决：①刷新不得阻塞等待——快照先行秒开（~1s 全量渲染）+ 后台静默同步生产库（SWR），离线保持快照；②时光机重演可退出——决策条按钮/重演chip✕/胶片磁吸三入口；③默认深色主题",
+      "dependencies": ["feat-008"],
+      "status": "done",
+      "evidence": "web/scripts/verify.mjs 21/21（有头 Chrome 独立实例）：秒开 1.08s 首屏四格/MAPE 就位；后台同步后 cov 85.6/49.0 收敛 §5 基线、预备 2,450、三区 5.43/5.40、极涡 17.02→23.14；上帝视角三入口退出+点线 series 48→0+决策条联动；磁吸回实时/远处保持重演；离线保持快照徽章；默认 dark；lint+tsc+build 零错；截图 web_v4_swr_*"
     }
   ]
 }

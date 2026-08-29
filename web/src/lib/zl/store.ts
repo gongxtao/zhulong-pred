@@ -55,13 +55,15 @@ export let originToken = 0; /* 导航令牌：新跳转使旧异步渲染失效 
 export function nextToken() { return ++originToken; }
 export function curToken() { return originToken; }
 
-export function applyAnchors() { /* T_MIN/T_MAX/NOW/D0/D1 从 store 推导（live/snapshot） */
+export function applyAnchors(preserveView = false) { /* T_MIN/T_MAX/NOW/D0/D1 从 store 推导（live/snapshot） */
   const dz = [...store.daily.values()].flat();
   if (dz.length) {
     const tMin = Math.min(...dz.map(d => dayTs(d.di)));
     const tMax = Math.max(...dz.map(d => dayTs(d.di + 1) - HOUR));
+    const prevNow = NOW_DEFAULT;
     setAnchors(tMin, tMax, Math.min(Date.UTC(2018, 6, 31, 10), tMax - 49 * HOUR)); /* NOW=2018-07-31 05:00 EST */
-    state.origin = NOW_DEFAULT; state.mode = 'live';
+    if (!preserveView) { state.origin = NOW_DEFAULT; state.mode = 'live' }
+    else if (state.origin === prevNow) { state.origin = NOW_DEFAULT } /* 后台同步数据滚动：仅当用户停在默认锚点时跟随 */
   }
   setDayRange(locDay(T_MIN), locDay(T_MAX - 1));
 }
@@ -71,6 +73,7 @@ export function dbgHook() { /* window.ZL_DATA 断言钩子（懒加载形态） 
     src: SRC, live: SRC === 'live',
     hours: { AEP: n('AEP'), DAYTON: n('DAYTON'), DOM: n('DOM') },
     daily: { AEP: store.daily.get('AEP')?.length || 0, DAYTON: store.daily.get('DAYTON')?.length || 0, DOM: store.daily.get('DOM')?.length || 0 },
+    anchors: { tMin: T_MIN, tMax: T_MAX, nowDefault: NOW_DEFAULT },
     model: store.model,
   };
 }

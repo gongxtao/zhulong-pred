@@ -127,7 +127,7 @@ export function calFrom(rows: PredRow[]) { /* 近期残差分位（boot 尾窗�
     }
   }
 }
-export async function bootLayer1() {
+export async function bootLayer1(preserveView = false) {
   const counts: Record<string, number> = {}; const EXPECT = 28100;
   const prog = (k: string) => (n: number) => {
     counts[k] = n; const t = Object.values(counts).reduce((s, v) => s + v, 0);
@@ -135,12 +135,13 @@ export async function bootLayer1() {
   };
   /* 1) 日峰视图（三区全量，胶片/热力图/极值/纪录；排序含 zone 保证分页稳定） */
   const dv = await sbPage<DailyViewRow>('energy_daily', { order: 'zone.asc,est_day.asc', select: 'zone,est_day,peak_mw,peak_ts_utc' }, prog('dv'));
+  const fresh: Partial<Record<Zone, DailyRow[]>> = {};
   for (const r of dv) {
-    if (!store.daily.has(r.zone)) store.daily.set(r.zone, []);
     const ts = Date.parse(r.peak_ts_utc) - HOUR; /* 视图为区间右端 → 现有口径 = 小时起点 */
-    store.daily.get(r.zone)!.push({ ts, peak: r.peak_mw, ph: etP(ts).h, di: locDay(ts) });
+    (fresh[r.zone] ??= []).push({ ts, peak: r.peak_mw, ph: etP(ts).h, di: locDay(ts) });
   }
-  applyAnchors(); /* 视图就位即可定 D1，供近窗边界 */
+  for (const z of ZONE_KEYS) if (fresh[z]) store.daily.set(z, fresh[z]!); /* 替换而非追加：同步路径防重复行 */
+  applyAnchors(preserveView); /* 视图就位即可定 D1，供近窗边界 */
   /* 2) 近 120 天小时 ×3 区（并发；决策/四格/回测/相似日候选全覆盖） */
   const lo = D1 - 119;
   await Promise.all(ZONE_KEYS.map(z => fetchHoursRange(z, lo, D1 + 1, prog('h' + z))));

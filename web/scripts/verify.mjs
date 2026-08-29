@@ -1,0 +1,179 @@
+/* =====================================================================
+   烛龙 web · 无头断言脚本（playwright-core + 系统 Chrome，独立实例，
+   与其它会话的浏览器完全隔离）。用法：node scripts/verify.mjs [URL]
+   断言口径：handoff §5 在线基线 + 秒开 SWR + 上帝视角退出 + 默认深色
+   ===================================================================== */
+import { chromium } from 'playwright-core';
+
+const URL = process.argv[2] || 'http://localhost:3100/';
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const results = [];
+function check(name, ok, detail = '') {
+  results.push({ name, ok, detail });
+  console.log(`${ok ? '✓' : '✗'} ${name}${detail ? '  [' + detail + ']' : ''}`);
+}
+
+const browser = await chromium.launch({ channel: 'chrome', headless: false }); /* 用户裁决：有头模式直测 */
+try {
+  const page = await browser.newPage({ viewport: { width: 1680, height: 1050 } });
+  const consoleErrs = [];
+  page.on('console', m => {
+    const t = m.text();
+    /* supabase 路由拦截测试段的 net::ERR_FAILED 是预期噪声，不计为页面错误 */
+    if (m.type() === 'error' && !t.includes('net::ERR_FAILED')) consoleErrs.push(t.slice(0, 120));
+  });
+  page.on('pageerror', e => consoleErrs.push('PAGEERROR ' + String(e).slice(0, 120)));
+
+  /* ---------- 1. 秒开：loader 消耗 + 快照态首屏 ---------- */
+  const t0 = Date.now();
+  await page.goto(URL, { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.ZL_DATA && !document.getElementById('loader'), null, { timeout: 30000 });
+  const paintMs = Date.now() - t0;
+  const phase1 = await page.evaluate(() => ({
+    src: window.ZL_DATA.src,
+    theme: document.documentElement.dataset.theme || '(none)',
+    badge: document.getElementById('srcText').textContent,
+    quad: [...document.querySelectorAll('#statusQuad .sq-v')].map(e => e.textContent.trim()),
+    mape: document.getElementById('mapeVal').textContent,
+  }));
+  check('秒开：首屏 <3.5s（快照先行）', paintMs < 3500, `${paintMs}ms`);
+  check('首屏数据源 snapshot（同步中徽章）', phase1.src === 'snapshot' && phase1.badge.includes('同步'), `${phase1.src}/${phase1.badge}`);
+  check('默认深色主题', phase1.theme === 'dark', phase1.theme);
+  check('首屏四格就位', phase1.quad[0] === '12,926MW' && phase1.quad[2].startsWith('18,261'), phase1.quad.join(' | '));
+  check('首屏 MAPE 3.57', phase1.mape === '3.57%', phase1.mape);
+
+  /* ---------- 2. 后台同步 → live 基线 ---------- */
+  await page.waitForFunction(() => window.ZL_DATA && window.ZL_DATA.src === 'live', null, { timeout: 45000 });
+  await sleep(300);
+  const phase2 = await page.evaluate(() => ({
+    badge: document.getElementById('srcText').textContent,
+    quad: [...document.querySelectorAll('#statusQuad .sq-v')].map(e => e.textContent.trim()),
+    mape: document.getElementById('mapeVal').textContent,
+    cov: [document.getElementById('cov90v').textContent, document.getElementById('cov50v').textContent],
+    banner2450: document.getElementById('decisionBanner').textContent.includes('2,450'),
+  }));
+  check('后台同步完成 → 在线徽章', phase2.badge.includes('在线'), phase2.badge);
+  check('四格基线 12,926/−2.03%/18,261@16:00/3.57',
+    phase2.quad[0] === '12,926MW' && phase2.quad[1].endsWith('2.03%') && phase2.quad[2].startsWith('18,261MW@16:00') && phase2.quad[3] === '3.57%',
+    phase2.quad.join(' | '));
+  check('cov 基线 85.6/49.0', phase2.cov.join('/') === '85.6%/49.0%', phase2.cov.join('/'));
+  check('决策条 预备 2,450 MW', phase2.banner2450);
+
+  /* ---------- 3. 上帝视角退出（三入口） ---------- */
+  await page.evaluate(() => [...document.querySelectorAll('#extChips button')].find(b => b.textContent.includes('极地涡旋')).click());
+  await sleep(1400);
+  const replay = await page.evaluate(() => ({
+    chip: document.getElementById('modeChip').textContent,
+    backBtn: !!document.getElementById('bnBackLive'),
+    basis: document.getElementById('basisCmp').textContent.replace(/\s+/g, ' ').slice(0, 46),
+  }));
+  check('极涡重演 + ↩ 回到实时按钮', replay.chip.includes('重演') && replay.backBtn, replay.chip);
+  check('杀手锏话术 17.02→23.14 落后', replay.basis.includes('17.02%') && replay.basis.includes('23.14%') && replay.basis.includes('落后'), replay.basis);
+  // 3a. 决策条按钮
+  await page.evaluate(() => document.getElementById('bnBackLive').click());
+  await sleep(700);
+  check('入口a 决策条按钮 → 实时', await page.evaluate(() => document.getElementById('modeChip').textContent) === '实时');
+  // 3b. modeChip ✕
+  await page.evaluate(() => [...document.querySelectorAll('#extChips button')].find(b => b.textContent.includes('极地涡旋')).click());
+  await sleep(1200);
+  await page.evaluate(() => document.getElementById('modeChip').click());
+  await sleep(700);
+  check('入口b 重演chip ✕ → 实时', await page.evaluate(() => document.getElementById('modeChip').textContent) === '实时');
+  // 3c. optGod 关闭：主图「实际·后续」系列清空 + 决策条同步「关」
+  await page.evaluate(() => [...document.querySelectorAll('#extChips button')].find(b => b.textContent.includes('极地涡旋')).click());
+  await sleep(1200);
+  const godLens = await page.evaluate(async () => {
+    const len = () => {
+      const inst = window.__zlCharts.mainC;
+      const s = inst.getOption().series.find(x => x.name === '实际·后续');
+      return s && s.data ? s.data.length : -1;
+    };
+    const before = len();
+    document.getElementById('optBtn').click();
+    await new Promise(r => setTimeout(r, 120));
+    const g = document.getElementById('optGod');
+    g.checked = false; g.dispatchEvent(new Event('change', { bubbles: true }));
+    await new Promise(r => setTimeout(r, 500));
+    const after = len();
+    const banner = document.getElementById('decisionBanner').textContent.includes('上帝视角 关');
+    g.checked = true; g.dispatchEvent(new Event('change', { bubbles: true }));
+    await new Promise(r => setTimeout(r, 300));
+    return { before, after, banner };
+  });
+  check('入口c 关上帝视角：点线移除', godLens.before > 0 && godLens.after === 0, `series ${godLens.before}→${godLens.after}`);
+  check('入口c 决策条同步「上帝视角 关」', godLens.banner);
+  await page.evaluate(() => document.getElementById('bnBackLive').click());
+  await sleep(600);
+
+  /* ---------- 4. 胶片磁吸：NOW 附近松手回实时；远处保持重演 ---------- */
+  const magnet = await page.evaluate(async () => {
+    const fw = document.getElementById('filmWrap');
+    const r = fw.getBoundingClientRect();
+    const T_MIN = Date.UTC(2004, 9, 1, 5), T_MAX = Date.UTC(2018, 7, 3, 9);
+    const ev = (type, x) => fw.dispatchEvent(new PointerEvent(type, { bubbles: true, pointerId: 1, clientX: x, clientY: r.top + 10, isPrimary: true }));
+    const raf2 = () => new Promise(rs => requestAnimationFrame(() => requestAnimationFrame(rs)));
+    // 拖到最右端（NOW 区）松手
+    ev('pointerdown', r.left + r.width * 0.3);
+    ev('pointermove', r.right - 2);
+    await raf2();
+    ev('pointerup', r.right - 2);
+    await new Promise(r2 => setTimeout(r2, 800));
+    const near = document.getElementById('modeChip').textContent;
+    // 拖到 2016 年（远离 NOW）松手
+    ev('pointerdown', r.right - 2);
+    const x2016 = r.left + (Date.UTC(2016, 5, 15) - T_MIN) / (T_MAX - T_MIN) * r.width;
+    ev('pointermove', x2016);
+    await raf2();
+    ev('pointerup', x2016);
+    await new Promise(r2 => setTimeout(r2, 900));
+    const far = { chip: document.getElementById('modeChip').textContent, origin: document.getElementById('originDate').textContent.slice(0, 10) };
+    document.getElementById('modeChip').click();
+    await new Promise(r2 => setTimeout(r2, 500));
+    return { near, far };
+  });
+  check('磁吸：拖到 NOW 区松手 → 实时', magnet.near === '实时', magnet.near);
+  check('远处拖拽保持重演', magnet.far.chip.includes('重演') && magnet.far.origin.startsWith('2016/06'), `${magnet.far.chip} @${magnet.far.origin}`);
+
+  /* ---------- 5. 离线：Supabase 不可达 → 保持快照可用 ---------- */
+  await page.route('**supabase.co**', route => route.abort());
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.ZL_DATA && !document.getElementById('loader'), null, { timeout: 30000 });
+  await sleep(9000); /* sbFetch 3 次重试退避 600+1200+1800ms 后才判定失败，等 catch 分支恢复徽章 */
+  const offline = await page.evaluate(() => ({
+    src: window.ZL_DATA.src,
+    badge: document.getElementById('srcText').textContent,
+    quad: [...document.querySelectorAll('#statusQuad .sq-v')].map(e => e.textContent.trim()),
+  }));
+  check('离线：保持快照模式可用', offline.src === 'snapshot' && offline.badge.includes('快照') && offline.quad[0] === '12,926MW', `${offline.src}/${offline.badge}`);
+  await page.unrouteAll({ behavior: 'ignoreErrors' });
+
+  /* ---------- 6. 三区 + console ---------- */
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => window.ZL_DATA && !document.getElementById('loader'), null, { timeout: 30000 });
+  const zones = await page.evaluate(async () => {
+    const out = {};
+    for (const z of ['DAYTON', 'DOM']) {
+      document.querySelector(`#zoneSeg button[data-zone="${z}"]`).click();
+      let last = '', stable = 0;
+      for (let i = 0; i < 40; i++) {
+        const m = document.getElementById('mapeVal').textContent;
+        if (m === last && m !== '—') { stable++; if (stable >= 3) break } else stable = 0;
+        last = m;
+        await new Promise(r => setTimeout(r, 250));
+      }
+      out[z] = document.getElementById('mapeVal').textContent;
+    }
+    document.querySelector('#zoneSeg button[data-zone="AEP"]').click();
+    await new Promise(r => setTimeout(r, 800));
+    return out;
+  });
+  check('DAYTON MAPE 5.43', zones.DAYTON === '5.43%', zones.DAYTON);
+  check('DOM MAPE 5.40', zones.DOM === '5.40%', zones.DOM);
+  check('控制台零错误', consoleErrs.length === 0, consoleErrs.slice(0, 3).join(' ;; '));
+
+  const failed = results.filter(r => !r.ok);
+  console.log(`\n==== ${results.length - failed.length}/${results.length} 通过 ====`);
+  process.exitCode = failed.length ? 1 : 0;
+} finally {
+  await browser.close();
+}

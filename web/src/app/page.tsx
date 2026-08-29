@@ -78,7 +78,7 @@ export default function Home() {
           {/* 时光机 dock：紧贴画面之下的擦洗器——同一台时间机器，无边线无小标题 */}
           <div id="filmDock">
             <div id="filmHead">
-              <span className="modeChip" id="modeChip">实时</span>
+              <button type="button" className="modeChip" id="modeChip" title="回到实时">实时</button>
               <div id="dateCapsule">
                 <button className="stepBtn" id="stepPrev" title="前移一天（起点）" aria-label="前移一天">‹</button>
                 <span className="zd" id="originDate"></span>
