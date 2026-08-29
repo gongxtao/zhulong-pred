@@ -1128,8 +1128,8 @@ function backToLive(){setOrigin(NOW_DEFAULT,'live')}
 function toggleGod(){
   state.opts.god=!state.opts.god;
   const cb=$('optGod');if(cb)cb.checked=state.opts.god;
-  /* 全联动：主图(线+偏差追踪) + 横幅(文案+tag) + 图例(chip) + 审计卡(本段重演⇄全局回测) + 四格(误差格口径) */
-  renderMain();renderDecision();renderLegendTable();renderCred();renderStatusQuad();
+  /* 与 ↺(backToLive) 同一条标准路径：setOrigin 管线式的全量重渲——联动由 renderAll 保证，永不遗漏 */
+  renderAll();dbgHook();
 }
 function renderDecision(){
   const z=state.zone,org=state.origin;
@@ -1414,6 +1414,7 @@ function renderAll(){
   if(state.drawerTab==='heat')renderHeat();
   if(state.drawerTab==='ext')renderExtremes();
   renderExtChips();
+  renderLegendTable(); /* 图例随渲染走（上帝视角 chip 联动等） */
   $('zoneCap').textContent=ZONES[state.zone].label;
   }catch(e){console.error('[renderAll]',state.zone,state.origin,e);window.__renderLog?.push({z:state.zone,err:''+e})}
 }
@@ -1447,8 +1448,8 @@ document.querySelectorAll('#rangeSeg button').forEach(b=>b.onclick=()=>{
 });
 ['optTemp','optYday','optGod','optPeak'].forEach(id=>{
   $(id).addEventListener('change',()=>{state.opts[id.slice(3).toLowerCase()]=$(id).checked;
-    renderMain();renderStatusQuad();renderDecision();
-    if(id==='optGod'){renderLegendTable();renderCred()} /* 上帝视角全联动 */});
+    if(id==='optGod'){renderAll();dbgHook()} /* 上帝视角走标准全量路径（与 ↺/toggleGod 一致） */
+    else{renderMain();renderStatusQuad()}});
 });
 /* 弹层开合（anchor='left' 时以按钮左缘对齐——供页面左侧的入口用） */
 function togglePop(pop,btn,anchor){
