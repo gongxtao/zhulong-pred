@@ -247,3 +247,15 @@ chip 全部移除；距纪录数字保留在四格悬停 title 与决策依据�
 
 verify 30/30（新增：markArea=0 / 无历史峰值 markLine / b50 不存在 b90 存在）；lint+tsc+build 零错。
 截图 .shots/diag_stage.png（诊断用，最终版见 web_v4 截图）。
+
+## 2026-08-29 15:45 · feat-012 Vercel 生产部署
+
+- **密钥纪律收严（用户裁决）**：supabase.ts 的 URL/KEY 全部只走 NEXT_PUBLIC_* 环境变量，代码零真实值；
+  未配置时 sbFetch 快速失败 → 三级兜底降级快照/仿真（cd824f4）
+- **Vercel 账号部署**（用户 gongxtaos-projects-546ada90，项目 zhulong）：env 四条（URL/KEY × production/preview，
+  `vercel env add --type config --value`）；`vercel deploy --prod` **READY 38s**，
+  生产别名 **https://zhulong-seven.vercel.app**；匿名临时部署（temporary-snappy-zinc-hp7f8oh，曾 30/30 验证通过）
+  按用户要求弃用（60min 自动过期）
+- **本机网络阻断（非部署问题）**：\*.vercel.app DNS 污染（解析到 88.191.249.183/168.143.171.189 假 IP）+
+  edge IP 直连亦被 reset；vercel.com API 域名正常——部署经 API inspect 确认 READY；生产 URL 的浏览器验证
+  待用户网络（有代理时）或现场网络确认；本地 `npm run dev`/`build+start` 与线上同代码同数据，为演示兜底
