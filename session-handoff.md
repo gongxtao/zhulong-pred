@@ -32,7 +32,8 @@
     **线上聊天已开启（2026-08-29 晚）**：Vercel Production 已加 `QWENPAW_URL`/`QWENPAW_AGENT_ID`
     并重新部署（Ready，zhulong-achg63ofj）。⚠️ 本机网络对 \*.vercel.app 是 IP 级阻断（DoH/强解均 000），
     线上链路最终验证需换网络（手机热点/评委网络）——已验证的等价链路段：部署 Ready+env 在列+
-    云端 QwenPaw 公网可达+dev 同代码对云 200 流式。push 仍未做（CLI 直部不含 git 历史）。
+    云端 QwenPaw 公网可达+dev 同代码对云 200 流式。**git 已 push（8/29 深夜，用户裁决）：
+    gongxtao=4bc99ac、main 合并=ffb1a87**；若 Vercel 挂 git 自动部署会随 push 触发，部署状态换网络后核。
     助手品牌=「烛龙助手」，UI/回答不出现 QwenPaw 字样（SOUL 自称+中文表达纪律）。
   - QwenPaw 配置 = 工作区文件模型（非 system prompt）：`~/.qwenpaw/workspaces/zhulong/`
     下 `skills/zhulong_analysis/SKILL.md`（分析手册，仓库 qwenpaw/ 同步）+ SOUL.md 末尾
@@ -60,7 +61,8 @@
 - **数据链路（data/README.md 权威）**：energy_hourly 模拟实时表（已加速释放至 2018-06-30+）；
   pred_dynamic 回放 15:27 至 2017-01-31、~8 起点/分加速（全程 945 起点）。
 - **部署（并行会话）**：Vercel https://zhulong-seven.vercel.app；GitHub gongxtao/zhulong-pred。
-  本机 \*.vercel.app DNS 污染，演示兜底 = 本地 dev。**push 待用户裁决（会触发 Vercel 自动部署）。**
+  本机 \*.vercel.app DNS 污染，演示兜底 = 本地 dev。**git 已 push（8/29 深夜）：gongxtao=4bc99ac、
+  main=ffb1a87（merge）**——Vercel 若挂 git 自动部署随 push 触发，Ready 与否换网络后核。
 - 路演故事线：「负荷档案 14 年 → 2016 预测纪元（静态模型）→ 持续学习模型逐日推送（pred_dynamic），
   页面 SWR 实时吸收——拖胶片看双线分叉收窄；WAPE 4.39→4.23%（2016-02 实测，AEP -7.7%）」。
 
@@ -80,10 +82,11 @@
     zhulong-seven.vercel.app 点悬浮球问一句即完成（等价链路段已全绿）。
 - ChatBI 路演前：云端 QwenPaw 在跑即可（`curl http://43.166.132.250:8088/api/version`，
     已开认证）；dev 经 .env.local 自动连云；演示用 chips 不手打（问法锁定+已对账）。
-- **git push 待用户裁决**：本地 gongxtao 领先远程 2 提交（5e3fbc9/1b1a19f ops 记录）；
-    另注意 Vercel 现网是 CLI 直部（含全部 feat-023 代码），GitHub 仓库若不 push 会落后于线上。
+- **git push 已完成（8/29 深夜，用户裁决）**：gongxtao=4bc99ac、main=ffb1a87（merge）——
+    此前 CLI 直部导致「线上领先 git」的局面已消除，git 与线上代码同源。
 - 本机 vercel.app DNS 污染，线上兜底 = 本地 dev（feat-012 记录）。
-- **push 待用户裁决（触发 Vercel 部署；线上聊天为降级态直到 QwenPaw 上云+配 env）**。
+- **push 后 Vercel 若挂 git 自动部署会触发**：聊天 env 三条已在 Production，部署 Ready
+    与线上终验换网络后核（见上「ChatBI 线上终验」条）。
 
 ## 指针
 
