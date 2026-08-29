@@ -79,6 +79,14 @@
       "dependencies": ["feat-008"],
       "status": "done",
       "evidence": "web/scripts/verify.mjs 21/21（有头 Chrome 独立实例）：秒开 1.08s 首屏四格/MAPE 就位；后台同步后 cov 85.6/49.0 收敛 §5 基线、预备 2,450、三区 5.43/5.40、极涡 17.02→23.14；上帝视角三入口退出+点线 series 48→0+决策条联动；磁吸回实时/远处保持重演；离线保持快照徽章；默认 dark；lint+tsc+build 零错；截图 web_v4_swr_*"
+    },
+    {
+      "id": "feat-011",
+      "name": "历史视窗实时校准（秒开+SWR per view）+ 历史峰值线移除",
+      "description": "用户裁决：查看历史数据必须是实时查询。store 加 liveDays/livePredOrigins 溯源；ensureWindow 对未校准视窗发起真实 Supabase 查询（快照先渲染、查询回来合并重渲、同窗零重查）；主图历史峰值线与图例项移除（距纪录保留在悬停/弹层）",
+      "dependencies": ["feat-010"],
+      "status": "done",
+      "evidence": "verify.mjs 26/26：跳极涡 3 个真实 energy_hourly 查询（2013-10 窗）+liveHours 121→204+话术保持+二次零重查；秒开 1.07s/cov 85.6/49.0/三区/磁吸/离线快照全保持；lint+tsc+build 零错"
     }
   ]
 }

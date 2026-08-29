@@ -17,6 +17,8 @@ const browser = await chromium.launch({ channel: 'chrome', headless: false }); /
 try {
   const page = await browser.newPage({ viewport: { width: 1680, height: 1050 } });
   const consoleErrs = [];
+  const sbRequests = []; /* feat-011：实时校准查询监听 */
+  page.on('request', r => { const u = r.url(); if (u.includes('supabase.co/rest/v1/')) sbRequests.push(u); });
   page.on('console', m => {
     const t = m.text();
     /* supabase 路由拦截测试段的 net::ERR_FAILED 是预期噪声，不计为页面错误 */
@@ -25,6 +27,8 @@ try {
   page.on('pageerror', e => consoleErrs.push('PAGEERROR ' + String(e).slice(0, 120)));
 
   /* ---------- 1. 秒开：loader 消耗 + 快照态首屏 ---------- */
+  /* 预热：让 dev server 先完成热重编译，避免首次 goto 撞上编译窗口拿到新旧混合 chunk */
+  await page.request.get(URL).catch(() => {});
   const t0 = Date.now();
   await page.goto(URL, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => window.ZL_DATA && !document.getElementById('loader'), null, { timeout: 30000 });
@@ -43,21 +47,50 @@ try {
   check('首屏 MAPE 3.57', phase1.mape === '3.57%', phase1.mape);
 
   /* ---------- 2. 后台同步 → live 基线 ---------- */
-  await page.waitForFunction(() => window.ZL_DATA && window.ZL_DATA.src === 'live', null, { timeout: 45000 });
-  await sleep(300);
+  /* 等数字真正稳定到基线（startEngine('live') 完成）再采样，避免徽章先于数字切换的瞬态 */
+  await page.waitForFunction(() =>
+    window.ZL_DATA && window.ZL_DATA.src === 'live'
+    && document.getElementById('cov90v').textContent === '85.6%'
+    && document.getElementById('mapeVal').textContent === '3.57%'
+    && document.querySelectorAll('#statusQuad .sq-v')[3]?.textContent.trim() === '3.57%',
+  null, { timeout: 45000 });
   const phase2 = await page.evaluate(() => ({
     badge: document.getElementById('srcText').textContent,
     quad: [...document.querySelectorAll('#statusQuad .sq-v')].map(e => e.textContent.trim()),
     mape: document.getElementById('mapeVal').textContent,
     cov: [document.getElementById('cov90v').textContent, document.getElementById('cov50v').textContent],
     banner2450: document.getElementById('decisionBanner').textContent.includes('2,450'),
+    legendHasRec: document.getElementById('legendTable').textContent.includes('历史峰值'),
   }));
   check('后台同步完成 → 在线徽章', phase2.badge.includes('在线'), phase2.badge);
+  check('主图历史峰值线已移除（用户裁决）', phase2.legendHasRec === false);
   check('四格基线 12,926/−2.03%/18,261@16:00/3.57',
     phase2.quad[0] === '12,926MW' && phase2.quad[1].endsWith('2.03%') && phase2.quad[2].startsWith('18,261MW@16:00') && phase2.quad[3] === '3.57%',
     phase2.quad.join(' | '));
   check('cov 基线 85.6/49.0', phase2.cov.join('/') === '85.6%/49.0%', phase2.cov.join('/'));
   check('决策条 预备 2,450 MW', phase2.banner2450);
+
+  /* ---------- 2b. feat-011 历史视窗实时校准：跳历史段必须发真实查询，二次访问不重查 ---------- */
+  sbRequests.length = 0;
+  const liveBefore = await page.evaluate(() => window.ZL_DATA.liveHours.AEP);
+  await page.evaluate(() => [...document.querySelectorAll('#extChips button')].find(b => b.textContent.includes('极地涡旋')).click());
+  await page.waitForFunction(() => !document.getElementById('sbToast').classList.contains('on'), null, { timeout: 15000 });
+  await sleep(600);
+  const vortexQ = sbRequests.filter(u => u.includes('energy_hourly') && u.includes('AEP') && u.includes('2013-10')).length;
+  const liveAfter = await page.evaluate(() => window.ZL_DATA.liveHours.AEP);
+  check('跳极涡 → 真实查询生产库（2013-10 窗）', vortexQ >= 1, `${vortexQ} 请求`);
+  check('实时校准标记增长', liveAfter > liveBefore, `liveHours ${liveBefore}→${liveAfter}`);
+  check('极涡话术在实时校准后保持', await page.evaluate(() => document.getElementById('basisCmp').textContent.includes('17.02%') && document.getElementById('basisCmp').textContent.includes('23.14%')));
+  // 二次访问同一窗：不再重查
+  sbRequests.length = 0;
+  await page.evaluate(() => document.getElementById('bnBackLive').click());
+  await sleep(900);
+  await page.evaluate(() => [...document.querySelectorAll('#extChips button')].find(b => b.textContent.includes('极地涡旋')).click());
+  await sleep(1500);
+  const refetch = sbRequests.filter(u => u.includes('energy_hourly') && u.includes('AEP') && u.includes('2013-10')).length;
+  check('二次访问已校准窗 → 零重查', refetch === 0, `${refetch} 请求`);
+  await page.evaluate(() => document.getElementById('bnBackLive').click());
+  await sleep(700);
 
   /* ---------- 3. 上帝视角退出（三入口） ---------- */
   await page.evaluate(() => [...document.querySelectorAll('#extChips button')].find(b => b.textContent.includes('极地涡旋')).click());
@@ -154,6 +187,10 @@ try {
     const out = {};
     for (const z of ['DAYTON', 'DOM']) {
       document.querySelector(`#zoneSeg button[data-zone="${z}"]`).click();
+      /* 先等 renderAll 真正渲染到该区（zoneCap 由 renderAll 末尾更新），避免把上一区残值判稳 */
+      for (let i = 0; i < 60 && !document.getElementById('zoneCap').textContent.startsWith(z); i++) {
+        await new Promise(r => setTimeout(r, 200));
+      }
       let last = '', stable = 0;
       for (let i = 0; i < 40; i++) {
         const m = document.getElementById('mapeVal').textContent;

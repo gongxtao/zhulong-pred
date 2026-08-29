@@ -16,7 +16,8 @@ import {
   backtest, buildCal, buildPers, BT, CAL, FC_CACHE, forecastAt, PERS, replayBT,
 } from './forecast';
 import {
-  bootLayer1, ensureWindow, ldAbort, ldReset, loadSnapshot, storeFromSnapshot, windowReady,
+  bootLayer1, ensureWindow, ldAbort, ldReset, loadSnapshot, setLiveMergeHook, storeFromSnapshot,
+  windowReady,
 } from './supabase';
 import {
   clamp, DAY, doyOf, etP, fmt, fmtFull, fmtHM, fmtMD, fmtMDH, fmtNow, HOUR,
@@ -82,7 +83,6 @@ function renderMain() {
   const { hist, god, fc, yday, temps, back } = stageData();
   const org = state.origin;
   const tMax = org + H_FC * HOUR;
-  const rec = RECORD[state.zone];
   /* 未来 24h 峰值与决策数字（钉在图上） */
   const day1 = fc.filter(p => p.ts <= org + 24 * HOUR);
   const peak = day1.reduce((a, b) => b.p50 > a.p50 ? b : a, day1[0]);
@@ -115,12 +115,7 @@ function renderMain() {
         lineStyle: { color: C.ink2, width: 1, type: 'solid', opacity: .8 },
         data: [
           { xAxis: org, label: { show: true, formatter: 'NOW', color: C.ink2, fontFamily: 'JetBrains Mono', fontSize: 10, position: 'insideEndTop' } },
-          (rec.v > 0 && rec.v <= Math.max(...hist.map(p => p[1]), peak.p90) * 1.4) ? {
-            yAxis: rec.v,
-            lineStyle: { color: C.rec, type: 'dashed', width: 1.2 },
-            label: { formatter: `历史峰值 ${fmt(rec.v)} · ${fmtMD(rec.ts)}`, color: C.ink3, fontSize: 10, position: 'insideEndTop' },
-          } : null,
-        ].filter(Boolean) },
+        ] },
       markPoint: { symbol: 'circle', symbolSize: 5.5, silent: true,
         itemStyle: { color: C.actual, borderColor: C.tipBg, borderWidth: 2 },
         data: [{ coord: [hist[hist.length - 1][0], hist[hist.length - 1][1]] },
@@ -175,7 +170,6 @@ function renderMain() {
         formatter: (v: number) => { const p = etP(v); return p2(p.mo) + '/' + p2(p.da) + '\n' + p2(p.h) + ':00' } }, /* 双行：日期+时间，任何缩放都看得出哪天 */
       splitLine: { show: false } },
     yAxis: { type: 'value', scale: true,
-      max: (v: AxisExtent) => (rec.v > 0 && rec.v <= v.max * 1.4) ? Math.max(v.max, rec.v * 1.005) : v.max,
       axisLabel: { color: C.ink3, fontSize: 10.5, fontFamily: 'JetBrains Mono', formatter: (v: number) => (v / 1000).toFixed(1) + 'k' },
       splitLine: { lineStyle: { color: C.split, width: 1 } }, axisLine: { show: false } },
     series,
@@ -469,7 +463,7 @@ function renderCaliber() {
   const real = SRC !== 'sim';
   const rows = [
     ['负荷', real
-      ? 'PJM 负荷区小时级<b>估算平均功率</b>（MW）；小时区间内数值上 ≈ MWh。<b>2004-10 至 2018-08 真值</b>（真实历史 + 模拟未来流，快照内嵌本页、断网可用）。'
+      ? 'PJM 负荷区小时级<b>估算平均功率</b>（MW）；小时区间内数值上 ≈ MWh。<b>2004-10 至 2018-08 真值</b>（真实历史 + 模拟未来流）。页面内嵌快照实现秒开；<b>查看任一历史段时按视窗实时查询生产库校准（SWR）</b>，断网时保持快照可用。'
       : 'PJM 负荷区小时级<b>估算平均功率</b>（MW）；小时区间内数值上 ≈ MWh。原型阶段为形态校准的仿真数据，接入 Supabase 后为真值。'],
     ['气象', real
       ? 'ERA5 再分析区域加权<b>真值</b>（气温/湿度/降水/风速），非单站实测。'
@@ -629,7 +623,6 @@ function renderLegendTable() {
     ['<span class="sw dash"></span>', '预测 P50', '中位路径'],
     ['<span class="sw dot"></span>', '实际 · 后续', '上帝视角'],
     ['<span class="sw thin"></span>', '昨日同时刻', '参照'],
-    ['<span class="sw rec"></span>', '历史峰值', '14 年纪录'],
   ].map(([sw, nm, d]) => `<span class="lg" title="${nm} · ${d}">${sw}<span>${nm}</span></span>`).join('');
 }
 
@@ -641,7 +634,7 @@ async function setZone(z: Zone) {
   state.zone = z;
   document.querySelectorAll('#zoneSeg button').forEach(b => b.classList.toggle('on', (b as HTMLElement).dataset.zone === z));
   const tok = nextToken();
-  if (SRC === 'live') await ensureWindow(z, state.origin);
+  if (SRC !== 'sim') await ensureWindow(z, state.origin); /* 快照/在线都实时校准视窗；仅仿真不查 */
   if (tok !== curToken()) return;
   renderAll(); dbgHook();
 }
@@ -649,7 +642,7 @@ async function setOrigin(ts: number, mode?: 'live' | 'replay') {
   state.origin = clamp(ts, T_MIN + 72 * HOUR, T_MAX - 48 * HOUR);
   state.mode = mode || (state.origin === NOW_DEFAULT ? 'live' : 'replay');
   const tok = nextToken();
-  if (SRC === 'live') await ensureWindow(state.zone, state.origin);
+  if (SRC !== 'sim') await ensureWindow(state.zone, state.origin);
   if (tok !== curToken()) return;
   renderAll(); dbgHook();
 }
@@ -741,8 +734,8 @@ function startEngine(src: string) {
   renderCaliber();
   renderAll();
   $('srcText').textContent = src === 'live' ? '在线 · Supabase' : src === 'snapshot' ? '真数据 · 快照' : '演示数据 · 仿真';
-  $('srcBadge').title = src === 'live' ? '实时查询生产库：energy_hourly（292,914 行）∪ energy_hourly_future（68,055）+ pred_static（41,688）+ 模型元数据'
-    : src === 'snapshot' ? 'PJM 负荷 + ERA5 天气真值快照（2004-10 → 2018-08），内嵌本页、断网可用'
+  $('srcBadge').title = src === 'live' ? '秒开 + 实时校准（SWR）：内嵌快照先行渲染，近窗与日峰已实时同步，查看任一历史段时按视窗实时查询生产库（energy_hourly ∪ energy_hourly_future + pred_static）'
+    : src === 'snapshot' ? 'PJM 负荷 + ERA5 天气真值快照（2004-10 → 2018-08），内嵌本页、断网可用；查看历史段时仍会实时查询生产库校准'
       : '形态校准的仿真数据';
 }
 async function boot() {
@@ -813,6 +806,11 @@ export function mountEngine(): () => void {
 
   bindInteractions();
   startClock();
+  /* feat-011：历史视窗实时校准——生产库数据回来后清预测缓存并重渲（数字同源通常不变） */
+  setLiveMergeHook(() => {
+    FC_CACHE.clear();
+    if (mounted) { renderAll(); dbgHook() }
+  });
 
   if (!bootStarted) {
     bootStarted = true;
@@ -824,6 +822,7 @@ export function mountEngine(): () => void {
 }
 function dispose() {
   mounted = false;
+  setLiveMergeHook(null);
   cleanups.forEach(fn => { try { fn() } catch { /* ignore */ } });
   cleanups.length = 0;
   dragging = false;

@@ -32,6 +32,24 @@ export const store = {
   model: null as ModelMeta | null,
 };
 
+/* 数据溯源（feat-011 秒开+SWR）：标记哪些日/预测起点来自实时查询而非内嵌快照。
+   查看历史视窗时对未校准的日发起真实 Supabase 查询（toast 可见），回写后清除 FC_CACHE 重渲。 */
+export const liveDays = new Map<Zone, Set<number>>(); // zone → 已实时校准的日序号集
+export const livePredOrigins = new Map<Zone, Set<number>>(); // zone → 已实时校准的 pred 起点集
+export function markLiveDays(zone: Zone, diLo: number, diHi: number) {
+  let s = liveDays.get(zone); if (!s) { s = new Set(); liveDays.set(zone, s) }
+  for (let di = diLo; di <= diHi; di++) s.add(di);
+}
+export function markLivePred(zone: Zone, origins: number[]) {
+  let s = livePredOrigins.get(zone); if (!s) { s = new Set(); livePredOrigins.set(zone, s) }
+  for (const o of origins) s.add(o);
+}
+export function isLiveDay(zone: Zone, di: number) { return !!liveDays.get(zone)?.has(di) }
+export function hasLivePredIn(zone: Zone, fromTs: number, toTs: number) {
+  for (const o of livePredOrigins.get(zone) || []) if (o > fromTs && o <= toTs) return true;
+  return false;
+}
+
 export let T_MIN = Date.UTC(2004, 9, 1, 5);
 export let T_MAX = Date.UTC(2018, 7, 3, 9);
 export let NOW_DEFAULT = Date.UTC(2018, 7, 1, 5); // 演示锚点（仿真口径）
@@ -69,9 +87,11 @@ export function applyAnchors(preserveView = false) { /* T_MIN/T_MAX/NOW/D0/D1 �
 }
 export function dbgHook() { /* window.ZL_DATA 断言钩子（懒加载形态） */
   const n = (z: Zone) => store.hours.get(z)?.size || 0;
+  const nl = (z: Zone) => liveDays.get(z)?.size || 0;
   (window as unknown as Record<string, unknown>).ZL_DATA = {
     src: SRC, live: SRC === 'live',
     hours: { AEP: n('AEP'), DAYTON: n('DAYTON'), DOM: n('DOM') },
+    liveHours: { AEP: nl('AEP'), DAYTON: nl('DAYTON'), DOM: nl('DOM') },
     daily: { AEP: store.daily.get('AEP')?.length || 0, DAYTON: store.daily.get('DAYTON')?.length || 0, DOM: store.daily.get('DOM')?.length || 0 },
     anchors: { tMin: T_MIN, tMax: T_MAX, nowDefault: NOW_DEFAULT },
     model: store.model,

@@ -4,7 +4,10 @@
    按需：ensureWindow（per-zone 串行队列 + toast）；sbFetch 3 次重试；sbPage 分页。
    ===================================================================== */
 import { ZONES, ZONE_KEYS, type Zone } from './const';
-import { applyAnchors, D1, sbToast, store, type DailyRow, type DayPack } from './store';
+import {
+  applyAnchors, D1, hasLivePredIn, isLiveDay, markLiveDays, markLivePred, sbToast, store,
+  type DailyRow, type DayPack,
+} from './store';
 import { dayTs, etP, fmtMD, HOUR, locDay, quantile } from './util';
 
 export const SB = {
@@ -90,6 +93,7 @@ export async function fetchHoursRange(zone: Zone, diLo: number, diHi: number, on
   const params = { zone: `eq.${zone}`, and, order: 'interval_end_utc.asc', select: COLS };
   const [a, b] = await Promise.all([sbPage<HRow>('energy_hourly', params, onRows), sbPage<HRow>('energy_hourly_future', params, onRows)]);
   putHours(a); putHours(b);
+  markLiveDays(zone, diLo, diHi); /* 该窗小时已实时查询校准（含空窗=核实为空） */
 }
 export function ingestPred(rows: PredRow[]) {
   const byZO: Record<string, Record<string, PredRow[]>> = {};
@@ -97,13 +101,16 @@ export function ingestPred(rows: PredRow[]) {
   for (const z in byZO) {
     if (!store.pred.has(z as Zone)) store.pred.set(z as Zone, new Map());
     const pm = store.pred.get(z as Zone)!;
+    const liveOrigins: number[] = [];
     for (const o in byZO[z]) {
       const ts = Date.parse(o);
+      liveOrigins.push(ts);
       if (pm.has(ts)) continue;
       const row: (number | null)[] = new Array(24).fill(null);
       for (const rr of byZO[z][o]) row[rr.forecast_horizon_hour - 1] = r1(rr.predicted_load_mw, 1);
       pm.set(ts, row);
     }
+    markLivePred(z as Zone, liveOrigins); /* 实时查询到的 pred 起点已校准 */
     store.predOrigins.set(z as Zone, [...pm.keys()].sort((x, y) => x - y));
   }
 }
@@ -169,26 +176,40 @@ export async function bootLayer1(preserveView = false) {
     }])),
   };
 }
-/* 按需拉取：ensureWindow（per-zone 串行队列 + toast），跳转/切区/松手统一走这里 */
+/* 实时合并钩子：数据从生产库回来后由 engine 清 FC_CACHE 并重渲（feat-011 SWR per view） */
+let onLiveMerge: (() => void) | null = null;
+export function setLiveMergeHook(fn: (() => void) | null) { onLiveMerge = fn; }
+function notifyLiveMerge() { try { onLiveMerge?.() } catch { /* ignore */ } }
+
+/* 按需拉取：ensureWindow（per-zone 串行队列 + toast），跳转/切区/松手统一走这里。
+   feat-011 语义升级：不只「缺数据才查」——视窗内存在「未实时校准」的日（来自快照）也发起真实查询，
+   页面先用快照即时渲染，查询回来后合并重渲（数字同源通常不变，网络面板可见真实请求）。 */
 const zoneQueue: Partial<Record<Zone, Promise<void>>> = {};
 export function ensureWindow(zone: Zone, originTs: number): Promise<void> {
   const task = async () => {
     const m = store.hours.get(zone) || new Map();
     const d0 = locDay(originTs), lo = d0 - 80, hi = d0 + 2;
-    let missing = 0; for (let di = lo; di <= hi; di++) if (!m.has(di)) missing++;
-    if (missing) {
-      sbToast(true, `查询生产库 · ${ZONES[zone].label.split(' ·')[0]} ${fmtMD(dayTs(d0))} 前后 ${missing} 天小时值`);
+    let missing = 0, stale = 0;
+    for (let di = lo; di <= hi; di++) {
+      if (!m.has(di)) missing++;
+      else if (!isLiveDay(zone, di)) stale++;
+    }
+    if (missing || stale) {
+      sbToast(true, `查询生产库 · ${ZONES[zone].label.split(' ·')[0]} ${fmtMD(dayTs(d0))} 前后 ${missing || stale} 天小时值`);
       await fetchHoursRange(zone, lo, hi);
       sbToast(false);
+      notifyLiveMerge();
     }
-    if (originTs >= Date.UTC(2016, 11, 1)) { /* 模型纪元：确保该起点（含偏差带用的昨日起点）附近有 pred_static */
+    if (originTs >= Date.UTC(2016, 11, 1)) { /* 模型纪元：该起点（含偏差带用的昨日起点）附近 pred 需实时校准 */
       const og = store.predOrigins.get(zone) || [];
       const has = og.some(o => o > originTs - 48 * HOUR && o <= originTs);
-      if (!has) {
+      const hasLive = hasLivePredIn(zone, originTs - 48 * HOUR, originTs);
+      if (!has || !hasLive) {
         const and = `(forecast_origin_utc.gte.${new Date(originTs - 48 * HOUR).toISOString()},forecast_origin_utc.lte.${new Date(originTs).toISOString()})`;
         sbToast(true, `查询生产库 · 模型在 ${fmtMD(originTs)} 起点的日前预测`);
         const rows = await sbPage<PredRow>('pred_static', { zone: `eq.${zone}`, and, order: 'forecast_origin_utc.asc', select: PRED_COLS });
         ingestPred(rows); sbToast(false);
+        notifyLiveMerge();
       }
     }
   };
