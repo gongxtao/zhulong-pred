@@ -99,7 +99,7 @@ export async function fetchHoursRange(zone: Zone, diLo: number, diHi: number, on
   putHours(a); putHours(b);
   markLiveDays(zone, diLo, diHi); /* 该窗小时已实时查询校准（含空窗=核实为空） */
 }
-export function ingestPred(rows: PredRow[]) {
+export function ingestPred(rows: PredRow[], override = false) { /* override=true（pred_dynamic 运营值）：同起点无条件覆盖；默认（pred_static）：首写优先 */
   const byZO: Record<string, Record<string, PredRow[]>> = {};
   for (const r of rows) { (byZO[r.zone] ??= {})[r.forecast_origin_utc] ??= []; byZO[r.zone][r.forecast_origin_utc].push(r) }
   for (const z in byZO) {
@@ -109,7 +109,7 @@ export function ingestPred(rows: PredRow[]) {
     for (const o in byZO[z]) {
       const ts = Date.parse(o);
       liveOrigins.push(ts);
-      if (pm.has(ts)) continue;
+      if (!override && pm.has(ts)) continue;
       const row: (number | null)[] = new Array(24).fill(null);
       for (const rr of byZO[z][o]) row[rr.forecast_horizon_hour - 1] = r1(rr.predicted_load_mw, 1);
       pm.set(ts, row);
@@ -157,12 +157,14 @@ export async function bootLayer1(preserveView = false) {
   const lo = D1 - 119;
   await Promise.all(ZONE_KEYS.map(z => fetchHoursRange(z, lo, D1 + 1, prog('h' + z))));
   ldSet(.99, '模型回测与元数据…');
-  /* 3) 近 70 天 pred_static（模型注入 + 近期残差分位） */
-  const psRows = await sbPage<PredRow>('pred_static', {
-    order: 'zone.asc,forecast_origin_utc.asc', select: PRED_COLS,
-    forecast_origin_utc: `gte.${new Date(dayTs(D1 - 70)).toISOString()}`,
-  }, prog('ps'));
-  ingestPred(psRows); calFrom(psRows);
+  /* 3) 近 70 天 pred_static（模型注入 + 近期残差分位）＋ 同窗 pred_dynamic（运营推送值，失败/空静默回退 static） */
+  const predWin = { order: 'zone.asc,forecast_origin_utc.asc', select: PRED_COLS, forecast_origin_utc: `gte.${new Date(dayTs(D1 - 70)).toISOString()}` };
+  const [psRows, pdRows] = await Promise.all([
+    sbPage<PredRow>('pred_static', predWin, prog('ps')),
+    sbPage<PredRow>('pred_dynamic', predWin).catch(() => [] as PredRow[]),
+  ]);
+  ingestPred(psRows); calFrom(psRows); /* 分位标定保持 static-only（dynamic 真值滞后且混模型污染残差带） */
+  ingestPred(pdRows, true); /* 同起点 dynamic 覆盖 static（运营模型优先） */
   /* 4) 模型元数据 */
   const H = { apikey: SB.KEY };
   const [mv, tt] = await Promise.all([
@@ -211,8 +213,13 @@ export function ensureWindow(zone: Zone, originTs: number): Promise<void> {
       if (!has || !hasLive) {
         const and = `(forecast_origin_utc.gte.${new Date(originTs - 48 * HOUR).toISOString()},forecast_origin_utc.lte.${new Date(originTs).toISOString()})`;
         sbToast(true, `查询生产库 · 模型在 ${fmtMD(originTs)} 起点的日前预测`);
-        const rows = await sbPage<PredRow>('pred_static', { zone: `eq.${zone}`, and, order: 'forecast_origin_utc.asc', select: PRED_COLS });
-        ingestPred(rows); sbToast(false);
+        const params = { zone: `eq.${zone}`, and, order: 'forecast_origin_utc.asc', select: PRED_COLS };
+        const [sta, dyn] = await Promise.all([
+          sbPage<PredRow>('pred_static', params),
+          sbPage<PredRow>('pred_dynamic', params).catch(() => [] as PredRow[]), /* 运营表失败/空不阻塞校准 */
+        ]);
+        ingestPred(sta); ingestPred(dyn, true); /* static 先入、dynamic 同起点覆盖 */
+        sbToast(false);
         notifyLiveMerge();
       }
     }

@@ -87,6 +87,22 @@
       "dependencies": ["feat-010"],
       "status": "done",
       "evidence": "verify.mjs 26/26：跳极涡 3 个真实 energy_hourly 查询（2013-10 窗）+liveHours 121→204+话术保持+二次零重查；秒开 1.07s/cov 85.6/49.0/三区/磁吸/离线快照全保持；lint+tsc+build 零错"
+    },
+    {
+      "id": "feat-014",
+      "name": "pred_dynamic 读层接入（运营模型优先）",
+      "description": "生产模型向 pred_dynamic 持续推送（实测 2016-02 段 WAPE 4.39→4.23% 三区全面更优）。读层升级：ingestPred 加 override 语义；bootLayer1 与 ensureWindow 的 pred 查询改双表（static 先入、dynamic 同起点覆盖、dynamic 失败/空静默回退）；calFrom 标定保持 static-only。模型纪元 2016-12-01 前回放数据不影响展示——回放推过纪元后数字自动变优，无需再改代码。（编号说明：feat-012/013 已被并行部署会话占用，见 progress.md）",
+      "dependencies": ["feat-011"],
+      "status": "done",
+      "evidence": "verify 31/31（新增第 31 项「boot 双轨预测查询」sta 5/dyn 1）；探针实测 boot 后 pred_dynamic 请求 1 次、在线徽章正常、断网回退快照不受影响；init.sh/tsc/eslint 零错；现有 30 项基线（MAPE 3.57/cov 85.6/49.0/三区）零漂移——dynamic 回放尚未覆盖模型纪元（2016-12-01），符合设计预期"
+    },
+    {
+      "id": "feat-015",
+      "name": "pred_dynamic 断言与口径收口",
+      "description": "verify.mjs 第 31 项断言（boot 后网络面板须含 pred_static ∪ pred_dynamic 请求）；engine.ts 口径文案双轨化（srcBadge title + 预测口径「双轨注入、运营推送值优先、回测值兜底」）；session-handoff.md 升格为权威交接文档（用户裁决：docs/zhulong-handoff.md 冻结为历史记录）",
+      "dependencies": ["feat-014"],
+      "status": "done",
+      "evidence": "verify 31/31 全绿；口径两处更新后「杀手锏话术/极涡话术」断言保持；lint+tsc 零错"
     }
   ]
 }

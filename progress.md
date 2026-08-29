@@ -268,3 +268,33 @@ verify 30/30（新增：markArea=0 / 无历史峰值 markLine / b50 不存在 b9
   直连 GitHub 被 reset）——HEAD ed8ada1，README 已加源码地址
 - 注：早期历史提交中曾含 .omc 工具状态（无密钥，init.sh 全程扫描 service_role 零命中）；
   如需彻底清除历史可 filter-repo 重写（会改写全部 commit hash，未做）
+
+## 2026-08-29 · feat-014/015 pred_dynamic 读层接入（运营模型优先）
+
+**背景**：生产模型开始向 pred_dynamic 推送。实测四表版图——energy_hourly(2004-10→2016-02, 295,002 行)
+∪ energy_hourly_future(2016-01→2018-08-03, 68,055 行) 是唯一 14 年负荷+4 列气象档案，不可被 pred 表替换
+（用户曾提议替换，已论证否决）；pred_static(68,040 行=945 起点×24h×3 区) 是冻结回测；
+pred_dynamic 是运营推送流（同构六列）。同窗对决：2016-02 段 dynamic WAPE 4.23% vs static 4.39%（-3.8%，
+三区全面更优；1 月值与 static 逐值相同、2 月起换新模型）。
+
+**坑（重要）**：pred_dynamic 建表时漏配 anon SELECT 策略——RLS 拦截时 PostgREST 返回 200+空集，
+与空表从客户端无法区分；用户已在库端补 `for select to anon using (true)`。新表上线 checklist 应含策略对照。
+
+**feat-014 改动**（web/src/lib/zl/supabase.ts 三处，~30 行）：
+1. `ingestPred(rows, override=false)`——static 首写优先不变；dynamic 传 override=true 同起点无条件覆盖
+2. `bootLayer1` 步骤 3 双表并行（同 D1-70 窗），`.catch(()=>[])` 隔离——dynamic 空/失败不得拖垮 boot
+3. `ensureWindow` 纪元内起点校准双表（同参数 Promise.all），走既有 notifyLiveMerge → 清 FC_CACHE 重渲
+
+**不变**：calFrom 分位标定 static-only（dynamic 真值滞后且混模型污染残差带）；小时/日峰表查询零改动；
+快照结构不动（SWR 首渲 static、live 合并 dynamic 覆盖属预期行为）。
+
+**验收**：verify **31/31**（第 31 项新增「boot 双轨预测查询 sta 5/dyn 1」）；探针实测 boot 后 pred_dynamic
+请求 1 次、在线徽章正常；init.sh/tsc/eslint 零错；现有 30 项基线零漂移（dynamic 回放 6.3%，未过模型纪元
+2016-12-01，今天接入可见表现为零变化——纯「线路就绪」，回放推进后数字自动变优）。
+
+**feat-015 收口**：verify 第 31 项断言；engine.ts 口径双轨化（srcBadge title + 预测口径文案）；
+session-handoff.md 升格为权威交接文档（用户裁决，docs/zhulong-handoff.md 冻结为历史）。
+
+**运维提示（后续会话必读）**：pred_dynamic 回放推过 2018-05 后，首屏 MAPE 3.57/cov 85.6/49.0 等
+verify 硬编码基线将因数据变优而失配——那是数据升级不是回归，届时重记录基线即可；
+路演现场若回放完成，演示数字自动体现新模型。

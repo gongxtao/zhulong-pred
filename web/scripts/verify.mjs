@@ -63,6 +63,9 @@ try {
     legendHasRec: document.getElementById('legendTable').textContent.includes('历史峰值'),
   }));
   check('后台同步完成 → 在线徽章', phase2.badge.includes('在线'), phase2.badge);
+  check('boot 双轨预测查询（static ∪ dynamic）',
+    sbRequests.some(u => u.includes('pred_static')) && sbRequests.some(u => u.includes('pred_dynamic')),
+    `sta ${sbRequests.filter(u => u.includes('pred_static')).length} / dyn ${sbRequests.filter(u => u.includes('pred_dynamic')).length}`);
   check('主图历史峰值线已移除（用户裁决）', phase2.legendHasRec === false);
   const marks = await page.evaluate(() => {
     const opt = window.__zlCharts.mainC.getOption();

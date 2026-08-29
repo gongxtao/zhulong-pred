@@ -473,7 +473,7 @@ function renderCaliber() {
       : 'ERA5 再分析区域加权（Open-Meteo），非单站实测：气温/湿度/降水/风速。'],
     ['时间', '入库统一 UTC（interval_end，区间右端）；展示统一为美东标准时间 EST（UTC−5）。2004-10 至 2018-08' + (real ? '（DOM 区自 2005-05 起）' : '') + '。'],
     ['预测', real
-      ? '<b>0–24h：生产模型</b>（梯度提升回归，Supabase model_versions 注册、pred_static 579 起点回测标定分位带）；<b>25–48h：相似日分位数基线</b>（按目标日同星期、k=10）＋残差经验分位标定。无未来信息泄露。'
+      ? '<b>0–24h：生产模型</b>（梯度提升回归，Supabase model_versions 注册；pred_static/pred_dynamic 双轨注入——运营推送值优先、回测值兜底，分位带由 pred_static 残差标定）；<b>25–48h：相似日分位数基线</b>（按目标日同星期、k=10）＋残差经验分位标定。无未来信息泄露。'
       : '相似日分位数基线（按目标日同星期、就近 70 天、k=10）＋残差经验分位标定；无未来信息泄露。正式模型交付后按 p10–p90 契约替换。'],
     ['建议', '建议容量 = P90 上界 − 97%×P50（向上取整至 50 MW）：按「最坏情形超出预期的部分」预留调峰资源；预备窗 = 峰前 3 小时。P90 上界取逐时分位数的包络（跨时刻拼接，结果偏保守）；正式版按日峰值分布的分位数计算。'],
     ['气象输入', real
@@ -737,7 +737,7 @@ function startEngine(src: string) {
   renderCaliber();
   renderAll();
   $('srcText').textContent = src === 'live' ? '在线 · Supabase' : src === 'snapshot' ? '真数据 · 快照' : '演示数据 · 仿真';
-  $('srcBadge').title = src === 'live' ? '秒开 + 实时校准（SWR）：内嵌快照先行渲染，近窗与日峰已实时同步，查看任一历史段时按视窗实时查询生产库（energy_hourly ∪ energy_hourly_future + pred_static）'
+  $('srcBadge').title = src === 'live' ? '秒开 + 实时校准（SWR）：内嵌快照先行渲染，近窗与日峰已实时同步，查看任一历史段时按视窗实时查询生产库（energy_hourly ∪ energy_hourly_future + pred_static ∪ pred_dynamic 运营推送）'
     : src === 'snapshot' ? 'PJM 负荷 + ERA5 天气真值快照（2004-10 → 2018-08），内嵌本页、断网可用；查看历史段时仍会实时查询生产库校准'
       : '形态校准的仿真数据';
 }
