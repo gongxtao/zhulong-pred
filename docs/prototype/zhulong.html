@@ -1029,7 +1029,7 @@ function renderStatusQuad(){
   const dPct=(nowV-yesV)/yesV*100;
   const devOk=dev!=null&&Math.abs(dev)<1.5;
   const recGap=(peak90.p90-RECORD[z].v)/RECORD[z].v*100;
-  const mapeShow=live?mape:replayBT().mape;
+  const mapeShow=(!live&&state.opts.god)?replayBT().mape:mape; /* 盲测时误差格回到全局口径 */
   $('sqTip').style.display='none'; /* 重渲即关：防悬空 */
   $('statusQuad').innerHTML=`
     <div class="sq" title="${WD_ZH[etP(org).wd]} ${fmtHM(org)}（美东）${live?'':' · 重演中，拖动胶片回放任一天'}">
@@ -1048,8 +1048,8 @@ function renderStatusQuad(){
       <div class="sq-v num" style="color:${C.fcHi}">${fmt(peak.p50)}<small>MW</small><small class="at">@${peakEt}</small></div>
       <div class="sq-s">最坏 P90 <b class="num">${fmt(peak90.p90)}</b></div>
     </div>
-    <div class="sq" title="MAPE = 日前 24h 预测平均绝对百分比误差 · 行业优良 &lt;3% · ${live?'近 28 起点回测':'本段重演 · 24h'}">
-      <div class="sq-l">预测误差${live?'':' · 本段重演'}<span class="db-q sq-i" data-sq="3" role="button" tabindex="0">i</span></div>
+    <div class="sq" title="MAPE = 日前 24h 预测平均绝对百分比误差 · 行业优良 &lt;3% · ${(!live&&state.opts.god)?'本段重演 · 24h':'近 28 起点回测'}">
+      <div class="sq-l">预测误差${(!live&&state.opts.god)?' · 本段重演':''}<span class="db-q sq-i" data-sq="3" role="button" tabindex="0">i</span></div>
       <div class="sq-v num">${mapeShow.toFixed(2)}<small>%</small></div>
       <div class="sq-s">${mapeShow<3?'<span class="badge ok">✓ 优于 3%</span>':'<span class="badge warn">劣于 3%</span>'} P90 命中 <b class="num">${cov90.toFixed(1)}%</b></div>
     </div>`;
@@ -1128,7 +1128,8 @@ function backToLive(){setOrigin(NOW_DEFAULT,'live')}
 function toggleGod(){
   state.opts.god=!state.opts.god;
   const cb=$('optGod');if(cb)cb.checked=state.opts.god;
-  renderMain();renderDecision();
+  /* 全联动：主图(线+偏差追踪) + 横幅(文案+tag) + 图例(chip) + 审计卡(本段重演⇄全局回测) + 四格(误差格口径) */
+  renderMain();renderDecision();renderLegendTable();renderCred();renderStatusQuad();
 }
 function renderDecision(){
   const z=state.zone,org=state.origin;
@@ -1139,7 +1140,9 @@ function renderDecision(){
     bn.innerHTML=`
       <div class="db-strip">
         <span class="db-tag" id="replayTag" style="cursor:pointer" title="回到当前（实时）">↺ 时光机 · 重演</span>
-        <span class="db-msg">起点 <b class="win">${fmtFull(org)}</b>——此刻之后的预测，正与真实历史对质</span>
+        <span class="db-msg">起点 <b class="win">${fmtFull(org)}</b>${state.opts.god
+          ?'——此刻之后的预测，正与真实历史对质'
+          :'——盲测中：像当时一样，只见预测、不知后续'}</span>
         <span class="sevTag" id="godTag" style="background:#E0F2FE;color:#0E7490;cursor:pointer" title="点击开关上帝视角（真实后续）">上帝视角 ${state.opts.god?'开':'关'}</span>
       </div>`;
     $('replayTag').onclick=()=>backToLive();
@@ -1223,7 +1226,7 @@ function renderAttrib(){
 function renderCred(){
   const z=state.zone;
   let per=BT[z],scope='近 28 个起点回测';
-  if(state.mode!=='live'){per=[replayBT()],scope='本段重演 · 24h'}
+  if(state.mode!=='live'&&state.opts.god){per=[replayBT()],scope='本段重演 · 24h'} /* 盲测(上帝视角关)时不展示对质结果 */
   const n=per.length;
   const c50=per.reduce((s,d)=>s+d.cov50,0)/n, c90=per.reduce((s,d)=>s+d.cov90,0)/n;
   const mape=per.reduce((s,d)=>s+d.mape,0)/n;
@@ -1247,7 +1250,7 @@ function renderCred(){
     okC90&&okC50?'✓ 区间校准通过：实际命中率与标称一致，P90 可作调度底线'
     :'⚠ 区间'+(c90<84?'偏窄':'偏宽')+'：已按回测自动修正张开系数'}</span>`;
   /* 基线对比：持久性（昨日同时 = 预测）vs 本模型——页面内实时复算 */
-  const pers=state.mode==='live'?PERS[z]:(()=>{
+  const pers=(state.mode==='live'||!state.opts.god)?PERS[z]:(()=>{
     let se=0,n=0;
     for(const p of forecastAt(z,state.origin)){const a=loadAt(z,p.ts),pp=loadAt(z,p.ts-24*HOUR);se+=Math.abs(pp-a)/a;n++}
     return se/n*100;
@@ -1444,7 +1447,8 @@ document.querySelectorAll('#rangeSeg button').forEach(b=>b.onclick=()=>{
 });
 ['optTemp','optYday','optGod','optPeak'].forEach(id=>{
   $(id).addEventListener('change',()=>{state.opts[id.slice(3).toLowerCase()]=$(id).checked;
-    renderMain();renderStatusQuad();renderDecision()});
+    renderMain();renderStatusQuad();renderDecision();
+    if(id==='optGod'){renderLegendTable();renderCred()} /* 上帝视角全联动 */});
 });
 /* 弹层开合（anchor='left' 时以按钮左缘对齐——供页面左侧的入口用） */
 function togglePop(pop,btn,anchor){
@@ -1916,15 +1920,18 @@ function loadSnapshot(){
   }
   console.info(`[烛龙] 数据源=${SRC} · 首屏 ${(performance.now()-t0)/1000|0}s`);
 })();
-function renderLegendTable(){
-  $('legendTable').innerHTML=[
+function renderLegendTable(){ /* 上帝视角联动：关闭时「实际 · 后续」chip 一并退场 */
+  const rows=[
     ['<span class="sw"></span>','实际负荷','截至 NOW'],
     ['<span class="sw band"></span>','P10–P90 / P25–P75','内深外浅'],
     ['<span class="sw dash"></span>','预测 P50','中位路径'],
-    ['<span class="sw dot"></span>','实际 · 后续','上帝视角'],
+  ];
+  if(state.opts.god)rows.push(['<span class="sw dot"></span>','实际 · 后续','上帝视角']);
+  rows.push(
     ['<span class="sw thin"></span>','昨日同时刻','参照'],
     ['<span class="sw rec"></span>','历史峰值','14 年纪录'],
-  ].map(([sw,nm,d])=>`<span class="lg" title="${nm} · ${d}">${sw}<span>${nm}</span></span>`).join('');
+  );
+  $('legendTable').innerHTML=rows.map(([sw,nm,d])=>`<span class="lg" title="${nm} · ${d}">${sw}<span>${nm}</span></span>`).join('');
 }
 </script>
 </body>
