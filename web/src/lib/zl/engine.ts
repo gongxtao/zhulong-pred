@@ -1057,8 +1057,8 @@ function bindInteractions() {
     const flush = () => {
       if (!table.length) return;
       const body = table.slice(1).filter(r => !r.every(c => /^[-:\s]*$/.test(c)));
-      out.push('<table class="chat-tb"><thead><tr>' + table[0].map(c => `<th>${c}</th>`).join('')
-        + '</tr></thead><tbody>' + body.map(r => '<tr>' + r.map(c => `<td>${c}</td>`).join('') + '</tr>').join('') + '</tbody></table>');
+      out.push('<div class="chat-tbw"><table class="chat-tb"><thead><tr>' + table[0].map(c => `<th>${c}</th>`).join('')
+        + '</tr></thead><tbody>' + body.map(r => '<tr>' + r.map(c => `<td>${c}</td>`).join('') + '</tr>').join('') + '</tbody></table></div>');
       table = [];
     };
     for (const ln of esc.split('\n')) {
@@ -1103,6 +1103,14 @@ function bindInteractions() {
     ($('chatInput') as HTMLTextAreaElement).value = '';
     let cur = '';
     const r = await streamChat(ctx + text, chatSessionId, {
+      onThink: th => {
+        /* 思考流上屏（尾部滚动）：让用户看到助手在干活，不是卡住；答案到达后被替换 */
+        typing.remove(); bubble.style.display = '';
+        bubble.innerHTML = '<div class="chat-think"><span class="spin"></span></div>';
+        const t = bubble.firstChild as HTMLElement;
+        t.append('思考中 · ' + th.slice(-260));
+        log.scrollTop = log.scrollHeight;
+      },
       onText: full => {
         cur = full;
         typing.remove(); bubble.style.display = ''; bubble.innerHTML = chatMd(full);

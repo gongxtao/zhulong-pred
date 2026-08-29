@@ -6,7 +6,11 @@
    - object:"response" status:"completed" 的 output[] = 权威全文（type:"message" 才是答案）
    兼容官方文档的 output 快照格式作为回退路径。
    ===================================================================== */
-export interface ChatCbs { onText(full: string): void; onStatus(s: 'thinking' | 'done' | 'error'): void }
+export interface ChatCbs {
+  onText(full: string): void
+  onThink(full: string): void /* 思考流（reasoning 累计），供 UI 展示"没卡住" */
+  onStatus(s: 'thinking' | 'done' | 'error'): void
+}
 
 export async function streamChat(text: string, sessionId: string, cbs: ChatCbs): Promise<{ ok: boolean; error?: string }> {
   let res: Response;
@@ -27,11 +31,17 @@ export async function streamChat(text: string, sessionId: string, cbs: ChatCbs):
   const msgText = new Map<string, string>(); /* msg_id → 已积累文本 */
   const msgKind = new Map<string, string>(); /* msg_id → 'reasoning' | 'message' */
   let acc = ''; /* 答案文本（type:"message" 串接） */
+  let thinkAcc = ''; /* 思考文本（type:"reasoning" 串接） */
 
   const emit = () => {
-    const parts: string[] = [];
-    for (const [id, kind] of msgKind) if (kind === 'message' && msgText.get(id)) parts.push(msgText.get(id)!);
-    const full = parts.join('\n');
+    const parts: string[] = [], thinks: string[] = [];
+    for (const [id, kind] of msgKind) {
+      const t = msgText.get(id);
+      if (!t) continue;
+      (kind === 'message' ? parts : thinks).push(t);
+    }
+    const full = parts.join('\n'), th = thinks.join('\n');
+    if (th && th !== thinkAcc) { thinkAcc = th; cbs.onThink(thinkAcc); }
     if (full) { acc = full; cbs.onText(acc); }
   };
 
@@ -64,8 +74,7 @@ export async function streamChat(text: string, sessionId: string, cbs: ChatCbs):
         const delta = ev.delta === true, t = (ev.text as string) || '';
         const cur = msgText.get(ev.msg_id) ?? '';
         msgText.set(ev.msg_id, delta ? cur + t : (t || cur));
-        if (msgKind.get(ev.msg_id) === 'message') emit();
-        /* reasoning 的增量只维持 thinking 态，不上屏 */
+        emit(); /* message → 答案流；reasoning → 思考流 */
       } else if (obj === 'response') {
         if (status === 'completed') {
           /* 权威终值：output[] 中 type:"message" 的全文 */

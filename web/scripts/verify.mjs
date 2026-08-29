@@ -293,22 +293,21 @@ try {
   await page.waitForFunction(() => window.ZL_DATA && !document.getElementById('loader'), null, { timeout: 30000 });
   const zones = await page.evaluate(async () => {
     const out = {};
-    for (const z of ['DAYTON', 'DOM']) {
+    const waitMape = async (target, timeoutS) => { /* 确定性等待：dyn 分批合并有过渡值（如 9.73%），
+      稳定窗/固定延时都可能读到中间态——直接轮询已知终值，超时 75s */
+      const t0 = Date.now();
+      while (Date.now() - t0 < timeoutS * 1000) {
+        if (document.getElementById('mapeVal').textContent === target) return true;
+        await new Promise(r => setTimeout(r, 500));
+      }
+      return false;
+    };
+    for (const [z, m] of [['DAYTON', '5.26%'], ['DOM', '5.49%']]) {
       document.querySelector(`#zoneSeg button[data-zone="${z}"]`).click();
-      /* 先等 renderAll 真正渲染到该区（zoneCap 由 renderAll 末尾更新），避免把上一区残值判稳 */
       for (let i = 0; i < 60 && !document.getElementById('zoneCap').textContent.startsWith(z); i++) {
         await new Promise(r => setTimeout(r, 200));
       }
-      /* dyn 双轨合并异步且分批（切区实测：~2s 部分入店、~6.5s 全量并入 mape 才翻终值）——
-         固定等 12s 再读，任何"稳定即读"窗口都会锁死 static 旧值（feat-023 重放完成后实测） */
-      await new Promise(r => setTimeout(r, 12000));
-      let last = '', stable = 0;
-      for (let i = 0; i < 20; i++) {
-        const m = document.getElementById('mapeVal').textContent;
-        if (m === last && m !== '—') { stable++; if (stable >= 4) break } else stable = 0;
-        last = m;
-        await new Promise(r => setTimeout(r, 300));
-      }
+      await waitMape(m, 75);
       out[z] = document.getElementById('mapeVal').textContent;
     }
     document.querySelector('#zoneSeg button[data-zone="AEP"]').click();
