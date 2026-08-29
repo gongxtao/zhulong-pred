@@ -190,6 +190,8 @@ export default function Home() {
           <button data-q="对比持续学习(pred_dynamic)与静态模型(pred_static)在 AEP 区 2016 年 3 月的日前预测精度（MAPE/WAPE），给出结论和数字">持续学习比静态模型好多少？</button>
           <button data-q="查询 pred_dynamic 表 AEP 区 forecast_origin_utc 为 2016-03-15 的日前预测：逐小时 predicted_load_mw 与 actual_load_mw、并给出当日 MAPE">查 AEP 2016-03-15 前 24h 预测</button>
           <button data-q="分析 pred_dynamic 表：三个区（AEP/DAYTON/DOM）各自的 MAPE 排名如何？误差按 forecast_horizon_hour 分桶后哪个时距段最差？">哪个区、哪个时段误差最大？</button>
+          <button data-q="用 pred_dynamic 表 AEP 区按季度聚合 MAPE 看趋势：持续学习的误差是否随时间改善？与 pred_static 同窗对比（静态应持平、动态应下降），给出逐季表格和结论">误差在改善吗？看学习趋势</button>
+          <button data-q="分析 pred_dynamic 表 AEP 区：按 forecast_origin_utc 起点日聚合当日 MAPE，列出最差的 5 天（日期+MAPE），并指出各自误差集中在哪个时距段">哪些天预测得最差？</button>
         </div>
         <div className="chat-input">
           <textarea id="chatInput" rows={2} maxLength={500} placeholder="问 pred_dynamic 的任何问题…（Enter 发送 · Shift+Enter 换行）" autoComplete="off"></textarea>

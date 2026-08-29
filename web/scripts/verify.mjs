@@ -346,7 +346,7 @@ try {
   });
   check('ChatBI：悬浮按钮存在', chat7.btn === true);
   check('ChatBI：弹层可开', chat7.open === true);
-  check('ChatBI：预设 chips 3 个', chat7.chips === 3, String(chat7.chips));
+  check('ChatBI：预设 chips 5 个', chat7.chips === 5, String(chat7.chips));
   check('ChatBI：与口径弹层互斥', chat7.mutex === true);
   check('ChatBI：发送→降级气泡（未连接）', chat7.afterSend === true);
   check('ChatBI：关闭按钮生效', chat7.closed === true);

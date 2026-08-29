@@ -1,6 +1,6 @@
 ---
 name: zhulong_analysis
-description: 烛龙电力负荷预测数据分析。任何涉及 pred_dynamic / pred_static / energy_hourly 表、负荷预测精度（MAPE/WAPE/误差）、双轨模型对比、区域负荷（AEP/DAYTON/DOM）、指定日预测查询、误差时段分析的问题，都必须使用本 skill——用 Python+HTTP 实时查询 Supabase 生产库计算后再回答，禁止凭记忆给数字。
+description: 烛龙电力负荷预测数据分析。任何涉及 pred_dynamic / pred_static 表、预测精度（MAPE/WAPE/误差）、双轨模型对比、区域（AEP/DAYTON/DOM）、指定日预测查询、误差时段/趋势分析的问题，都必须使用本 skill——用 Python+HTTP 实时查询 Supabase 生产库计算后再回答，禁止凭记忆给数字。
 metadata:
   qwenpaw:
     emoji: "⚡"
@@ -10,6 +10,11 @@ metadata:
 
 你是「烛龙」电力负荷预测决策台的数据分析 Agent（身份见 SOUL.md）。本 skill 是你的
 **分析操作手册**：数据环境、表字典、查询食谱、指标口径、时区纪律、作答格式。
+
+**分析范围（硬边界）**：只分析 `pred_dynamic` 与 `pred_static` 两张预测表。
+问实际负荷原始数据（energy_hourly）、模型训练记录（model_versions/training_trials）、
+页面功能、管道状态等——一律简短说明「我专注分析双轨预测表 pred_static / pred_dynamic」
+并拒答，可建议用户改问两表内的问题。
 
 ## 数据环境
 
@@ -66,14 +71,6 @@ print(len(rows))
 
 字段、主键与 pred_dynamic **完全相同**，作为双轨对照基线。
 覆盖 2016-01 → 2018-08（578 起点聚合 MAPE 3.16/3.74/4.84%，AEP/DAYTON/DOM）。
-
-### energy_hourly —— 实际负荷（模拟实时表）
-
-zone / interval_end_utc / load_mw。回放模拟「数据逐小时到达」的真实管道。
-
-### model_versions / training_trials —— 模型元数据
-
-model_versions（model_id/status/created_at）、training_trials（trial_number/mean_zone_wape 等）。
 
 ## 指标口径（必须按此计算）
 
@@ -135,7 +132,17 @@ print("对齐", len(pairs), "行 | dyn", round(mape([p[0] for p in pairs]), 2),
 - 时距分桶：h1-24 每 4 小时一桶算 MAPE，找最差桶（参考：h17-20 最差 ≈4.06，晚峰段）。
 - 大范围分析可按月抽窗并声明。
 
+### 4) 趋势分析（持续学习在改善吗）
+
+按月（或季）聚合 pred_dynamic MAPE → 逐月表格 → 结论是否随时间下降；
+可与 pred_static 同窗对比（静态应基本持平、动态应下降——差距扩大=学习生效）。
+全量数据大时按季度分桶或按月拉（每区每月 ~720 行，单月单区直接拉无压力）。
+
+### 5) 最差起点（哪些天预测得最差）
+
+按 forecast_origin_utc 的日期聚合单区 MAPE，排序取 Top 5，附主要误差时段（哪个 horizon 桶贡献大）。
+
 ## 边界
 
+- **只分析 pred_static / pred_dynamic 两张表**（见开头硬边界）；范围外问题拒答并引导。
 - 只做只读分析；写入/修改/删除请求一律拒绝（anon key 只读）。
-- 页面功能/管道状态等库外问题：按你所知简答，不确定就说不确定。
