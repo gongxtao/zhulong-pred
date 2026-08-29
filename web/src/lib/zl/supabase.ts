@@ -3,7 +3,7 @@
    boot 近窗（bootLayer1，~40 请求 ≈12s）→ 失败回退内嵌快照 → 再失败仿真。
    按需：ensureWindow（per-zone 串行队列 + toast）；sbFetch 3 次重试；sbPage 分页。
    ===================================================================== */
-import { ZONES, ZONE_KEYS, type Zone } from './const';
+import { PRED_EPOCH, ZONES, ZONE_KEYS, type Zone } from './const';
 import {
   applyAnchors, D1, hasLivePredIn, isLiveDay, markLiveDays, markLivePred, sbToast, store,
   type DailyRow, type DayPack,
@@ -209,7 +209,7 @@ export function ensureWindow(zone: Zone, originTs: number): Promise<void> {
       sbToast(false);
       notifyLiveMerge();
     }
-    if (originTs >= Date.UTC(2016, 0, 1, 4)) { /* pred 纪元=2016-01-01 首起点（feat-018 放开原 2016-12 门：2016 全年重演窗也实时拉双轨真预测）；更早无 pred 数据，走相似日 */
+    if (originTs >= PRED_EPOCH) { /* pred 纪元=PRED_EPOCH 首起点（feat-018 放开原 2016-12 门：2016 全年重演窗也实时拉双轨真预测）；更早无 pred 数据，走相似日 */
       const og = store.predOrigins.get(zone) || [];
       const has = og.some(o => o > originTs - 48 * HOUR && o <= originTs);
       const hasLive = hasLivePredIn(zone, originTs - 48 * HOUR, originTs);

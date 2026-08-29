@@ -117,6 +117,24 @@ try {
   check('跳极涡 → 真实查询生产库（2013-10 窗）', vortexQ >= 1, `${vortexQ} 请求`);
   check('实时校准标记增长', liveAfter > liveBefore, `liveHours ${liveBefore}→${liveAfter}`);
   check('极涡话术在实时校准后保持', await page.evaluate(() => document.getElementById('basisCmp').textContent.includes('17.02%') && document.getElementById('basisCmp').textContent.includes('23.14%')));
+  /* feat-020 预测纪元分割：极涡窗（2014-01，纪元前）= 档案模式 */
+  const preE = await page.evaluate(() => {
+    const names = window.__zlCharts.mainC.getOption().series.map(s => s.name);
+    const quad = [...document.querySelectorAll('#statusQuad .sq-l')].map(e => e.textContent.trim());
+    return {
+      noPred: !names.includes('持续学习 P50') && !names.includes('静态预测') && !names.includes('b90'),
+      epochMark: !!document.querySelector('.filmEpoch'),
+      quadArc: quad.some(t => t.includes('今日峰值 · 实际')),
+      banner: document.getElementById('decisionBanner').textContent.includes('模型纪元'),
+      basisRelabel: document.getElementById('basisCmp').textContent.includes('相似日基线'),
+      godKept: names.includes('实际·后续') || !document.getElementById('godToggle'), /* 上帝视角数据线保留（若开） */
+    };
+  });
+  check('纪元前：预测层全部隐藏（档案模式）', preE.noPred);
+  check('胶片预测纪元分割标记（2016-01）', preE.epochMark);
+  check('纪元前四格档案语义（今日峰值·实际）', preE.quadArc);
+  check('纪元前决策条文案（无预测建议）', preE.banner);
+  check('杀手锏话术改标：相似日基线（纪元前）', preE.basisRelabel);
   // 二次访问同一窗：不再重查
   sbRequests.length = 0;
   await page.locator('#bnBackLive').waitFor({ timeout: 5000 }); /* 防与 liveMerge 重渲竞态 */
@@ -135,7 +153,7 @@ try {
   const replay = await page.evaluate(() => ({
     chip: document.getElementById('modeChip').textContent,
     backBtn: !!document.getElementById('bnBackLive'),
-    basis: document.getElementById('basisCmp').textContent.replace(/\s+/g, ' ').slice(0, 46),
+    basis: document.getElementById('basisCmp').textContent.replace(/\s+/g, ' ').slice(0, 60),
   }));
   check('极涡重演 + ↩ 回到实时按钮', replay.chip.includes('重演') && replay.backBtn, replay.chip);
   check('杀手锏话术 17.02→23.14 落后', replay.basis.includes('17.02%') && replay.basis.includes('23.14%') && replay.basis.includes('落后'), replay.basis);

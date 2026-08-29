@@ -6,7 +6,7 @@
    ===================================================================== */
 import * as echarts from 'echarts';
 import {
-  EVENTS, H_FC, RANGES, SQ_TIPS, THEMES, ZONES, ZONE_KEYS, type Theme, type Zone,
+  EVENTS, H_FC, PRED_EPOCH, RANGES, SQ_TIPS, THEMES, ZONES, ZONE_KEYS, type Theme, type Zone,
 } from './const';
 import {
   applyAnchors, buildDaily, curToken, daily, dbgHook, loadAt, nextToken, NOW_DEFAULT,
@@ -81,6 +81,7 @@ function bandStack(fc: ReturnType<typeof forecastAt>, loK: 'p10' | 'p25', hiK: '
 function renderMain() {
   const { hist, god, fc, temps, back } = stageData();
   const stat = staticLineAt(state.zone, state.origin); /* 静态模型对照线（predStatic 原始轨） */
+  const preEpoch = state.origin < PRED_EPOCH; /* 预测纪元前=档案模式：无任何预测层（用户裁决 feat-020） */
   const org = state.origin;
   const tMax = org + H_FC * HOUR;
   /* 未来 24h 峰值与决策数字（钉在图上） */
@@ -100,18 +101,18 @@ function renderMain() {
   }
 
   const series = [
-    ...bandStack(fc, 'p10', 'p90', 'b90', C.b90),
+    ...(preEpoch ? [] : bandStack(fc, 'p10', 'p90', 'b90', C.b90)),
     /* 内层 P25–P75 窄带已按用户裁决移除（2026-08-29）：P50 在宽带中央，窄带视觉突兀；
        cov50 数字仍按需呈现于审计卡与悬停 */
     { name: '实际·后续', type: 'line', data: god, showSymbol: false, z: 3,
       lineStyle: { color: C.actual, type: 'dotted', width: 1.7, opacity: .7 }, itemStyle: { color: C.actual },
       endLabel: { show: god.length > 0, formatter: '真实', color: C.ink3, fontSize: 10, distance: 4 } },
-    { name: '静态预测', type: 'line', data: stat, showSymbol: false, z: 4, silent: true,
+    ...(preEpoch ? [] : [{ name: '静态预测', type: 'line', data: stat, showSymbol: false, z: 4, silent: true,
       lineStyle: { color: C.yday, width: 1.7, type: 'dashed', opacity: .95 }, itemStyle: { color: C.yday },
       endLabel: { show: stat.length > 0, formatter: '静态', color: C.yday, fontSize: 10, fontWeight: 600, distance: 4 },
       /* 线尾标签左下入图（右缘裁剪修复）+ 与学习线错位（重合段两线同值，标签须避让不叠字） */
       labelLayout: stat.length ? { dx: -16, dy: 14 } : undefined,
-      tooltip: { show: false } },
+      tooltip: { show: false } }]),
     { name: '实际负荷', type: 'line', data: hist, showSymbol: false, z: 6,
       lineStyle: { color: C.actual, width: 3 }, itemStyle: { color: C.actual },
       emphasis: { focus: 'series' },
@@ -128,7 +129,7 @@ function renderMain() {
           { coord: [hist[hist.length - 1][0], hist[hist.length - 1][1]], symbolSize: 15,
             itemStyle: { color: 'transparent', borderColor: C.actual, borderWidth: 1.5, opacity: .55 } }] },
     },
-    { name: '持续学习 P50', type: 'line', data: fc.map(p => [p.ts, p.p50]), showSymbol: false, z: 5,
+    ...(preEpoch ? [] : [{ name: '持续学习 P50', type: 'line', data: fc.map(p => [p.ts, p.p50]), showSymbol: false, z: 5,
       lineStyle: { color: C.fc, width: 1.8, type: 'dashed' }, itemStyle: { color: C.fc }, emphasis: { focus: 'series' },
       endLabel: { show: true, formatter: 'P50', color: C.fcHi, fontSize: 10, fontWeight: 600, distance: 4 },
       labelLayout: { dx: -14, dy: -10 }, /* 线尾标签移入图内（右缘裁剪修复，与「静态」上下错开 */
@@ -137,14 +138,14 @@ function renderMain() {
         /* 文字标注移至 title 组件（图右上固定，永不裁切）；此线仅指示峰时刻 */
         data: state.opts.peak && peak ? [{ xAxis: peak.ts, label: { show: false } }] : [] },
       /* 预备窗琥珀竖带已按用户裁决移除（2026-08-29）：窗口时间在决策条/依据弹层按需呈现，主图保持干净 */
-    },
+    }]),
   ];
   mainC.setOption({
     animationDuration: 650, animationDurationUpdate: 350,
     grid: { left: 58, right: 46, top: 44, bottom: 52 }, /* bottom 容纳双行轴标签 */
     legend: { show: false },
     /* 日峰/最坏/建议备：固定右上角，峰时刻由 P50 系列的垂直虚线指示（防右缘裁切，用户实测被遮） */
-    title: state.opts.peak && peak ? {
+    title: !preEpoch && state.opts.peak && peak ? {
       text: `日峰 P50 ${fmt(peak.p50)} · ${peakEt}`,
       subtext: `最坏 P90 ${fmt(peak90.p90)} · 建议备 ${fmt(prepMW)} MW`,
       right: 52, top: 4,
@@ -231,6 +232,7 @@ function renderMain() {
 function renderStatusQuad() {
   const z = state.zone, org = state.origin;
   const live = state.mode === 'live';
+  const preEpoch = org < PRED_EPOCH; /* 模型纪元前：预测类格子降为档案/— 语义（feat-020） */
   const bt = BT[z]!;
   const mape = bt.reduce((s, d) => s + d.mape, 0) / bt.length;
   const cov90 = bt.reduce((s, d) => s + d.cov90, 0) / bt.length;
@@ -250,6 +252,7 @@ function renderStatusQuad() {
   }
   if (dev != null) dev /= wSum; /* 加权平均（越近权重越高）——必须除以权重和 Σ(1/h)=2.45 */
   const nowV = loadAt(z, org), yesV = loadAt(z, org - 24 * HOUR);
+  const dayPk = preEpoch ? daily[z].find(d => d.di === locDay(org)) : undefined; /* 纪元前档案语义：当日实际峰 */
   const dPct = (nowV - yesV) / yesV * 100;
   const devOk = dev != null && Math.abs(dev) < 1.5;
   const recGap = (peak90.p90 - RECORD[z].v) / RECORD[z].v * 100;
@@ -264,9 +267,20 @@ function renderStatusQuad() {
     </div>
     <div class="sq" title="实际 − 昨日起点预测 · 近 6 小时加权平均（越近越重）· ±1.5% 内为正常">
       <div class="sq-l">预测偏差<span class="db-q sq-i" data-sq="1" role="button" tabindex="0">i</span></div>
-      <div class="sq-v num" style="color:${dev == null ? C.ink3 : devOk ? C.ink : C.warn}">${dev == null ? '—' : (dev >= 0 ? '+' : '') + dev.toFixed(2) + '%'}</div>
-      <div class="sq-s">${dev == null ? '重演模式无昨日预测' : `<span class="badge ${devOk ? 'ok' : 'warn'}">${devOk ? '正常' : '关注'}</span>`}</div>
+      <div class="sq-v num" style="color:${dev == null || preEpoch ? C.ink3 : devOk ? C.ink : C.warn}">${dev == null || preEpoch ? '—' : (dev >= 0 ? '+' : '') + dev.toFixed(2) + '%'}</div>
+      <div class="sq-s">${dev == null || preEpoch ? (preEpoch ? '模型纪元前无预测' : '重演模式无昨日预测') : `<span class="badge ${devOk ? 'ok' : 'warn'}">${devOk ? '正常' : '关注'}</span>`}</div>
     </div>
+    ${preEpoch ? `
+    <div class="sq" title="模型纪元（2016-01）前 · 档案语义：当日实际峰值（无预测层）">
+      <div class="sq-l">今日峰值 · 实际<span class="db-q sq-i" data-sq="2" role="button" tabindex="0">i</span></div>
+      <div class="sq-v num">${dayPk ? `${fmt(dayPk.peak)}<small>MW</small><small class="at">@${fmtHM(dayPk.ts)}</small>` : '—'}</div>
+      <div class="sq-s">档案 · 模型纪元前</div>
+    </div>
+    <div class="sq" title="模型纪元（2016-01）前无生产预测，误差指标不适用">
+      <div class="sq-l">预测误差 · 纪元前<span class="db-q sq-i" data-sq="3" role="button" tabindex="0">i</span></div>
+      <div class="sq-v num" style="color:${C.ink3}">—</div>
+      <div class="sq-s">2016-01 起模型纪元</div>
+    </div>` : `
     <div class="sq" title="未来 24h 预测日峰（P50）· 最坏 P90 距历史纪录 ${recGap >= 0 ? '+' : ''}${recGap.toFixed(1)}% · 预备窗 ${fmtHM(peak.ts - 3 * HOUR)}–${peakEt}">
       <div class="sq-l">今日峰值 · 预测<span class="db-q sq-i" data-sq="2" role="button" tabindex="0">i</span></div>
       <div class="sq-v num" style="color:${C.fcHi}">${fmt(peak.p50)}<small>MW</small><small class="at">@${peakEt}</small></div>
@@ -275,8 +289,9 @@ function renderStatusQuad() {
     <div class="sq" title="MAPE = 日前 24h 预测平均绝对百分比误差 · 行业优良 &lt;3% · ${live ? '近 28 起点回测' : '本段重演 · 24h'}">
       <div class="sq-l">预测误差${live ? '' : ' · 本段重演'}<span class="db-q sq-i" data-sq="3" role="button" tabindex="0">i</span></div>
       <div class="sq-v num">${mapeShow.toFixed(2)}<small>%</small></div>
-      <div class="sq-s">${mapeShow < 3 ? '<span class="badge ok">✓ 优于 3%</span>' : '<span class="badge warn">劣于 3%</span>'} P90 命中 <b class="num">${cov90.toFixed(1)}%</b></div>
-    </div>`;
+           <div class="sq-s">${mapeShow < 3 ? '<span class="badge ok">✓ 优于 3%</span>' : '<span class="badge warn">劣于 3%</span>'} P90 命中 <b class="num">${cov90.toFixed(1)}%</b></div>
+    </div>`}
+  `;
 }
 
 /* =====================================================================
@@ -312,6 +327,13 @@ function renderFilmEvents() {
     el.onclick = ev => { ev.stopPropagation(); jumpTo(e.c) };
     box.appendChild(el);
   }
+  /* 预测纪元分割线（feat-020 用户裁决）：2016-01-01 起有预测层，左侧为负荷档案 */
+  const ep = document.createElement('div');
+  ep.className = 'filmEpoch';
+  ep.style.left = clamp((PRED_EPOCH - T_MIN) / (T_MAX - T_MIN) * 100, 0.5, 99.5) + '%';
+  ep.title = '预测纪元 · 2016-01 起：此前为负荷档案（无预测层），此后静态→持续学习双模型对照';
+  ep.innerHTML = '<span>▎预测纪元 2016</span>';
+  box.appendChild(ep);
 }
 function positionHandle(animate: boolean) {
   const h = $('filmHandle');
@@ -338,7 +360,9 @@ function renderDecision() {
     bn.innerHTML = `
       <div class="db-strip">
         <span class="db-tag">↺ 时光机 · 重演</span>
-        <span class="db-msg">起点 <b class="win">${fmtFull(org)}</b>——此刻之后的预测，正与真实历史对质</span>
+        <span class="db-msg">起点 <b class="win">${fmtFull(org)}</b>——${org < PRED_EPOCH
+          ? '模型纪元（2016-01）前 · 无生产预测，回放实际负荷档案'
+          : '此刻之后的预测，正与真实历史对质'}</span>
         <span class="sevTag" style="background:#E0F2FE;color:#0E7490">上帝视角 ${state.opts.god ? '开' : '关'}</span>
         <button type="button" class="sevTag" id="bnBackLive" style="background:var(--chipOkBg);color:var(--okInk);border:1px solid var(--chipOkBd);cursor:pointer">↩ 回到实时</button>
       </div>`;
@@ -457,9 +481,12 @@ function renderCred() {
     return se / n2 * 100;
   })();
   const impr = Math.round((pers - mape) / pers * 100);
+  /* 纪元前重演（如极涡 2014-01）：对照的是相似日基线而非生产模型——改标签讲「接入持续学习」的故事（feat-020） */
+  const preEpochReplay = state.mode !== 'live' && state.origin < PRED_EPOCH;
+  const mName = preEpochReplay ? '相似日基线' : '本模型';
   $('basisCmp').innerHTML = impr > 0
-    ? `基线对比：持久性（昨日同时）MAPE <b class="num">${pers.toFixed(2)}%</b> → 本模型 <b class="num">${mape.toFixed(2)}%</b> <b style="color:var(--ok)">误差 ↓${impr}%</b>`
-    : `基线对比：持久性（昨日同时）MAPE <b class="num">${pers.toFixed(2)}%</b> → 本模型 <b class="num">${mape.toFixed(2)}%</b> <b style="color:var(--warn)">天气突变段落后于基线</b>（相似日盲区，正是接入气象预报的论据，见口径）`;
+    ? `基线对比：持久性（昨日同时）MAPE <b class="num">${pers.toFixed(2)}%</b> → ${mName} <b class="num">${mape.toFixed(2)}%</b> <b style="color:var(--ok)">误差 ↓${impr}%</b>`
+    : `基线对比：持久性（昨日同时）MAPE <b class="num">${pers.toFixed(2)}%</b> → ${mName} <b class="num">${mape.toFixed(2)}%</b> <b style="color:var(--warn)">天气突变段落后于基线</b>（${preEpochReplay ? '模型纪元前无生产模型·相似日盲区——2016 起接入持续学习模型的论据' : '相似日盲区，正是接入气象预报的论据，见口径'}）`;
   /* 生产模型行（真数据模式）：来自训练管道的独立验证 */
   const M = store.model, mz = M && M.zones && M.zones[z];
   $('modelLine').innerHTML = (M && M.modelId && mz) ? `

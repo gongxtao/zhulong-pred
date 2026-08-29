@@ -37,6 +37,9 @@ export const EVENTS: ZLEvent[] = [
   { key: 'vortex', label: '❄ 极地涡旋 2014-01', c: Date.UTC(2014, 0, 6, 12), tAnom: -8, mult: 1.12 },
   { key: 'heat12', label: '♨ 热浪 2012-07', c: Date.UTC(2012, 6, 5, 12), tAnom: 4.5, mult: 1.07 },
 ];
+/* 预测纪元：首个日前预测起点（pred_static/pred_dynamic 首行 origin）。
+   此前视窗=负荷档案模式（无任何预测层），胶片画纪元分割线（feat-020 用户裁决） */
+export const PRED_EPOCH = Date.UTC(2016, 0, 1, 4);
 
 /* ---------- 双主题调色板（两套均通过 CVD 六项验证） ---------- */
 export interface Theme {
