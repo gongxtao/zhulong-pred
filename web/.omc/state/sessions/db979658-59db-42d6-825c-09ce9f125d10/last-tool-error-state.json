@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"bash init.sh >/dev/null 2>&1 && echo \\\"init PASS\\\" && git add CLAUDE.md feature_list.json progress.md docs/zhulong-handoff.md web/ && git commit -q -m \\\"info: 方向变更——冻结原型，正式工程 web/ 脚手架就绪（Ne...",
-  "error": "Exit code 127",
-  "timestamp": "2026-08-29T02:24:25.127Z",
-  "retry_count": 1
-}
