@@ -98,6 +98,10 @@ store（唯一数据后端）：hours Map<zone,Map<di,{L,T,H,W,P}F64(24)>> · da
    网关偶发瞬时 5xx，sbFetch 必须 3 次重试
 10. **删常量先全量 grep 引用**（REAL 删除时残留一处 → startEngine 半途 ReferenceError，
     页面停在半初始化态且无提示——renderAll/startEngine 的 try/catch 诊断日志因此常驻）
+11. **状态切换类交互（god/主题/区域等）一律走 renderAll 标准路径**——手工罗列渲染函数必漏
+    （toggleGod 首版漏 renderCred）；renderLegendTable 已纳入 renderAll（图例含上帝视角联动 chip）
+12. **localStorage 缓存注意 JSON 把 NaN 序列化为 null**——Float64Array.from 会把 null 变 0，
+    hydrate 必须映射回 NaN；缓存路径要显式设 SRC（曾漏设致仿真与真模型混算）
 
 ## 5. 验证基线（v3 懒加载口径：审计 = 日前 24h · CAL = 近 60 天残差，改完必须对上）
 
