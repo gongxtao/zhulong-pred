@@ -337,7 +337,8 @@ try {
     await new Promise(r => setTimeout(r, 1500));
     out.afterSend = document.querySelectorAll('#chatLog .chat-msg').length >= 2
       && (document.getElementById('chatLog').textContent.includes('未连接')
-        || !!document.querySelector('#chatLog .chat-typing')); /* 无 env=降级气泡；.env.local 已固化 QWENPAW_*（聊天默认开）=思考态/流式 */
+        || !!document.querySelector('#chatLog .chat-typing')
+        || !!document.querySelector('#chatLog .chat-think')); /* 无 env=降级；有 env=typing/思考/动作行任一活动态 */
     document.getElementById("chatClose").click();
     await new Promise(r => setTimeout(r, 100));
     out.closed = !document.getElementById('chatLayer').classList.contains('on');

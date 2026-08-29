@@ -1101,16 +1101,27 @@ function bindInteractions() {
     log.scrollTop = log.scrollHeight;
     ($('chatSend') as HTMLButtonElement).disabled = true;
     ($('chatInput') as HTMLTextAreaElement).value = '';
-    let cur = '';
+    let cur = '', thinkTxt = '', actTxt = '';
+    const renderThink = () => {
+      /* 过程态气泡 = 动作行(工具调用) + 思考行(尾部滚动)；答案开始后由 onText 整体替换 */
+      typing.remove(); bubble.style.display = '';
+      bubble.innerHTML = '<div class="chat-think"><span class="spin"></span><div class="chat-think-body"></div></div>';
+      const body = bubble.querySelector('.chat-think-body') as HTMLElement;
+      if (actTxt) {
+        const a = document.createElement('div');
+        a.className = 'chat-act'; a.textContent = '⚙ ' + actTxt;
+        body.appendChild(a);
+      }
+      if (thinkTxt) {
+        const t = document.createElement('div');
+        t.className = 'chat-think-txt'; t.textContent = '思考中 · ' + thinkTxt.slice(-260);
+        body.appendChild(t);
+      }
+      log.scrollTop = log.scrollHeight;
+    };
     const r = await streamChat(ctx + text, chatSessionId, {
-      onThink: th => {
-        /* 思考流上屏（尾部滚动）：让用户看到助手在干活，不是卡住；答案到达后被替换 */
-        typing.remove(); bubble.style.display = '';
-        bubble.innerHTML = '<div class="chat-think"><span class="spin"></span></div>';
-        const t = bubble.firstChild as HTMLElement;
-        t.append('思考中 · ' + th.slice(-260));
-        log.scrollTop = log.scrollHeight;
-      },
+      onAct: label => { actTxt = label; renderThink(); },
+      onThink: th => { thinkTxt = th; renderThink(); },
       onText: full => {
         cur = full;
         typing.remove(); bubble.style.display = ''; bubble.innerHTML = chatMd(full);
