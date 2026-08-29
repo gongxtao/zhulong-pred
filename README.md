@@ -11,12 +11,32 @@ DNS 污染，无法访问时请走代理或使用下方本地运行方式，两�
 | | |
 |---|---|
 | **数据规模** | 14 年 · 3 个 PJM 负荷区 · **358,800** 小时真值（PJM 负荷 + ERA5 再分析天气，2004-10 → 2018-08） |
-| **预测精度** | 日前 24h MAPE **3.57%**（AEP）· 较持久性基线 **↓41%**（3.82% vs 6.51%，训练管道独立验证） |
-| **区间校准** | P90 命中 **85.6%** / P50 命中 **49.0%**（滚动 28 起点回测，标称 90%/50%） |
+| **预测精度** | 日前 24h MAPE **3.39%**（AEP·持续学习轨）· 静态基线 3.57% · 较持久性基线 **↓41%**（训练管道独立验证） |
+| **区间校准** | P90 命中 **88.8%** / P50 命中 **54.2%**（滚动 28 起点回测，标称 90%/50%） |
 | **打开速度** | 刷新 **~1s** 全量渲染（内嵌快照秒开），任何历史段查看时**实时查询生产库对账** |
 | **决策输出** | 一行告示：预备窗 13:00–16:00，预备 **2,450 MW** 调峰资源（= P90 上界 − 97%×P50） |
 
+**主视觉（深色默认）**：
+
+| 决策台全貌（右下悬浮球 = 数据问答入口） | ChatBI 数据问答（Agent 实时查库作答） |
+|:---:|:---:|
+| ![决策台](docs/screenshots/dashboard-dark.png) | ![数据问答](docs/screenshots/chatbi-dark.png) |
+
 ---
+
+## 技术栈
+
+| 层 | 选型 | 说明 |
+|---|---|---|
+| 前端框架 | **Next.js 16**（App Router）+ **React 19** + **TypeScript 5** | React 只做静态骨架，命令式引擎接管全部渲染与交互（性能与断言口径双收） |
+| 样式 | **Tailwind CSS v4** + 手写 CSS 变量主题 | 浅/深双主题，色板通过 CVD（色觉障碍）六项验证 |
+| 可视化 | **ECharts 6** | 主图/胶片/迷你图/热力图共 6 图联动，时间机器一体卡 |
+| 后端接口 | **Next.js Route Handlers**（Node runtime） | `/api/chat` SSE 流式透传；限流与长度护栏 |
+| 数据库 | **Supabase**（PostgreSQL + PostgREST + RLS） | 358,800 小时真值 + 双轨预测表 + 模型注册表；anon 只读边界 |
+| AI Agent | **QwenPaw**（AgentScope Runtime 协议，自托管云服务器） | 烛龙助手：Python 代码执行 + HTTP 实时查库计算指标，SSE 流式作答 |
+| 数据管道 | **Node.js 脚本** + PJM 公开负荷 + **ERA5** 再分析气象 | 快照构建器（断网秒开）与训练/回放管道 |
+| 质量保障 | **Playwright** 无头浏览器断言（`verify.mjs`，50 项） | 秒开计时/指标基线/回归清单一键全量 |
+| 部署 | **Vercel**（web）+ 云服务器（QwenPaw Agent） | 线上聊天经 `/api/chat` → 云端 Agent（Bearer 认证） |
 
 ## 它解决什么问题
 
@@ -38,6 +58,9 @@ DNS 污染，无法访问时请走代理或使用下方本地运行方式，两�
   生产库校准（toast + 网络面板可见真实请求，同一视窗不重复查）。
 - **三级数据源兜底**：在线 Supabase → 内嵌快照（断网可用）→ 内置仿真，演示永不翻车。
 - **双主题**：浅/深两套色板均通过 CVD（色觉障碍）六项验证；默认深色。
+- **ChatBI 数据问答**：右下悬浮球唤起「烛龙助手」——自然语言提问（持续学习比静态模型好多少？
+  哪个时段误差最大？），Agent 实时查询生产库、当场算出 MAPE/WAPE 并以表格作答；
+  过程态全程可见（思考流 + 工具调用动作提示），每个数字都有出处。
 - **演示六幕**（按 `D`）：纵深 → 节律 → 推演 → 验证 → 自证 → 落地，约 1 分钟讲完整个故事。
 
 ## 快速开始
@@ -52,7 +75,7 @@ npm run dev -- --port 3100        # http://localhost:3100
 
 - 环境变量 `web/.env.local`：`NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`
   （anon 公开只读 key，安全边界 = RLS 策略；service_role 密钥绝不入库）。
-- 一键回归断言（30 项：秒开计时 / 基线数字 / 时光机 / 实时校准请求 / 离线兜底）：
+- 一键回归断言（50 项：秒开计时 / 基线数字 / 时光机 / 实时校准请求 / 离线兜底 / ChatBI）：
 
 ```bash
 cd web && node scripts/verify.mjs
@@ -71,8 +94,9 @@ cd docs/prototype && python3 -m http.server 4173   # http://127.0.0.1:4173/zhulo
 ├─ 数据层  store 唯一后端：hours/daily/pred/cal/model + 实时校准溯源（liveDays/livePredOrigins）
 │          boot = 快照秒开(~1s) → 后台同步近窗/日峰/预测 → 收敛在线基线
 │          按需 = ensureWindow 视窗实时校准（缺失或快照来源都发真实查询）
-├─ 预测层  生产模型注入（pred_static 日前起点按偏移重索引，≤24h）+ 相似日分位数基线（25–48h 兜底）
-│          + 残差经验分位标定（CAL）+ FC_CACHE
+├─ 预测层  双轨注入：静态模型（pred_static，冻结对照）+ 持续学习模型（pred_dynamic，逐日重训推送、同起点覆盖）
+│          + 相似日分位数基线（25–48h 兜底）+ 残差经验分位标定（CAL）+ FC_CACHE
+├─ 问答层  ChatBI：/api/chat SSE 代理 → 云端 QwenPaw Agent（烛龙助手）Python 查库算指标作答
 ├─ 评估层  滚动 28 起点 × 24h 回测（MAPE/cov90/cov50）+ 持久性基线对比 + 本段重演回测
 └─ 数据库  Supabase（PostgREST）：energy_hourly ∪ energy_hourly_future + energy_daily 视图
            + pred_static 回测 + model_versions/training_trials 模型注册
@@ -87,10 +111,11 @@ cd docs/prototype && python3 -m http.server 4173   # http://127.0.0.1:4173/zhulo
 web/                     主交付物（Next.js 16 + TS）
   src/lib/zl/            util/const/sim/store/supabase/forecast/engine 七模块
   src/app/               page.tsx 骨架 + layout.tsx（主题预置/快照预取）+ globals.css
-  scripts/               verify.mjs（30 项断言）· shot.mjs（双主题截图）
+  scripts/               verify.mjs（50 项断言）· shot.mjs（双主题截图）
   public/data/           内嵌真数据快照（断网可用）
 docs/prototype/          原型 zhulong.html（冻结为 spec 与兜底）+ 快照源
 scripts/                 build-snapshot.mjs 快照生成器
+qwenpaw/                 烛龙助手 Agent 配置（skill + 人设纪律 + 接入指南）
 docs/zhulong-handoff.md  开发交接文档（框架红线/坑清单/验证基线）
 .shots/                  验证截图存档
 ```
