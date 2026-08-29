@@ -180,7 +180,7 @@ export default function Home() {
       <div id="chatLayer" role="dialog" aria-label="数据问答">
         <div className="chat-h">
           <h3>数据问答</h3>
-          <span className="hint">烛龙助手实时查询生产库 · pred_dynamic 双轨分析</span>
+          <span className="hint">随口一问 · 真实数据作答</span>
           <button className="iconBtn" id="chatClose" title="关闭" aria-label="关闭" style={{ marginLeft: 'auto', width: 26, height: 26 }}>
             <svg viewBox="0 0 16 16"><path d="M4 4 L12 12 M12 4 L4 12" /></svg>
           </button>
