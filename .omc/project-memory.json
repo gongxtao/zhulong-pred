@@ -37,15 +37,63 @@
       "type": "file"
     },
     {
-      "path": "docs/zhulong-design.md",
-      "accessCount": 40,
-      "lastAccessed": 1787940965833,
+      "path": "docs/prototype/zhulong.html",
+      "accessCount": 88,
+      "lastAccessed": 1787974476459,
       "type": "file"
     },
     {
       "path": "docs/zhulong-handoff.md",
-      "accessCount": 24,
-      "lastAccessed": 1787940916790,
+      "accessCount": 47,
+      "lastAccessed": 1787978237859,
+      "type": "file"
+    },
+    {
+      "path": "docs/zhulong-design.md",
+      "accessCount": 41,
+      "lastAccessed": 1787943436394,
+      "type": "file"
+    },
+    {
+      "path": "web/src/lib/zl/engine.ts",
+      "accessCount": 13,
+      "lastAccessed": 1787975027430,
+      "type": "file"
+    },
+    {
+      "path": "feature_list.json",
+      "accessCount": 10,
+      "lastAccessed": 1787975523361,
+      "type": "file"
+    },
+    {
+      "path": "progress.md",
+      "accessCount": 8,
+      "lastAccessed": 1787974100946,
+      "type": "file"
+    },
+    {
+      "path": "web/src/lib/zl/supabase.ts",
+      "accessCount": 6,
+      "lastAccessed": 1787975001791,
+      "type": "file"
+    },
+    {
+      "path": "init.sh",
+      "accessCount": 4,
+      "lastAccessed": 1787943130562,
+      "type": "file"
+    },
+    {
+      "path": "CLAUDE.md",
+      "accessCount": 4,
+      "lastAccessed": 1787978245677,
+      "type": "file"
+    },
+    {
+      "path": "web/src/lib/zl/store.ts",
+      "accessCount": 3,
+      "lastAccessed": 1787974969032,
       "type": "file"
     },
     {
@@ -238,6 +286,48 @@
       "path": ".shots/v18_quad_final_dark.jpeg",
       "accessCount": 1,
       "lastAccessed": 1787940641503,
+      "type": "file"
+    },
+    {
+      "path": "data/README.md",
+      "accessCount": 1,
+      "lastAccessed": 1787941424810,
+      "type": "file"
+    },
+    {
+      "path": "session-handoff.md",
+      "accessCount": 1,
+      "lastAccessed": 1787942690821,
+      "type": "file"
+    },
+    {
+      "path": ".shots/v19_realdata_dark.jpeg",
+      "accessCount": 1,
+      "lastAccessed": 1787943359392,
+      "type": "file"
+    },
+    {
+      "path": ".shots/film_axis_check.png",
+      "accessCount": 1,
+      "lastAccessed": 1787969520742,
+      "type": "file"
+    },
+    {
+      "path": ".shots/film_axis_fixed.png",
+      "accessCount": 1,
+      "lastAccessed": 1787969590454,
+      "type": "file"
+    },
+    {
+      "path": ".shots/axis_date_fixed.png",
+      "accessCount": 1,
+      "lastAccessed": 1787969754938,
+      "type": "file"
+    },
+    {
+      "path": ".shots/v20_lazy_dark.jpeg",
+      "accessCount": 1,
+      "lastAccessed": 1787971227067,
       "type": "file"
     }
   ],
