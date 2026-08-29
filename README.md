@@ -6,6 +6,7 @@
 
 **线上部署**：<https://zhulong-seven.vercel.app>（Vercel 生产；\*.vercel.app 在部分网络环境下存在
 DNS 污染，无法访问时请走代理或使用下方本地运行方式，两份数据完全一致）
+**源码仓库**：<https://github.com/gongxtao/zhulong-pred>
 
 | | |
 |---|---|

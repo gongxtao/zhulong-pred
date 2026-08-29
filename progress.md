@@ -259,3 +259,12 @@ verify 30/30（新增：markArea=0 / 无历史峰值 markLine / b50 不存在 b9
 - **本机网络阻断（非部署问题）**：\*.vercel.app DNS 污染（解析到 88.191.249.183/168.143.171.189 假 IP）+
   edge IP 直连亦被 reset；vercel.com API 域名正常——部署经 API inspect 确认 READY；生产 URL 的浏览器验证
   待用户网络（有代理时）或现场网络确认；本地 `npm run dev`/`build+start` 与线上同代码同数据，为演示兜底
+
+## 2026-08-29 16:05 · feat-013 GitHub 发布
+
+- 仓库根新增 .gitignore（工具状态/密钥/构建产物），untrack 误跟踪的 .omc（98 文件）、.workbuddy、web/.omc
+  （web/.gitignore 的 `web/.omc/` 路径笔误修正为 `.omc/`）；跟踪文件 191→91，全部为项目本体
+- 推送 https://github.com/gongxtao/zhulong-pred.git（main，走用户本地代理 127.0.0.1:17891；
+  直连 GitHub 被 reset）——HEAD ed8ada1，README 已加源码地址
+- 注：早期历史提交中曾含 .omc 工具状态（无密钥，init.sh 全程扫描 service_role 零命中）；
+  如需彻底清除历史可 filter-repo 重写（会改写全部 commit hash，未做）
