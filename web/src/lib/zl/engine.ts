@@ -1111,7 +1111,7 @@ function bindInteractions() {
       onStatus: s => {
         if (s === 'error' && !bubble.textContent) {
           typing.remove(); bubble.style.display = ''; bubble.classList.add('err');
-          bubble.textContent = 'Agent 服务未连接（QWENPAW_URL 未配置或不可达）。本地演示请先启动 QwenPaw；线上部署后自动可用。';
+          bubble.textContent = '烛龙助手未连接（分析服务未启动）。本地演示请先启动助手服务；线上部署后自动可用。';
         }
       },
     });
