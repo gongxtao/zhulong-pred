@@ -72,8 +72,13 @@
    2017+ 时补 `pred_static?zone=&forecast_origin_utc=gte.<origin-24h>&lte.<origin>`。
    返回 Promise；期间右下角 toast「⇄ 查询生产库 2014-01 …」。
 5. **交互接线**：`setOrigin/jumpTo` → 先 toast + await ensureWindow 再 renderAll（避免 NaN 闪烁）；
-   胶片拖拽 rAF 阶段**不发请求**（用已缓存数据预览，可出空洞），pointerup 走 setOrigin 路径；
+   **拖拽预览冻结**（2026-08-29 补钉）：拖拽 rAF 阶段不发请求，且若目标窗未加载则**跳过 renderMain**
+   （主图保持旧画面，只有胶片手柄/日期胶囊动）+ 右下角提示「松手加载」，pointerup 走 setOrigin 路径；
    `setZone` → ensure 该区近窗（首次切区 ~1s）；演示六幕的 jumpTo 天然走同路径。
+5b. **并发去重**（补钉）：ensureWindow 按 (zone, 日期区间) 缓存 in-flight Promise，快速连跳
+   （热力图连点/演示自动切幕）合并为一次请求，后到者 await 先发者。
+5c. **演示事件窗预热**（补钉）：boot Layer-1 追加预取 2014 极涡窗与 2012 热浪窗（+3 请求），
+   保证六幕第四幕零等待——这两窗也是评委最可能要求现场回放的时段。
 6. **backtest/buildPers/buildCal**：基于 boot 近窗即可（28 起点候选日最深 origin-70d，120 天窗覆盖 ✓）。
 7. **保留**：loader 遮罩（首屏）、4s 跳过按钮（跳到快照路径）、`window.ZL_DATA` 断言钩子、
    极涡话术、弹层四件套、CSV（窗口已 ensure）。
