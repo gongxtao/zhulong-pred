@@ -209,7 +209,7 @@ export function ensureWindow(zone: Zone, originTs: number): Promise<void> {
       sbToast(false);
       notifyLiveMerge();
     }
-    if (originTs >= Date.UTC(2016, 11, 1)) { /* 模型纪元：该起点（含偏差带用的昨日起点）附近 pred 需实时校准 */
+    if (originTs >= Date.UTC(2016, 0, 1, 4)) { /* pred 纪元=2016-01-01 首起点（feat-018 放开原 2016-12 门：2016 全年重演窗也实时拉双轨真预测）；更早无 pred 数据，走相似日 */
       const og = store.predOrigins.get(zone) || [];
       const has = og.some(o => o > originTs - 48 * HOUR && o <= originTs);
       const hasLive = hasLivePredIn(zone, originTs - 48 * HOUR, originTs);

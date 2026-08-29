@@ -13,7 +13,7 @@ import {
   packAt, RECORD, sensAt, setSrc, sbToast, SRC, state, store, T_MAX, T_MIN, tempAt,
 } from './store';
 import {
-  backtest, buildCal, buildPers, BT, CAL, FC_CACHE, forecastAt, PERS, replayBT,
+  backtest, buildCal, buildPers, BT, CAL, FC_CACHE, forecastAt, PERS, replayBT, staticLineAt,
 } from './forecast';
 import {
   bootLayer1, ensureWindow, ldAbort, ldReset, loadSnapshot, setLiveMergeHook, storeFromSnapshot,
@@ -62,12 +62,11 @@ function stageData() {
   for (let ts = org - back * HOUR; ts <= org; ts += HOUR) hist.push([ts, loadAt(z, ts)]);
   if (state.opts.god) for (let ts = org + HOUR; ts <= Math.min(org + H_FC * HOUR, T_MAX); ts += HOUR) god.push([ts, loadAt(z, ts)]);
   const fc = forecastAt(z, org);
-  const yday: [number, number][] = [];
-  if (state.opts.yday) for (let h = 1; h <= back; h++) { const ts = org + (back - h) * HOUR; yday.push([ts, loadAt(z, ts - 24 * HOUR)]) }
+  /* 昨日同时刻参照线已按用户裁决移除（2026-08-29）：由「静态预测」对照线取代（持续学习故事） */
   const temps: [number, number][] = [];
   for (let ts = org - back * HOUR; ts <= org + H_FC * HOUR; ts += HOUR) temps.push([ts, tempAt(ts, ZONES[z].tOff)]);
   FC_PREV = forecastAt(z, org - 24 * HOUR);
-  return { hist, god, fc, yday, temps, back };
+  return { hist, god, fc, temps, back };
 }
 function bandStack(fc: ReturnType<typeof forecastAt>, loK: 'p10' | 'p25', hiK: 'p90' | 'p75', stack: string, color: string) {
   const base: [number, number][] = [], delta: [number, number][] = [];
@@ -80,7 +79,8 @@ function bandStack(fc: ReturnType<typeof forecastAt>, loK: 'p10' | 'p25', hiK: '
   ] as Record<string, unknown>[];
 }
 function renderMain() {
-  const { hist, god, fc, yday, temps, back } = stageData();
+  const { hist, god, fc, temps, back } = stageData();
+  const stat = staticLineAt(state.zone, state.origin); /* 静态模型对照线（predStatic 原始轨） */
   const org = state.origin;
   const tMax = org + H_FC * HOUR;
   /* 未来 24h 峰值与决策数字（钉在图上） */
@@ -106,8 +106,9 @@ function renderMain() {
     { name: '实际·后续', type: 'line', data: god, showSymbol: false, z: 3,
       lineStyle: { color: C.actual, type: 'dotted', width: 1.7, opacity: .7 }, itemStyle: { color: C.actual },
       endLabel: { show: god.length > 0, formatter: '真实', color: C.ink3, fontSize: 10, distance: 4 } },
-    { name: '昨日同时刻', type: 'line', data: yday, showSymbol: false, z: 1, silent: true,
-      lineStyle: { color: C.yday, width: 1.4, opacity: .85 }, itemStyle: { color: C.yday }, tooltip: { show: false } },
+    { name: '静态预测', type: 'line', data: stat, showSymbol: false, z: 4, silent: true,
+      lineStyle: { color: C.yday, width: 1.7, type: 'dashed', opacity: .95 }, itemStyle: { color: C.yday },
+      endLabel: { show: stat.length > 0, formatter: '静态', color: C.ink3, fontSize: 10, distance: 4 }, tooltip: { show: false } },
     { name: '实际负荷', type: 'line', data: hist, showSymbol: false, z: 6,
       lineStyle: { color: C.actual, width: 3 }, itemStyle: { color: C.actual },
       emphasis: { focus: 'series' },
@@ -124,7 +125,7 @@ function renderMain() {
           { coord: [hist[hist.length - 1][0], hist[hist.length - 1][1]], symbolSize: 15,
             itemStyle: { color: 'transparent', borderColor: C.actual, borderWidth: 1.5, opacity: .55 } }] },
     },
-    { name: '预测 P50', type: 'line', data: fc.map(p => [p.ts, p.p50]), showSymbol: false, z: 5,
+    { name: '持续学习 P50', type: 'line', data: fc.map(p => [p.ts, p.p50]), showSymbol: false, z: 5,
       lineStyle: { color: C.fc, width: 1.8, type: 'dashed' }, itemStyle: { color: C.fc }, emphasis: { focus: 'series' },
       endLabel: { show: true, formatter: 'P50', color: C.fcHi, fontSize: 10, distance: 4 },
       markLine: { symbol: 'none', silent: true,
@@ -623,9 +624,9 @@ function renderLegendTable() {
   $('legendTable').innerHTML = [
     ['<span class="sw"></span>', '实际负荷', '截至 NOW'],
     ['<span class="sw band"></span>', 'P10–P90 区间', '90% 可能落入'],
-    ['<span class="sw dash"></span>', '预测 P50', '中位路径'],
+    ['<span class="sw dash"></span>', '持续学习 P50', '中位路径 · 学习模型'],
+    ['<span class="sw thin"></span>', '静态预测', '初始模型对照'],
     ['<span class="sw dot"></span>', '实际 · 后续', '上帝视角'],
-    ['<span class="sw thin"></span>', '昨日同时刻', '参照'],
   ].map(([sw, nm, d]) => `<span class="lg" title="${nm} · ${d}">${sw}<span>${nm}</span></span>`).join('');
 }
 

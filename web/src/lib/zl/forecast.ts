@@ -71,6 +71,24 @@ export function forecastAt(zone: Zone, originTs: number): ForecastPt[] {
   FC_CACHE.set(key, out);
   return out;
 }
+/* 静态对照线：与 forecastAt 同起点选择逻辑，但从 predStatic 原始轨取值；
+   只画静态模型实际覆盖的 0–24h 段（无相似日延伸——对照线不造数） */
+export function staticLineAt(zone: Zone, originTs: number): [number, number][] {
+  const pm = store.predStatic.get(zone);
+  if (!pm || !pm.size) return [];
+  const O = [...pm.keys()].sort((a, b) => a - b);
+  let lo = 0, hi = O.length - 1, best = -1;
+  while (lo <= hi) { const m = (lo + hi) >> 1; if (O[m] <= originTs) { best = m; lo = m + 1 } else hi = m - 1 }
+  if (best < 0 || originTs - O[best] >= 24 * HOUR) return [];
+  const off = Math.round((originTs - O[best]) / HOUR);
+  const row = pm.get(O[best])!;
+  const out: [number, number][] = [];
+  for (let h = 1; h <= H_FC; h++) {
+    const mh = off + h; if (mh < 1 || mh > 24) continue;
+    const v = row[mh - 1]; if (v != null && v > 0) out.push([originTs + h * HOUR, v]);
+  }
+  return out;
+}
 /* 残差标定：最近 14 个起点的裸预测残差 → 逐 horizon 经验分位（±2h 邻域池化） */
 export function buildCal(zone: Zone) {
   const per = Array.from({ length: H_FC }, () => [] as number[]);

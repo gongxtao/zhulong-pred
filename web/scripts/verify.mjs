@@ -69,7 +69,7 @@ try {
   check('主图历史峰值线已移除（用户裁决）', phase2.legendHasRec === false);
   const marks = await page.evaluate(() => {
     const opt = window.__zlCharts.mainC.getOption();
-    const p50 = opt.series.find(s => s.name === '预测 P50');
+    const p50 = opt.series.find(s => s.name === '持续学习 P50');
     const recLine = opt.series.find(s => s.name === '实际负荷');
     return {
       prepArea: p50 && p50.markArea ? p50.markArea.data.length : 0,
@@ -84,6 +84,22 @@ try {
   });
   check('概率带：外层 P10–P90 保留', bands.b90 === true);
   check('概率带：内层 P25–P75 窄带已移除（用户裁决）', bands.b50 === false);
+  const tri = await page.evaluate(() => {
+    const opt = window.__zlCharts.mainC.getOption();
+    const stat = opt.series.find(s => s.name === '静态预测');
+    const p50 = opt.series.find(s => s.name === '持续学习 P50');
+    const legend = document.getElementById('legendTable').textContent;
+    return {
+      statPts: stat ? stat.data.length : -1,
+      p50Pts: p50 ? p50.data.length : -1,
+      ydayGone: !opt.series.some(s => s.name === '昨日同时刻'),
+      legendOk: legend.includes('静态预测') && legend.includes('持续学习') && !legend.includes('昨日同时刻'),
+    };
+  });
+  /* NOW 锚点：静态线有值（快照 2017-01 起起点覆盖）；两线数据同长（dyn 缺→static 填充兜底生效） */
+  check('三线：静态对照线就位（predStatic 轨）', tri.statPts > 0, `静态点 ${tri.statPts}`);
+  check('三线：持续学习 P50 就位', tri.p50Pts > 0, `P50点 ${tri.p50Pts}`);
+  check('三线：昨日同时刻线与图例已移除（用户裁决）', tri.ydayGone && tri.legendOk, JSON.stringify(tri));
   check('四格基线 12,926/−2.03%/18,261@16:00/3.57',
     phase2.quad[0] === '12,926MW' && phase2.quad[1].endsWith('2.03%') && phase2.quad[2].startsWith('18,261MW@16:00') && phase2.quad[3] === '3.57%',
     phase2.quad.join(' | '));
@@ -187,6 +203,39 @@ try {
   });
   check('磁吸：拖到 NOW 区松手 → 实时', magnet.near === '实时', magnet.near);
   check('远处拖拽保持重演', magnet.far.chip.includes('重演') && magnet.far.origin.startsWith('2016/06'), `${magnet.far.chip} @${magnet.far.origin}`);
+
+  /* ---------- 4b. feat-018 纪元门放开 + 持续学习分叉：2016-06 重演窗双轨真预测可见 ---------- */
+  await page.evaluate(async () => {
+    const fw = document.getElementById('filmWrap');
+    const r = fw.getBoundingClientRect();
+    const T_MIN = Date.UTC(2004, 9, 1, 5), T_MAX = Date.UTC(2018, 7, 3, 9);
+    const ev = (type, x) => fw.dispatchEvent(new PointerEvent(type, { bubbles: true, pointerId: 1, clientX: x, clientY: r.top + 10, isPrimary: true }));
+    const raf2 = () => new Promise(rs => requestAnimationFrame(() => requestAnimationFrame(rs)));
+    const x = r.left + (Date.UTC(2016, 5, 15) - T_MIN) / (T_MAX - T_MIN) * r.width;
+    ev('pointerdown', r.right - 2);
+    ev('pointermove', x);
+    await raf2();
+    ev('pointerup', x);
+  });
+  await page.waitForFunction(() => !document.getElementById('sbToast').classList.contains('on'), null, { timeout: 20000 });
+  await sleep(1200); /* 等 live 合并 → FC_CACHE 清 → 重渲 */
+  const duotrack = await page.evaluate(() => {
+    const opt = window.__zlCharts.mainC.getOption();
+    const st = opt.series.find(s => s.name === '静态预测');
+    const p50 = opt.series.find(s => s.name === '持续学习 P50');
+    let diff = 0;
+    if (st && p50) {
+      const pm = new Map(p50.data.map(p => [p[0], p[1]]));
+      for (const [ts, v] of st.data) { const pv = pm.get(ts); if (pv != null && Math.abs(pv - v) > 0.51) diff++ }
+    }
+    return { dyn: window.ZL_DATA.predDyn.AEP, stPts: st ? st.data.length : 0, diffPts: diff };
+  });
+  /* dyn>0 即门已放开铁证：快照不含 dyn 轨，2016-06（原纪元 2016-12 之前）的 dyn 数据只能来自实时查询；
+     diffPts>0 = 静态对照线与学习线分叉，持续学习效果肉眼可见 */
+  check('纪元门放开：2016-06 重演窗 dyn 轨入店', duotrack.dyn > 0, `predDyn.AEP=${duotrack.dyn}`);
+  check('持续学习分叉：静态线偏离学习线', duotrack.stPts > 0 && duotrack.diffPts > 0, JSON.stringify(duotrack));
+  await page.evaluate(() => document.getElementById('bnBackLive').click());
+  await sleep(600);
 
   /* ---------- 5. 离线：Supabase 不可达 → 保持快照可用 ---------- */
   await page.route('**supabase.co**', route => route.abort());

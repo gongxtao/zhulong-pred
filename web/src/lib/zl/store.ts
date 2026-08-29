@@ -64,12 +64,12 @@ export interface ZLState {
   mode: 'live' | 'replay';
   origin: number;
   range: keyof typeof RANGES;
-  opts: { temp: boolean; yday: boolean; god: boolean; peak: boolean };
+  opts: { temp: boolean; god: boolean; peak: boolean };
   drawerTab: string;
 }
 export const state: ZLState = {
   zone: 'AEP', mode: 'live', origin: NOW_DEFAULT, range: '3d',
-  opts: { temp: true, yday: true, god: true, peak: true }, drawerTab: 'sm',
+  opts: { temp: true, god: true, peak: true }, drawerTab: 'sm',
 };
 export let originToken = 0; /* 导航令牌：新跳转使旧异步渲染失效 */
 export function nextToken() { return ++originToken; }

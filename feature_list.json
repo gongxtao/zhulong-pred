@@ -117,16 +117,16 @@
       "name": "主图三线（真实/静态预测/持续学习预测）",
       "description": "用户裁决：删「昨日同时刻」参照线与图例（审计卡持久性对比数字保留——杀手锏话术载体）；新增「静态预测」灰虚线（store.predStatic）；「预测 P50」更名「持续学习 P50」（展示轨 dyn 优先）；P10-P90 带仍挂主线",
       "dependencies": ["feat-016"],
-      "status": "in-progress",
-      "evidence": ""
+      "status": "done",
+      "evidence": "verify 34/34（新增 3 项：静态对照线就位/持续学习P50就位/昨日线+图例移除）；数据级复核 NOW 锚点两线重叠段 17/17 全等 maxGap=0（视觉模型所述偏离为幻觉）；杀手锏话术/极涡/磁吸/离线全保持；截图 .shots/web_v6_triline_{dark,light}.png；tsc+eslint 零错"
     },
     {
       "id": "feat-018",
       "name": "纪元门放开 + 双轨分叉断言 + 收口",
       "description": "ensureWindow 的 pred 查询放开 2016-12-01 纪元限制（2016-01 起重演窗均可拉双轨真预测，此前为相似日基线——行为变化经用户确认）；verify 增断言：2016-02 重演窗两预测线张开（学习效果可见）+NOW 锚点两线重合（兜底生效）；progress/session-handoff 收口",
       "dependencies": ["feat-017"],
-      "status": "not-started",
-      "evidence": ""
+      "status": "done",
+      "evidence": "verify 36/36（新增 2 项：2016-06 重演窗 predDyn.AEP=2 入店=门放开铁证（快照不含 dyn 只能来自实时查询）；静态线 11 点中 10 点偏离学习线=分叉可见）；分叉截图 .shots/web_v6_diverge_2016-06_dark.png（06/15-16 间距 1-2k MW）；静态线线宽 1.4→1.7/不透明度 .85→.95（深色主题可读性，未动 CVD 调色板）；tsc+eslint 零错"
     }
   ]
 }
