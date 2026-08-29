@@ -118,3 +118,32 @@ handoff §5 已更新）**。截图 .shots/v20_lazy_{light,dark}.jpeg。
 **踩坑记录**（handoff §4 已有，新增两条）：
 - 视图/多区分页排序必须含唯一键（zone,day），否则翻页可能丢行
 - 删常量（REAL）必须全量 grep 引用——一次 ReferenceError 让 startEngine 半途死、页面停在半刈化状态
+
+## 2026-08-29 12:15 · feat-008 原型 v3 → web/ 正式工程平移完成（M1-M5 一次过）
+
+**架构**：React 只提供静态骨架（page.tsx 照抄原型 body，id/class 逐一对齐保断言口径），
+lib/zl/engine.ts 以命令式接管渲染与交互（与原型行为逐项一致）；
+globals.css = 原型 <style> 原样平移（无 Tailwind 注入，避免 preflight 干扰令牌）。
+分层：util/const/sim/store/supabase/forecast/engine 七模块，算法逐行照抄 TS 化。
+
+**移植要点**：
+- store + bootLayer1 + ensureWindow + windowReady + sbFetch×3 重试 + sbPage 分页（M1）
+- forecastAt（pred 起点偏移重索引 mh=off+h + 相似日兜底 + CAL + FC_CACHE）/backtest×28/buildPers/replayBT（M2）
+- 决策条/四格/主图+温度带+偏差带/胶片 rAF 冻结拖拽/归因/审计/抽屉三 tab/CSV/弹层四件套互斥（M3）
+- DEMO 六幕 + D/Esc/←→ + boot 尾部极涡/热浪预热 + setTheme+localStorage + layout 前置主题脚本（M4）
+- gridFrom 确认死代码未移植；快照 cp 至 web/public/data/（与原型同 blob，零 git 体积）
+
+**实测（evaluate 断言，非目测）**：
+- live 主路径：boot 13s/119 天×3 区/5055 日峰；四格 12,926/−2.03%/18,261@16:00/3.57%；
+  MAPE 3.57/cov 85.6/49.0；预备 2,450MW——handoff §5 基线逐位对上
+- 三区：DAYTON 5.43、DOM 5.40 ✓；模型行 3.43/7.48 ↓54% ✓
+- 极涡重演：秒跳（预热）、持久性 17.02% → 相似日 23.14% 落后——杀手锏话术逐字成立
+- 拖 2010 未加载区：冻结+「松手加载」toast，松手 1.5s 出图；回到当前 202ms
+- 热力图（惰性 init 后 canvas 1579×153）/极端日 8 行（首行 2008/10/20 12:00 与原型一致）/六幕/主题来回/弹层互斥全过
+- 兜底三级：snapshot（四格/MAPE 3.57 同源一致）、sim（MAPE 2.34 = 旧仿真基线逐位吻合）
+- lint+tsc 零错零警；npm run build 成功（静态预渲染）；console 干净（ECharts 0×0 警告已修：heatC 惰性 init + reactStrictMode:false）
+
+**截图**：.shots/web_v3_{light,dark}.jpeg。**dev**：web @3100（遗留 dev server HMR 在跑）；原型对照 @4173。
+
+**遗留**：feat-009 全量回归收口（本会话已覆盖大部分，剩余：CSV 文件下载实检、多窗口并排对照走查）；
+~20:00 决策点：web 已过基线，可直接以 web 提交，原型兜底仍在 HEAD。

@@ -1,20 +1,22 @@
 # 烛龙 ZHULONG · 交接文档
 
 > 写给下一个开发会话。框架已与用户对齐锁定，继续优化前**必读本文**。
-> 最后更新：2026-08-29 05:40（feat-006 在线模式已提交，feat-007 懒加载待实现——**规格在 progress.md**）· 提交截止：8/29 24:00
+> 最后更新：2026-08-29 12:15（feat-008 完成：原型 v3 已平移到 web/ 正式工程并通过全部断言）· 提交截止：8/29 24:00
 
 ## 0. 一句话现状
 
-`zhulong.html`（`docs/prototype/` 下，~87KB 单文件）= 电力负荷预测决策台，浅/深双主题。
-v14–v18 完成五轮重审并实测通过：主体化→减密→时光机并入主图→决策通知条→四格权重重排。
-页面层级定稿：**告示（通知条）→ 仪表（四格）→ 机器（主图+胶片一体卡）**。剩余工作：接真数据。
+**web/ 正式工程已就绪并通过 handoff §5 全部断言（feat-008，8/29 12:15）**——原型 v3 的完整平移：
+`web/src/lib/zl/`（util/const/sim/store/supabase/forecast/engine，算法逐行照抄 TS 化）+ React 静态骨架
+（page.tsx 的 id/class 与原型逐一对齐，命令式引擎接管渲染）+ globals.css（原型样式原样平移）。
+dev：`cd web && npm run dev -- --port 3100`；快照在 `web/public/data/`（与原型同 blob）。
+原型 `zhulong.html` 冻结为 spec 与提交兜底。剩余：feat-009 全量回归收口 + 提交。
 
 ## 1. 文件地图（只看这些）
 
 | 文件 | 说明 |
 |---|---|
-| `docs/prototype/zhulong.html` | **唯一主文件**（用户明确：其它不看；2026-08-29 从根目录迁入） |
-| `docs/prototype/data/zhulong-data.js` | 真数据快照（7.1MB，build-snapshot.mjs 产物，勿手改勿提交巨型 diff 外的改动） |
+| `web/` | **主战场**：Next16+TS 正式工程（feat-008 平移完成）；`src/lib/zl/` 七模块 + `src/app/page.tsx` 骨架 + `globals.css`；快照 `public/data/` |
+| `docs/prototype/zhulong.html` | 原型 v3（**冻结为 spec**，算法照抄来源；提交兜底） |
 | `scripts/build-snapshot.mjs` | 快照生成器（ZL_SKEY 环境变量传入，绝不入库） |
 | `CLAUDE.md` / `init.sh` / `feature_list.json` / `progress.md` | 工程 harness（启动验证走 `bash init.sh`） |
 | `docs/zhulong-design.md` | 设计文档（布局/交互/方法论/质量记录/版本小史） |
@@ -114,10 +116,10 @@ store（唯一数据后端）：hours Map<zone,Map<di,{L,T,H,W,P}F64(24)>> · da
 
 ## 6. 待办（按优先级）
 
-1. **正式工程 web/ 平移（下一主战场）**：把原型 v3（懒加载，`cc69a6e`）整体移植——
-   M1 store/懒加载层照抄原型算法 TS 化 → M2-M5 特性平移（原型即 spec）→ M6 全量回归（feat-008/009）。
-   Next 16 + TS + Tailwind v4 + echarts 6.1 脚手架已就绪（dev :3100 验证过，env 已配）
-2. **原型为提交兜底**（当前 HEAD 即可提交）；~20:00 决策点：新工程未过断言则提交原型
+1. **feat-009 全量回归与提交**：web 已过全部基线断言（见 progress.md 8/29 12:15 节），
+   剩余：CSV 下载实检、双工程并排走查、`.shots/web_v3_*` 存档、收口提交。
+   ~20:00 决策点已解除：web 与原型数字逐位一致，以 web 为主提交、原型一并入库兜底
+2. ~~正式工程 web/ 平移~~ ✅ feat-008 完成（8/29 12:15，M1-M5 一次过）
 3. ~~接 Supabase 真数据 + 懒加载~~ ✅ v3 完整落地（feat-005/006/007）
 4. 可选：energy_forecasts 管道跑起来后切真前瞻；模拟器 cron 开启（"活的 NOW"）
 

@@ -61,8 +61,8 @@
       "name": "web/ 平移：懒加载 store + 全部特性",
       "description": "把原型 v3 已验证实现移植到 web/：①src/lib 移植 store/bootLayer1/ensureWindow/sbFetch 重试（算法照抄原型，TS 化）；②components 平移决策条/四格/主图+胶片/证据/抽屉/演示/主题；ECharts 6 选项逐项对照验证、THEMES 双 CVD 调色板、弹层互斥",
       "dependencies": ["feat-007"],
-      "status": "not-started",
-      "evidence": ""
+      "status": "done",
+      "evidence": "web @3100 evaluate 断言：boot 13s live；四格 12,926/−2.03%/18,261@16:00/3.57%、cov 85.6/49.0、预备 2,450MW、三区 5.43/5.40/3.57、极涡 17.02→23.14 落后——handoff §5 逐位对上；拖未加载区冻结+松手 1.5s；热力图/极端日(2008/10/20 一致)/六幕/主题/弹层互斥全过；snapshot/sim 兜底实测（3.57 / 2.34 各与记载一致）；lint+tsc+build 零错；截图 web_v3_{light,dark}"
     },
     {
       "id": "feat-009",
