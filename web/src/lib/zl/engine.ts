@@ -108,7 +108,10 @@ function renderMain() {
       endLabel: { show: god.length > 0, formatter: '真实', color: C.ink3, fontSize: 10, distance: 4 } },
     { name: '静态预测', type: 'line', data: stat, showSymbol: false, z: 4, silent: true,
       lineStyle: { color: C.yday, width: 1.7, type: 'dashed', opacity: .95 }, itemStyle: { color: C.yday },
-      endLabel: { show: stat.length > 0, formatter: '静态', color: C.ink3, fontSize: 10, distance: 4 }, tooltip: { show: false } },
+      endLabel: { show: stat.length > 0, formatter: '静态', color: C.yday, fontSize: 10, fontWeight: 600, distance: 4 },
+      /* 线尾标签左下入图（右缘裁剪修复）+ 与学习线错位（重合段两线同值，标签须避让不叠字） */
+      labelLayout: stat.length ? { dx: -16, dy: 14 } : undefined,
+      tooltip: { show: false } },
     { name: '实际负荷', type: 'line', data: hist, showSymbol: false, z: 6,
       lineStyle: { color: C.actual, width: 3 }, itemStyle: { color: C.actual },
       emphasis: { focus: 'series' },
@@ -127,7 +130,8 @@ function renderMain() {
     },
     { name: '持续学习 P50', type: 'line', data: fc.map(p => [p.ts, p.p50]), showSymbol: false, z: 5,
       lineStyle: { color: C.fc, width: 1.8, type: 'dashed' }, itemStyle: { color: C.fc }, emphasis: { focus: 'series' },
-      endLabel: { show: true, formatter: 'P50', color: C.fcHi, fontSize: 10, distance: 4 },
+      endLabel: { show: true, formatter: 'P50', color: C.fcHi, fontSize: 10, fontWeight: 600, distance: 4 },
+      labelLayout: { dx: -14, dy: -10 }, /* 线尾标签移入图内（右缘裁剪修复，与「静态」上下错开 */
       markLine: { symbol: 'none', silent: true,
         lineStyle: { color: C.fcHi, width: 1, type: 'dashed', opacity: .7 },
         /* 文字标注移至 title 组件（图右上固定，永不裁切）；此线仅指示峰时刻 */
@@ -625,7 +629,7 @@ function renderLegendTable() {
     ['<span class="sw"></span>', '实际负荷', '截至 NOW'],
     ['<span class="sw band"></span>', 'P10–P90 区间', '90% 可能落入'],
     ['<span class="sw dash"></span>', '持续学习 P50', '中位路径 · 学习模型'],
-    ['<span class="sw thin"></span>', '静态预测', '初始模型对照'],
+    ['<span class="sw thin"></span>', '静态预测', '初始模型对照；与学习线重合处=持续学习尚未覆盖该段'],
     ['<span class="sw dot"></span>', '实际 · 后续', '上帝视角'],
   ].map(([sw, nm, d]) => `<span class="lg" title="${nm} · ${d}">${sw}<span>${nm}</span></span>`).join('');
 }
