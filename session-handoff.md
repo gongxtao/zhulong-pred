@@ -14,7 +14,7 @@
 ## 当前状态（2026-08-29 19:00）
 
 - **ChatBI 数据问答已上线（feat-023，verify 50/50）**：
-  - 入口 = 右下角悬浮球 💬 → 右侧扩展式抽屉（互斥家族第五件）；3 预设 chips + 自由输入
+  - 入口 = 右下角悬浮球 💬 → 右侧扩展式抽屉（互斥家族第五件）；5 预设 chips + 自由输入（预置问题已联动 NOW 锚点：双轨=2018-06 窗、指定日=2018-06-30，与页面数字互证）
     （textarea，Enter 发送 / Shift+Enter 换行，纸飞机按钮）；Agent 回答 markdown 表格渲染
   - 链路：`/api/chat`（web/src/app/api/chat/route.ts，SSE 透传+限流 20/分+500 字上限）
     → QwenPaw `:8088` Agent `zhulong` → Python 查 Supabase(anon 只读) 算指标再答
@@ -55,7 +55,7 @@
   重记录 + 更新 verify.mjs 硬编码基线即可（同款流程）。
 - pred_dynamic 回放若再停滞（曾停在 2016-07-31 约 15 分钟），先查管道——它是故事的燃料。
 - calFrom 分位标定保持 static-only；dyn 已覆盖 boot 窗，**可评估切换**（切换前跑 verify 看分位带变化）。
-- ChatBI 路演前：确认 QwenPaw 在跑（`curl localhost:8088/api/version`）+ dev server 带 env；
+- ChatBI 路演前：确认 QwenPaw 在跑（`curl localhost:8088/api/version`）；dev 经 .env.local 自动连助手；
     演示用 chips 不手打（问法锁定+已对账）；可先发一条 warm-up 预热。
 - 本机 vercel.app DNS 污染，线上兜底 = 本地 dev（feat-012 记录）。
 - **push 待用户裁决（触发 Vercel 部署；线上聊天为降级态直到 QwenPaw 上云+配 env）**。
