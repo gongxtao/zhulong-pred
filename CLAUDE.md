@@ -14,8 +14,10 @@
 
 ## Scope 边界（红线）
 
-- **主战场**：`web/`（Next.js 16 + TS + Tailwind v4 + ECharts 6 正式工程，`npm run dev` @ :3100）
-- **冻结（仅兜底，不再修改）**：`docs/prototype/zhulong.html`（提交兜底版本，断言基线对 handoff §5）
+- **主战场（下一阶段）**：`web/`（Next.js 16 + TS + Tailwind v4 + ECharts 6 正式工程，`npm run dev` @ :3100）
+- **spec 与兜底**：`docs/prototype/zhulong.html` —— 懒加载已完整落地并验证（v3，`cc69a6e`），
+  **移植期间原则上不再修改**（发现 bug 先评估：小修 prototype 保持同步，大改进 web/）；
+  提交兜底版本即当前 HEAD
 - **可改**：`scripts/`、`docs/prototype/data/`、harness 五件套、`docs/zhulong-*.md`
 - **不碰**：`dashboard_v2~v10.html`（他人/旧线）、`.omc/`、Supabase 库结构
 - 设计红线见 handoff §2/§4：告示→仪表→机器层级、四格对等、单栏无分栏、弹层四件套互斥、CVD 色板勿改

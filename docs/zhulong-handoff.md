@@ -55,23 +55,26 @@ v14–v18 完成五轮重审并实测通过：主体化→减密→时光机并�
 6. 双主题色板均经 CVD 六项验证，勿凭感觉改色
 7. 时光机与主图是**同一台机器**（屏+进度条），勿再拆开或往中间插层
 
-## 3. 代码结构（改哪里找哪里）
+## 3. 代码结构（改哪里找哪里 · v3 懒加载架构）
 
 ```
 CSS :root + html[data-theme="dark"]   全部视觉令牌（改色只动这里）
 THEMES = {light, dark}                 图表调色板（改图表色动这里）
-启动（异步 boot，页面底部）：#loader 遮罩 → fetchLiveData()（在线拉 Supabase，249 请求 ≈25s，
-      进度条+跳过按钮）→ 失败回退 loadSnapshot()（动态 script 标签读 data/zhulong-data.js）
-      → 再失败回退内置仿真；applyData(zd) 初始化 ZD/REAL/时间锚 → startEngine(src)（buildDaily/
-      buildCal/FC_CACHE.clear/BT/PERS/renderAll，徽章：在线·Supabase｜真数据·快照｜演示数据·仿真）
-在线拉取器：SB.URL/SB.KEY（anon）+ sbPage(limit/offset 分页) + gridFrom(去重∪线性插值)
-      + model 元数据 + pred_static 聚合（与 scripts/build-snapshot.mjs 同算法）
-预测：forecastAt = 真模型注入（≤24h 内最近 pred_static 日起点，偏移重索引 mh=off+h，
-      p50+真残差分位带）+ 相似日基线兜底（25–48h/2017 前）+ CAL + FC_CACHE(memo)
-评估：backtest(28起点×24h，审计=模型契约视界) + buildPers(24h 同视界) + replayBT(24h)
+store（唯一数据后端）：hours Map<zone,Map<di,{L,T,H,W,P}F64(24)>> · daily Map<zone,[{ts,peak,ph,di}]>
+      · pred Map<zone,Map<originTs,p[24]>> + predOrigins · cal[zone][h] · model
+启动（异步 boot）：#loader 遮罩 → bootLayer1()（energy_daily 视图[order=zone,est_day] +
+      近120天×3区 + 近70天 pred_static[CAL来源] + 模型元数据，~40请求≈12s）→ 失败回退
+      loadSnapshot()→storeFromSnapshot() 全量灌 store → 再失败仿真（SRC: live|snapshot|sim）
+按需：ensureWindow(zone,origin)（per-zone 串行队列+toast；小时[origin-80d,+2d]+pred[origin-48h,origin]）
+      · windowReady()（拖拽冻结判定）· sbFetch（3 次重试）· sbPage（limit/offset 分页）
+预测：forecastAt = 真模型注入（≤24h 最近 pred 起点偏移重索引 mh=off+h）+ 相似日基线兜底
+      （25–48h/2017 前；candsFor 只取已加载日）+ CAL + FC_CACHE(memo)
+评估：backtest(28起点×24h，审计=模型契约视界) + buildPers(24h) + replayBT(24h)
 渲染：renderDecision/StatusQuad/Main/Film/Attrib/Cred/SM/Heat/Extremes/LegendTable
-交互：setZone/setOrigin/jumpTo/胶片拖拽(rAF轻量刷新)/抽屉tabs/弹层四件套(互斥+重渲即关)/CSV
-演示：DEMO 六幕数组 + demoToggle（D键/Esc/←→）
+      （renderAll 带 try/catch 诊断日志 window.__renderLog）
+交互：setZone/setOrigin（异步+originToken 令牌）/jumpTo/胶片拖拽（rAF 冻结式）/抽屉 tabs
+      （sm tab 自动 ensure 三区）/弹层四件套/CSV
+演示：DEMO 六幕 + demoToggle（D/Esc/←→）；boot 尾部预热极涡/热浪窗
 主题：setTheme + localStorage('zl-theme')
 快照再生成：ZL_SKEY=<service_role> node scripts/build-snapshot.mjs（密钥只走环境变量）
 ```
@@ -111,11 +114,11 @@ THEMES = {light, dark}                 图表调色板（改图表色动这里�
 
 ## 6. 待办（按优先级）
 
-1. **正式工程 web/ 开发（当前主战场）**：Next 16 + TS + Tailwind v4 + echarts 6.1 脚手架已就绪
-   （dev :3100 验证过）；M1 懒加载 store（规格 = progress.md feat-007 节含补钉）→ M2-M5 特性平移
-   （原型即 spec）→ M6 全量回归（feat-007/008/009）
-2. **原型已冻结为提交兜底**（`7ad8fe0` 在线全量模式）；~20:00 决策点：新工程未过断言则提交原型
-3. ~~接 Supabase 真数据~~ ✅ v2 完成并已上线在线模式（feat-005/006）
+1. **正式工程 web/ 平移（下一主战场）**：把原型 v3（懒加载，`cc69a6e`）整体移植——
+   M1 store/懒加载层照抄原型算法 TS 化 → M2-M5 特性平移（原型即 spec）→ M6 全量回归（feat-008/009）。
+   Next 16 + TS + Tailwind v4 + echarts 6.1 脚手架已就绪（dev :3100 验证过，env 已配）
+2. **原型为提交兜底**（当前 HEAD 即可提交）；~20:00 决策点：新工程未过断言则提交原型
+3. ~~接 Supabase 真数据 + 懒加载~~ ✅ v3 完整落地（feat-005/006/007）
 4. 可选：energy_forecasts 管道跑起来后切真前瞻；模拟器 cron 开启（"活的 NOW"）
 
 ## 7. 演示剧本（按 D）

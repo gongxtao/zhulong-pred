@@ -58,8 +58,8 @@
     },
     {
       "id": "feat-008",
-      "name": "M2-M5 特性平移（决策条/四格/主图+胶片/证据/抽屉/演示/主题）",
-      "description": "按原型 spec 逐特性移植到 web/src/components/：ECharts 选项逐项对照（echarts 6 兼容性验证）、THEMES 双 CVD 调色板、弹层四件套互斥、六幕演示、localStorage 主题",
+      "name": "web/ 平移：懒加载 store + 全部特性",
+      "description": "把原型 v3 已验证实现移植到 web/：①src/lib 移植 store/bootLayer1/ensureWindow/sbFetch 重试（算法照抄原型，TS 化）；②components 平移决策条/四格/主图+胶片/证据/抽屉/演示/主题；ECharts 6 选项逐项对照验证、THEMES 双 CVD 调色板、弹层互斥",
       "dependencies": ["feat-007"],
       "status": "not-started",
       "evidence": ""
