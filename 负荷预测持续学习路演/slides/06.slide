@@ -1,0 +1,135 @@
+<Slide style={{ width: 1280, height: 720, background: '#0A1D37', display: 'flex', flexDirection: 'column', padding: '44px 64px 16px 64px' }}>
+    <Text style={{ fontSize: 14, color: '#22D3EE', letterSpacing: 3 }}>实证 · 相同数据 · 相同模型</Text>
+    <Text style={{ fontSize: 33, fontWeight: 'bold', color: '#F8FAFC', marginTop: 8 }}>相同数据、相同模型下，持续学习验证指标改善约 5.6%</Text>
+
+    <Box style={{ flexDirection: 'row', gap: 40, flex: 1, marginTop: 20, alignItems: 'stretch' }}>
+        <Box style={{ width: 400, display: 'flex', flexDirection: 'column' }}>
+            <Text style={{ fontSize: 104, fontWeight: 'bold', color: '#22D3EE', fontFamily: 'Space Grotesk, Inter, sans-serif', lineHeight: 1.0 }}>5.6%</Text>
+            <Text style={{ fontSize: 17, color: '#F8FAFC', marginTop: 8 }}>WAPE 相对改善</Text>
+            <Box style={{ height: 1, background: '#123B63', margin: '20px 0' }} />
+            <Box style={{ flexDirection: 'row', gap: 32 }}>
+                <Box>
+                    <Text style={{ fontSize: 34, fontWeight: 'bold', color: '#F8FAFC', fontFamily: 'Space Grotesk, Inter, sans-serif' }}>31 / 32</Text>
+                    <Text style={{ fontSize: 12, color: '#94A3B8', marginTop: 4 }}>个月动态模型更优</Text>
+                </Box>
+                <Box>
+                    <Text style={{ fontSize: 34, fontWeight: 'bold', color: '#F8FAFC', fontFamily: 'Space Grotesk, Inter, sans-serif' }}>68,040</Text>
+                    <Text style={{ fontSize: 12, color: '#94A3B8', marginTop: 4 }}>共有预测主键 · 同口径对齐</Text>
+                </Box>
+            </Box>
+            <Box style={{ marginTop: 18, border: '1px solid #123B63', borderRadius: 8, padding: '10px 14px' }}>
+                <Text style={{ fontSize: 12, color: '#94A3B8', lineHeight: 1.7 }}>唯一回退月份：2016-07（WAPE +0.02 pp）——32 个月中仅 1 次略差，仍纳入统计、不做剔除。</Text>
+            </Box>
+            <Text style={{ fontSize: 13, color: '#94A3B8', lineHeight: 1.8, marginTop: 'auto' }}>改善不靠更换模型——在相同模型条件下，由持续学习获得。</Text>
+        </Box>
+
+        <Box style={{ flex: 1, background: '#123B63', borderRadius: 14, padding: 22, display: 'flex', flexDirection: 'column' }}>
+            <Box>
+                <Box style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={{ fontSize: 14.5, fontWeight: 'bold', color: '#F8FAFC' }}>WAPE｜越低越好</Text>
+                    <Box style={{ marginLeft: 'auto', border: '1px solid #22D3EE', borderRadius: 999, padding: '2px 10px' }}>
+                        <Text style={{ fontSize: 12.5, fontWeight: 'bold', color: '#22D3EE' }}>−0.2176 pp</Text>
+                    </Box>
+                </Box>
+                <Box style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 }}>
+                    <Text style={{ width: 76, fontSize: 12.5, color: '#94A3B8' }}>静态模型</Text>
+                    <Box style={{ width: 400, height: 20, background: '#0A1D37', borderRadius: 4, position: 'relative' }}>
+                        <Box style={{ position: 'absolute', left: 0, top: 0, width: 390, height: 20, background: '#94A3B8', borderRadius: 4 }} />
+                    </Box>
+                    <Text style={{ fontSize: 12.5, fontWeight: 'bold', color: '#F8FAFC', marginLeft: 6 }}>3.8876%</Text>
+                </Box>
+                <Box style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                    <Text style={{ width: 76, fontSize: 12.5, color: '#F8FAFC' }}>持续学习</Text>
+                    <Box style={{ width: 400, height: 20, background: '#0A1D37', borderRadius: 4, position: 'relative' }}>
+                        <Box style={{ position: 'absolute', left: 0, top: 0, width: 368, height: 20, background: '#22D3EE', borderRadius: 4 }} />
+                    </Box>
+                    <Text style={{ fontSize: 12.5, fontWeight: 'bold', color: '#22D3EE', marginLeft: 6 }}>3.6700%</Text>
+                </Box>
+            </Box>
+
+            <Box style={{ height: 1, background: '#0A1D37', margin: '14px 0' }} />
+
+            <Box>
+                <Box style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={{ fontSize: 14.5, fontWeight: 'bold', color: '#F8FAFC' }}>MAE｜越低越好</Text>
+                    <Box style={{ marginLeft: 'auto', border: '1px solid #22D3EE', borderRadius: 999, padding: '2px 10px' }}>
+                        <Text style={{ fontSize: 12.5, fontWeight: 'bold', color: '#22D3EE' }}>−20.34 MW</Text>
+                    </Box>
+                </Box>
+                <Box style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 }}>
+                    <Text style={{ width: 76, fontSize: 12.5, color: '#94A3B8' }}>静态模型</Text>
+                    <Box style={{ width: 400, height: 20, background: '#0A1D37', borderRadius: 4, position: 'relative' }}>
+                        <Box style={{ position: 'absolute', left: 0, top: 0, width: 363, height: 20, background: '#94A3B8', borderRadius: 4 }} />
+                    </Box>
+                    <Text style={{ fontSize: 12.5, fontWeight: 'bold', color: '#F8FAFC', marginLeft: 6 }}>363.33</Text>
+                </Box>
+                <Box style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                    <Text style={{ width: 76, fontSize: 12.5, color: '#F8FAFC' }}>持续学习</Text>
+                    <Box style={{ width: 400, height: 20, background: '#0A1D37', borderRadius: 4, position: 'relative' }}>
+                        <Box style={{ position: 'absolute', left: 0, top: 0, width: 343, height: 20, background: '#22D3EE', borderRadius: 4 }} />
+                    </Box>
+                    <Text style={{ fontSize: 12.5, fontWeight: 'bold', color: '#22D3EE', marginLeft: 6 }}>342.99</Text>
+                </Box>
+            </Box>
+
+            <Box style={{ height: 1, background: '#0A1D37', margin: '14px 0' }} />
+
+            <Box style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                <Text style={{ fontSize: 14.5, fontWeight: 'bold', color: '#F8FAFC' }}>月度 WAPE 走势</Text>
+                <Text style={{ marginLeft: 12, fontSize: 11.5, color: '#94A3B8' }}>2016-01 → 2018-08 · 动态模型长期低于静态</Text>
+            </Box>
+            <Chart
+                style={{ height: 200 }}
+                chartType='lineChart'
+                background='#123B63'
+                showLegend={true}
+                legendColor='#94A3B8'
+                axisColor='#64748B'
+                colors={['#94A3B8', '#22D3EE']}
+                data={[
+                    ['月份', '静态 WAPE', '动态 WAPE'],
+                    ['16-01', 4.5448, 4.5448],
+                    ['16-02', 4.4292, 4.2311],
+                    ['16-03', 3.2708, 3.0051],
+                    ['16-04', 3.3004, 3.1009],
+                    ['16-05', 2.8832, 2.7354],
+                    ['16-06', 3.9656, 3.6806],
+                    ['16-07', 3.5909, 3.6100],
+                    ['16-08', 3.5359, 3.3589],
+                    ['16-09', 4.2052, 4.0221],
+                    ['16-10', 2.8927, 2.6459],
+                    ['16-11', 3.2834, 2.8776],
+                    ['16-12', 4.0062, 3.9155],
+                    ['17-01', 4.3050, 4.0186],
+                    ['17-02', 4.5920, 4.2749],
+                    ['17-03', 3.8754, 3.6176],
+                    ['17-04', 3.4790, 3.1714],
+                    ['17-05', 3.9822, 3.6762],
+                    ['17-06', 3.7651, 3.6524],
+                    ['17-07', 3.7563, 3.4687],
+                    ['17-08', 3.2999, 3.2072],
+                    ['17-09', 3.6859, 3.3214],
+                    ['17-10', 3.2119, 2.9114],
+                    ['17-11', 3.6483, 3.3150],
+                    ['17-12', 4.1561, 3.9405],
+                    ['18-01', 4.8647, 4.8506],
+                    ['18-02', 4.2964, 4.1074],
+                    ['18-03', 4.3352, 4.0496],
+                    ['18-04', 4.1911, 3.8786],
+                    ['18-05', 4.3633, 4.0013],
+                    ['18-06', 4.2547, 3.8982],
+                    ['18-07', 3.8659, 3.7938],
+                    ['18-08', 3.5641, 3.1085],
+                ]}
+            />
+        </Box>
+    </Box>
+
+    <Box style={{ flexDirection: 'row', marginTop: 14, alignItems: 'center' }}>
+        <Text style={{ fontSize: 11.5, color: '#94A3B8' }}>Source: monthly_static_dynamic_validation_metrics.csv · 68,040 共有预测主键 · 按纽约本地预测月份统计 · 验证集结果，非真实生产承诺</Text>
+        <Box style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Box style={{ width: 10, height: 10, background: '#22D3EE' }} />
+            <Text style={{ fontSize: 13, color: '#94A3B8' }}>CLE · 06 / 07</Text>
+        </Box>
+    </Box>
+</Slide>

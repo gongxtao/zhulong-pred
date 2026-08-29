@@ -1,0 +1,108 @@
+<Slide style={{ width: 1280, height: 720, background: '#0A1D37', position: 'relative', overflow: 'hidden' }}>
+    <Box style={{ position: 'absolute', right: -120, top: -180, width: 440, height: 440, borderRadius: 220, background: 'rgba(34,211,238,0.05)' }} />
+    <Box style={{ position: 'absolute', left: 340, bottom: -220, width: 380, height: 380, borderRadius: 190, background: 'rgba(34,211,238,0.04)' }} />
+
+    <Box style={{ position: 'absolute', left: 64, top: 42, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <Box style={{ padding: '5px 12px', border: '1px solid #123B63', borderRadius: 6 }}>
+            <Text style={{ fontSize: 12.5, color: '#94A3B8' }}>AI Agent</Text>
+        </Box>
+        <Box style={{ padding: '5px 12px', border: '1px solid #123B63', borderRadius: 6 }}>
+            <Text style={{ fontSize: 12.5, color: '#94A3B8' }}>持续学习闭环</Text>
+        </Box>
+        <Box style={{ padding: '5px 12px', border: '1px solid #123B63', borderRadius: 6 }}>
+            <Text style={{ fontSize: 12.5, color: '#94A3B8' }}>电力时序预测</Text>
+        </Box>
+    </Box>
+    <Box style={{ position: 'absolute', right: 64, top: 42, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <Box style={{ width: 8, height: 8, background: '#22D3EE' }} />
+        <Text style={{ fontSize: 12.5, color: '#94A3B8' }}>投资人 × 产业客户 · 路演版 · 2026</Text>
+    </Box>
+
+    <Chart
+        style={{ position: 'absolute', left: 470, top: 116, width: 740, height: 430 }}
+        chartType='lineChart'
+        background='#0A1D37'
+        showLegend={true}
+        legendColor='#94A3B8'
+        axisColor='#64748B'
+        colors={['#F8FAFC', '#22D3EE']}
+        data={[
+            ['小时', '实际负荷', '预测负荷'],
+            ['00:00', 2280, 2180],
+            ['01:00', 2150, 2080],
+            ['02:00', 2090, 2020],
+            ['03:00', 2120, 2050],
+            ['04:00', 2260, 2160],
+            ['05:00', 2540, 2420],
+            ['06:00', 2850, 2720],
+            ['07:00', 3080, 2950],
+            ['08:00', 3180, 3060],
+            ['09:00', 3220, 3120],
+            ['10:00', 3300, 3180],
+            ['11:00', 3400, 3240],
+            ['12:00', 3460, 3300],
+            ['13:00', 3480, 3320],
+            ['14:00', 3520, 3260],
+            ['15:00', 3440, 3200],
+            ['16:00', 3380, 3160],
+            ['17:00', 3320, 3120],
+            ['18:00', 3260, 3080],
+            ['19:00', 3150, 2980],
+            ['20:00', 2980, 2860],
+            ['21:00', 2760, 2680],
+            ['22:00', 2540, 2460],
+            ['23:00', 2360, 2300],
+        ]}
+    />
+    <Box style={{ position: 'absolute', left: 828, top: 168, width: 164, height: 286, background: '#F59E0B', opacity: 0.06 }} />
+    <Box style={{ position: 'absolute', left: 910, top: 168, width: 2, height: 286, background: '#F59E0B', opacity: 0.7 }} />
+    <Text style={{ position: 'absolute', left: 480, top: 552, fontSize: 13, color: '#64748B' }}>未来 24 小时负荷曲线 · 实际 vs 预测</Text>
+    <Text style={{ position: 'absolute', left: 925, top: 140, fontSize: 15, fontWeight: 'bold', color: '#F8FAFC' }}>实际峰值</Text>
+    <Text style={{ position: 'absolute', left: 925, top: 188, fontSize: 15, fontWeight: 'bold', color: '#F59E0B' }}>未预见峰值</Text>
+    <Text style={{ position: 'absolute', left: 925, top: 236, fontSize: 15, color: '#22D3EE' }}>预测负荷</Text>
+
+    <Text style={{ position: 'absolute', left: 64, top: 116, fontSize: 14, color: '#22D3EE', letterSpacing: 3, fontFamily: 'Space Grotesk, Inter, sans-serif' }}>AGENT · CONTINUAL LEARNING ENGINE</Text>
+    <Text style={{ position: 'absolute', left: 64, top: 154, fontSize: 50, fontWeight: 'bold', color: '#F8FAFC', lineHeight: 1.25 }}>面向电力负荷预测</Text>
+    <Text style={{ position: 'absolute', left: 64, top: 218, fontSize: 50, fontWeight: 'bold', color: '#F8FAFC', lineHeight: 1.25 }}>持续学习的智能引擎</Text>
+    <Box style={{ position: 'absolute', left: 64, top: 294, width: 48, height: 5, background: '#22D3EE' }} />
+    <Text style={{ position: 'absolute', left: 64, top: 318, fontSize: 23, color: '#F8FAFC' }}>让 <span style={{ color: '#22D3EE', fontWeight: 'bold' }}>Agent</span> 指导小模型持续学习</Text>
+    <Text style={{ position: 'absolute', left: 64, top: 376, width: 390, fontSize: 15.5, color: '#94A3B8', lineHeight: 1.8 }}>如果无法准确预测用电负荷峰值何时到来，就无法及时安排应对措施，变压器可能持续重过载，进而造成设备损坏。</Text>
+
+    <Box style={{ position: 'absolute', left: 64, top: 502, width: 396, flexDirection: 'row', alignItems: 'stretch' }}>
+        <Box style={{ flex: 1 }}>
+            <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#22D3EE', fontFamily: 'Space Grotesk, Inter, sans-serif' }}>5.6%</Text>
+            <Text style={{ fontSize: 11.5, color: '#94A3B8', marginTop: 4 }}>WAPE 相对改善</Text>
+        </Box>
+        <Box style={{ width: 1, background: '#123B63', margin: '0 14px' }} />
+        <Box style={{ flex: 1 }}>
+            <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#22D3EE', fontFamily: 'Space Grotesk, Inter, sans-serif' }}>31/32</Text>
+            <Text style={{ fontSize: 11.5, color: '#94A3B8', marginTop: 4 }}>个月动态模型更优</Text>
+        </Box>
+        <Box style={{ width: 1, background: '#123B63', margin: '0 14px' }} />
+        <Box style={{ flex: 1 }}>
+            <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#22D3EE', fontFamily: 'Space Grotesk, Inter, sans-serif' }}>−20.34</Text>
+            <Text style={{ fontSize: 11.5, color: '#94A3B8', marginTop: 4 }}>MW · MAE 绝对降幅</Text>
+        </Box>
+    </Box>
+
+    <Box style={{ position: 'absolute', left: 64, bottom: 92, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <Text style={{ fontSize: 11.5, color: '#64748B', marginRight: 2 }}>风险链</Text>
+        <Box style={{ padding: '6px 14px', border: '1px solid #123B63', borderRadius: 6 }}>
+            <Text style={{ fontSize: 15, color: '#F59E0B' }}>未预见峰值</Text>
+        </Box>
+        <Text style={{ fontSize: 18, color: '#64748B' }}>→</Text>
+        <Box style={{ padding: '6px 14px', border: '1px solid #123B63', borderRadius: 6 }}>
+            <Text style={{ fontSize: 15, color: '#F59E0B' }}>持续重过载</Text>
+        </Box>
+        <Text style={{ fontSize: 18, color: '#64748B' }}>→</Text>
+        <Box style={{ padding: '6px 14px', border: '1px solid #123B63', borderRadius: 6 }}>
+            <Text style={{ fontSize: 15, color: '#F59E0B' }}>设备损坏</Text>
+        </Box>
+    </Box>
+
+    <Text style={{ position: 'absolute', left: 64, bottom: 30, fontSize: 12, color: '#64748B' }}>面向电力负荷预测持续学习的智能引擎 · 投资人 × 产业客户路演 · 2026</Text>
+    <Box style={{ position: 'absolute', right: 64, bottom: 26, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <Box style={{ width: 10, height: 10, background: '#22D3EE' }} />
+        <Text style={{ fontSize: 13, color: '#94A3B8' }}>CLE · 01 / 07</Text>
+    </Box>
+</Slide>

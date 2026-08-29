@@ -10,10 +10,17 @@
 3. `bash init.sh`
 4. `feature_list.json`（活跃特性，一次一个）
 5. `cd web && npx next dev -p 3100` 然后 `node scripts/verify.mjs`（51 项断言；
-   ⚠️ 8/29 深夜起 §2 在线基线因生产库数据漂移中断——见「待办」首条，属预期红）
+   §2 在线基线 8/30 凌晨已回绿——8/29 深夜的"数据漂移"实为 pred 双表内容对调，已修复）
 
-## 当前状态（2026-08-29 深夜收班）
+## 当前状态（2026-08-30 凌晨更新）
 
+- **🔴 pred 双表内容对调·前端换读修复（2026-08-30 凌晨，verify 51/51）**：生产库
+  `pred_dynamic`/`pred_static` 两表内容 8/29 晚被管线交叉写入（dyn 表实为初始静态批回测、
+  static 表实为持续学习回放；证据链 5 路见 progress.md 2026-08-30 条）。用户裁决：
+  **数据侧冻结不动，方案3 前端换读为稳定终态**——`web/src/lib/zl/supabase.ts` 头部
+  `SRC_STATIC/SRC_DYN` 常量换读两表（分位标定随静态源），下游零改动；§2 基线
+  3.39/88.8/54.2 无需重录即回绿。🔴 若管线将来把两表归位：恢复常量为直读表名+复跑 verify。
+  ChatBI skill 已加「数据现状」节（repo+本地工作区已同步；**云端未同步，见待办**）。
 - **聊天新建会话已上线（feat-024，专项 E2E 8/8）**：聊天抽屉头部「＋ 新会话」→
   换 session_id（QwenPaw 旧上下文随 id 作废）+ 清空记录 + 系统提示；流式中按钮与发送
   同锁禁用（防旧流污染新会话）。mock SSE 双 gate 确定性 E2E 验证（busy 禁用/重置/二次
@@ -68,16 +75,19 @@
 
 ## 待办 / 运维提示
 
-- **⚠️ 在线基线数据漂移（8/29 深夜，用户裁决=先落功能不改基线）**：17:10 重录基线
-  （3.39/88.8/54.2）之后管线重推过 pred_dynamic（现 68,040 行=945 起点×3区×24h 整、
-  max origin 2018-08-02，较 17:10 版少 1 天）+ 16:47 重训模型——页面 live 稳定值为
-  MAPE 3.57/cov90 83.2/cov50 45.7（快照同为 3.57），verify §2 `waitForFunction` 45s 超时
-  中断套件。**stash 铁证非代码回归**（干净 HEAD 同样超时）。回绿两条路：(a) 管线侧重推
-  17:10 版 dyn 数据；(b) 数据定稿后按 17:10 同款流程重录（固定等 12s 再读纪律）。
-- **基线漂移已兑现并重录**（见上，2026-08-29 17:10）——后续若再重放/改数据，跑 verify 取新值
-  重记录 + 更新 verify.mjs 硬编码基线即可（同款流程）。
+- **✅ 已结案：8/29 深夜「在线基线数据漂移」（8/30 凌晨）**：真因 = pred 双表内容对调
+  （见「当前状态」首条），非漂移非回归；17:10 基线 3.39/88.8/54.2 本身没变。前端换读后
+  verify §2 无需重录即回绿（51/51）。原 (a)(b) 回绿路线作废。
+- **🔴 云端 QwenPaw SKILL.md 未同步（路演前必办）**：43.166.132.250 SSH 不通，需用户把
+  repo 版 `qwenpaw/skills/zhulong_analysis/SKILL.md`（已加「数据现状·两表内容对调」节）
+  传到云上 agent 工作区——否则聊天答案的表名口径与页面相反。
+- **快照重建暂缓**：`scripts/build-snapshot.mjs` 仍直读 pred_static——两表归位前重建快照
+  会把持续学习内容嵌成静态轨（离线兜底语义错）。归位后再重建，或在脚本里同款换读。
+- 🔴 **若管线将来把两表归位**：`web/src/lib/zl/supabase.ts` 头部恢复 `SRC_STATIC/SRC_DYN`
+  为直读表名 + 复跑 verify；云端/本地 SKILL.md「数据现状」节同删。
 - pred_dynamic 回放若再停滞（曾停在 2016-07-31 约 15 分钟），先查管道——它是故事的燃料。
-- calFrom 分位标定保持 static-only；dyn 已覆盖 boot 窗，**可评估切换**（切换前跑 verify 看分位带变化）。
+- calFrom 分位标定保持 static-only（当前随 SRC_STATIC 换读=pred_dynamic 表=初始静态残差，
+  口径与换前一致）；dyn 已覆盖 boot 窗，**可评估切换**（切换前跑 verify 看分位带变化）。
 - **ChatBI 线上终验（唯一未闭环）**：本机对 *.vercel.app IP 级阻断——用手机热点开
     zhulong-seven.vercel.app 点悬浮球问一句即完成（等价链路段已全绿）。
 - ChatBI 路演前：云端 QwenPaw 在跑即可（`curl http://43.166.132.250:8088/api/version`，
@@ -85,12 +95,19 @@
 - **git push 已完成（8/29 深夜，用户裁决）**：gongxtao=4bc99ac、main=ffb1a87（merge）——
     此前 CLI 直部导致「线上领先 git」的局面已消除，git 与线上代码同源。
 - 本机 vercel.app DNS 污染，线上兜底 = 本地 dev（feat-012 记录）。
-- **push 后 Vercel 若挂 git 自动部署会触发**：聊天 env 三条已在 Production，部署 Ready
-    与线上终验换网络后核（见上「ChatBI 线上终验」条）。
+- **Vercel git 自动部署已修复并双路验证（8/29 深夜）**：push 后 git 构建报
+    「Couldn't find any pages or app directory」——根因项目未设 Root Directory（工程在 `web/`，
+    git 集成从仓库根构建；此前 CLI 直部无此问题）。修复 = `zhulong` 项目 rootDirectory=**web**
+    （API PATCH v9/projects）。验证：main 生产部署 READY（431d07c, 23:15）+ 并行会话推
+    gongxtao（5fec2ba PPT 页）preview 部署 READY（23:18）——push→自动构建链路全通。
+    ~~⚠️ 遗留：误建重复项目 `guikesong`~~ → **已处理（8/29 深夜）**：用户在 Dashboard 删除
+    （API 404 实证）；仓库根残留的 `.vercel/` 死链接（gitignored）已一并清除，
+    `web/.vercel`（zhulong 活链接）保留。
 
 ## 指针
 
 - 特性状态：`feature_list.json`（feat-014~024 全 done；023 = ChatBI；024 = 聊天新建会话）
-- 会话日志：`progress.md`；验证：`web/scripts/verify.mjs`（51 项）；截图：`.shots/web_v10_chatbi_*`
+- 会话日志：`progress.md`；验证：`web/scripts/verify.mjs`（51 项）；
+  截图：`.shots/web_v10_chatbi_*`、`.shots/web_v11_trackswap_fix_live.png`（双表对调修复后 live 态）
 - ChatBI 设计/计划：`docs/superpowers/specs/2026-08-29-chatbi-design.md`、`docs/superpowers/plans/2026-08-29-chatbi.md`
 - QwenPaw 配置材料：`qwenpaw/`（README + skills/zhulong_analysis）

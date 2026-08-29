@@ -1,0 +1,84 @@
+<Slide style={{ width: 1280, height: 720, background: '#FFFFFF', display: 'flex', flexDirection: 'column', padding: '22px 64px 16px 64px' }}>
+    <Box>
+        <Text style={{ fontSize: 32, fontWeight: 'bold', color: '#0A1D37' }}>我们卖的不是模型，而是让 Agent 可靠工作的 Harness</Text>
+        <Text style={{ fontSize: 16, color: '#64748B', marginTop: 6 }}>Harness 把数据、工具、约束和反馈组织起来——让通用 Agent 成为垂直智能体</Text>
+    </Box>
+
+    <Box style={{ flexDirection: 'row', gap: 28, flex: 1, marginTop: 16, alignItems: 'stretch' }}>
+        <Box style={{ width: 700, position: 'relative', height: 500 }}>
+            <Box style={{ position: 'absolute', left: 349, top: 92, width: 2, height: 66, background: '#CBD5E1' }} />
+            <Box style={{ position: 'absolute', left: 202, top: 242, width: 68, height: 2, background: '#CBD5E1' }} />
+            <Box style={{ position: 'absolute', left: 430, top: 242, width: 68, height: 2, background: '#CBD5E1' }} />
+            <Box style={{ position: 'absolute', left: 349, top: 318, width: 2, height: 74, background: '#CBD5E1' }} />
+            <Box style={{ position: 'absolute', left: 210, top: 8, width: 280, height: 84, background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: 10, alignItems: 'center', justifyContent: 'center', padding: 10 }}>
+                <Text style={{ fontSize: 16.5, fontWeight: 'bold', color: '#0A1D37' }}>① 数据上下文（读取）</Text>
+                <Text style={{ fontSize: 12, color: '#64748B', marginTop: 6, textAlign: 'center' }}>新增负荷 · 天气 · 历史分布 · 模型表现 · EDM 日志</Text>
+            </Box>
+            <Box style={{ position: 'absolute', left: 2, top: 198, width: 200, height: 92, background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: 10, alignItems: 'center', justifyContent: 'center', padding: 10 }}>
+                <Text style={{ fontSize: 16.5, fontWeight: 'bold', color: '#0A1D37' }}>② EDM</Text>
+                <Text style={{ fontSize: 12, color: '#64748B', marginTop: 6, textAlign: 'center' }}>数据漂移检测 · 结论沉淀为日志与上下文</Text>
+            </Box>
+            <Box style={{ position: 'absolute', left: 498, top: 198, width: 200, height: 92, background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: 10, alignItems: 'center', justifyContent: 'center', padding: 10 }}>
+                <Text style={{ fontSize: 16.5, fontWeight: 'bold', color: '#0A1D37' }}>③ 训练验证</Text>
+                <Text style={{ fontSize: 12, color: '#64748B', marginTop: 6, textAlign: 'center' }}>训练 Skill · 时序验证统一口径</Text>
+            </Box>
+            <Box style={{ position: 'absolute', left: 210, top: 392, width: 280, height: 84, background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: 10, alignItems: 'center', justifyContent: 'center', padding: 10 }}>
+                <Text style={{ fontSize: 16.5, fontWeight: 'bold', color: '#0A1D37' }}>④ 发布约束</Text>
+                <Text style={{ fontSize: 12, color: '#64748B', marginTop: 6, textAlign: 'center' }}>只能使用已到达数据 · 版本化管理</Text>
+            </Box>
+            <Box style={{ position: 'absolute', left: 270, top: 158, width: 160, height: 160, borderRadius: 80, background: '#22D3EE', alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ fontSize: 27, fontWeight: 'bold', color: '#0A1D37' }}>Agent</Text>
+                <Text style={{ fontSize: 12, color: '#0A1D37', opacity: 0.72, marginTop: 4 }}>垂直智能体</Text>
+            </Box>
+            <Text style={{ position: 'absolute', left: 0, top: 486, width: 700, fontSize: 13, color: '#94A3B8', textAlign: 'center' }}>Agent 决定何时学、怎么学；Harness 保证它学得可靠、可审计</Text>
+            <Box style={{ position: 'absolute', left: 175, top: 512, width: 350, flexDirection: 'row', justifyContent: 'center', gap: 8 }}>
+                <Box style={{ padding: '3px 10px', background: '#F1F5F9', borderRadius: 6 }}>
+                    <Text style={{ fontSize: 11.5, color: '#64748B' }}>数据</Text>
+                </Box>
+                <Box style={{ padding: '3px 10px', background: '#F1F5F9', borderRadius: 6 }}>
+                    <Text style={{ fontSize: 11.5, color: '#64748B' }}>工具</Text>
+                </Box>
+                <Box style={{ padding: '3px 10px', background: '#F1F5F9', borderRadius: 6 }}>
+                    <Text style={{ fontSize: 11.5, color: '#64748B' }}>约束</Text>
+                </Box>
+                <Box style={{ padding: '3px 10px', background: '#F1F5F9', borderRadius: 6 }}>
+                    <Text style={{ fontSize: 11.5, color: '#64748B' }}>反馈</Text>
+                </Box>
+                <Text style={{ fontSize: 11.5, color: '#94A3B8', alignSelf: 'center' }}>—— Harness 四要素</Text>
+            </Box>
+        </Box>
+
+        <Box style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <Text style={{ fontSize: 19, fontWeight: 'bold', color: '#0A1D37' }}>一句话定义</Text>
+            <Box style={{ borderLeft: '4px solid #22D3EE', background: 'rgba(34,211,238,0.07)', borderRadius: '0 10px 10px 0', padding: 14, marginTop: 10 }}>
+                <Text style={{ fontSize: 15, color: '#0F2039', lineHeight: 1.8 }}>Harness 把数据、工具、约束和反馈组织起来，让通用 Agent 成为负荷预测持续学习的垂直智能体。</Text>
+            </Box>
+            <Box style={{ marginTop: 16 }}>
+                <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#0A1D37' }}>Agent 读取</Text>
+                <Text style={{ fontSize: 13, color: '#64748B', marginTop: 4, lineHeight: 1.7 }}>新增负荷、天气、历史分布、模型表现、EDM 日志</Text>
+                <Text style={{ fontSize: 12, color: '#94A3B8', marginTop: 4 }}>→ 自主判断是否学习、如何学习</Text>
+            </Box>
+            <Box style={{ marginTop: 12, paddingBottom: 12, borderBottom: '1px solid #E2E8F0' }}>
+                <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#0A1D37' }}>Harness 提供</Text>
+                <Text style={{ fontSize: 13, color: '#64748B', marginTop: 4, lineHeight: 1.7 }}>EDM、训练、验证与部署能力，并限制其只能使用已到达数据</Text>
+                <Text style={{ fontSize: 12, color: '#94A3B8', marginTop: 4 }}>→ 能力标准化，不依赖特定算法团队</Text>
+            </Box>
+            <Box style={{ borderLeft: '4px solid #0A1D37', background: '#F8FAFC', borderRadius: '0 10px 10px 0', padding: 14, marginTop: 16 }}>
+                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#0A1D37' }}>约束是卖点</Text>
+                <Text style={{ fontSize: 13, color: '#0F2039', lineHeight: 1.8, marginTop: 6 }}>Agent 可自主决定如何学习，但只能在 Harness 划定的数据边界与验证口径内行动——这正是产业客户需要的『可审计的自主权』。</Text>
+            </Box>
+            <Box style={{ borderLeft: '4px solid #F59E0B', background: '#FFFBEB', borderRadius: '0 10px 10px 0', padding: 14, marginTop: 12 }}>
+                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#0A1D37' }}>为什么是工程问题</Text>
+                <Text style={{ fontSize: 13, color: '#0F2039', lineHeight: 1.8, marginTop: 6 }}>模型会不会过时，不再取决于算法团队是否在场——持续学习成为标准化、可复用、可审计的工程能力。</Text>
+            </Box>
+        </Box>
+    </Box>
+
+    <Box style={{ flexDirection: 'row', marginTop: 12, alignItems: 'center' }}>
+        <Text style={{ fontSize: 12, color: '#94A3B8' }}>负荷预测持续学习引擎 · 方案定义</Text>
+        <Box style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Box style={{ width: 10, height: 10, background: '#22D3EE' }} />
+            <Text style={{ fontSize: 13, color: '#64748B' }}>CLE · 03 / 07</Text>
+        </Box>
+    </Box>
+</Slide>

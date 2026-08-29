@@ -1,0 +1,115 @@
+<Slide style={{ width: '1280px', height: '720px', background: '#0B1730', padding: '20px 60px 16px 60px', fontFamily: "'PingFang SC','Noto Sans SC',sans-serif", display: 'flex', flexDirection: 'column' }}>
+
+  {/* A · 标题块 */}
+  <Box style={{ height: 92, marginBottom: 12, flexShrink: 0 }}>
+    <Text style={{ fontSize: 34, fontWeight: 'bold', color: '#E9F0FB', lineHeight: 1.3 }}>聊天与 Cron，让持续学习成为可运营能力</Text>
+    <Box style={{ width: 44, height: 3, background: '#0891B2', marginTop: 6, marginBottom: 8, borderRadius: 2 }} />
+    <Text style={{ fontSize: 16, color: 'rgba(233,240,251,0.62)' }}>产品入口演示：聊天问数 → 日志沉淀 → 定时训练发布</Text>
+  </Box>
+
+  {/* B · 内容区 */}
+  <Box style={{ height: 540, marginBottom: 10, flexShrink: 0, flexDirection: 'column', gap: 14 }}>
+
+    {/* 三帧演示 */}
+    <Box style={{ height: 316, flexDirection: 'row', alignItems: 'stretch' }}>
+
+      {/* 帧1 · 聊天 */}
+      <Box style={{ flex: 1, background: 'rgba(233,240,251,0.05)', border: '1px solid rgba(233,240,251,0.14)', borderRadius: 12, flexDirection: 'column', overflow: 'hidden' }}>
+        <Box style={{ height: 34, background: 'rgba(233,240,251,0.06)', flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 14, flexShrink: 0 }}>
+          <Box style={{ width: 8, height: 8, borderRadius: 4, background: 'rgba(233,240,251,0.25)' }} />
+          <Box style={{ width: 8, height: 8, borderRadius: 4, background: 'rgba(233,240,251,0.25)' }} />
+          <Box style={{ width: 8, height: 8, borderRadius: 4, background: 'rgba(233,240,251,0.25)' }} />
+          <Text style={{ fontSize: 12, color: 'rgba(233,240,251,0.55)', marginLeft: 8, fontFamily: "'Menlo','Courier New',monospace" }}>对话 · 烛龙</Text>
+        </Box>
+        <Box style={{ flex: 1, padding: 14, flexDirection: 'column', gap: 10 }}>
+          <Box style={{ alignSelf: 'flex-end', maxWidth: '88%', background: 'rgba(8,145,178,0.16)', borderRadius: 10, padding: 10 }}>
+            <Text style={{ fontSize: 14, color: '#E9F0FB', lineHeight: 1.5 }}>分析最近两周的负荷数据，有没有漂移？</Text>
+          </Box>
+          <Box style={{ alignSelf: 'flex-start', width: '94%', background: 'rgba(233,240,251,0.05)', border: '1px solid rgba(233,240,251,0.12)', borderRadius: 10, padding: 10 }}>
+            <Text style={{ fontSize: 13, color: 'rgba(233,240,251,0.85)', lineHeight: 1.55 }}>EDM 结论：近 7 天负荷均值上移 4.2%，温度驱动为主，建议 08-28 窗口重训。</Text>
+          </Box>
+          <Text style={{ fontSize: 11, color: 'rgba(233,240,251,0.50)', fontFamily: "'Menlo','Courier New',monospace", marginTop: 'auto' }}>✓ 结论已写入 EDM 日志</Text>
+        </Box>
+      </Box>
+
+      <Box style={{ width: 40, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <Text style={{ fontSize: 26, fontWeight: 'bold', color: '#0891B2' }}>→</Text>
+      </Box>
+
+      {/* 帧2 · EDM 日志 */}
+      <Box style={{ flex: 1, background: 'rgba(233,240,251,0.05)', border: '1px solid rgba(233,240,251,0.14)', borderRadius: 12, flexDirection: 'column', overflow: 'hidden' }}>
+        <Box style={{ height: 34, background: 'rgba(233,240,251,0.06)', flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 14, flexShrink: 0 }}>
+          <Box style={{ width: 8, height: 8, borderRadius: 4, background: 'rgba(233,240,251,0.25)' }} />
+          <Box style={{ width: 8, height: 8, borderRadius: 4, background: 'rgba(233,240,251,0.25)' }} />
+          <Box style={{ width: 8, height: 8, borderRadius: 4, background: 'rgba(233,240,251,0.25)' }} />
+          <Text style={{ fontSize: 12, color: 'rgba(233,240,251,0.55)', marginLeft: 8, fontFamily: "'Menlo','Courier New',monospace" }}>logs / edm.jsonl</Text>
+        </Box>
+        <Box style={{ flex: 1, padding: 14, flexDirection: 'column', gap: 9 }}>
+          <Text style={{ fontSize: 12.5, color: 'rgba(233,240,251,0.75)', fontFamily: "'Menlo','Courier New',monospace" }}><span style={{ color: 'rgba(233,240,251,0.45)' }}>[08-27 10:00]</span> <span style={{ color: '#0891B2' }}>edm #012</span> · recorded</Text>
+          <Text style={{ fontSize: 12.5, color: 'rgba(233,240,251,0.75)', fontFamily: "'Menlo','Courier New',monospace" }}>  均值上移 <span style={{ color: '#E9F0FB', fontWeight: 'bold' }}>+4.2%</span> · 温度驱动</Text>
+          <Text style={{ fontSize: 12.5, color: 'rgba(233,240,251,0.75)', fontFamily: "'Menlo','Courier New',monospace" }}>  建议重训窗口 <span style={{ color: '#C2620A' }}>08-28</span></Text>
+          <Text style={{ fontSize: 12.5, color: 'rgba(233,240,251,0.75)', fontFamily: "'Menlo','Courier New',monospace" }}><span style={{ color: 'rgba(233,240,251,0.45)' }}>[08-28 06:00]</span> <span style={{ color: '#0891B2' }}>train</span> start · 读取 #012</Text>
+          <Text style={{ fontSize: 12.5, color: 'rgba(233,240,251,0.75)', fontFamily: "'Menlo','Courier New',monospace" }}><span style={{ color: 'rgba(233,240,251,0.45)' }}>[08-28 06:40]</span> <span style={{ color: '#0891B2' }}>validate</span> pass · 时序口径</Text>
+          <Box style={{ marginTop: 'auto', alignSelf: 'flex-start', background: 'rgba(8,145,178,0.10)', border: '1px solid rgba(8,145,178,0.45)', borderRadius: 6, padding: '6px 10px' }}>
+            <Text style={{ fontSize: 12, color: '#0891B2', fontFamily: "'Menlo','Courier New',monospace" }}>沉淀为日志与上下文 ✓</Text>
+          </Box>
+        </Box>
+      </Box>
+
+      <Box style={{ width: 40, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <Text style={{ fontSize: 26, fontWeight: 'bold', color: '#0891B2' }}>→</Text>
+      </Box>
+
+      {/* 帧3 · Cron 训练发布 */}
+      <Box style={{ flex: 1, background: 'rgba(233,240,251,0.05)', border: '1px solid rgba(233,240,251,0.14)', borderRadius: 12, flexDirection: 'column', overflow: 'hidden' }}>
+        <Box style={{ height: 34, background: 'rgba(233,240,251,0.06)', flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 14, flexShrink: 0 }}>
+          <Box style={{ width: 8, height: 8, borderRadius: 4, background: 'rgba(233,240,251,0.25)' }} />
+          <Box style={{ width: 8, height: 8, borderRadius: 4, background: 'rgba(233,240,251,0.25)' }} />
+          <Box style={{ width: 8, height: 8, borderRadius: 4, background: 'rgba(233,240,251,0.25)' }} />
+          <Text style={{ fontSize: 12, color: 'rgba(233,240,251,0.55)', marginLeft: 8, fontFamily: "'Menlo','Courier New',monospace" }}>cron · train-deploy</Text>
+        </Box>
+        <Box style={{ flex: 1, padding: 14, flexDirection: 'column', gap: 9 }}>
+          <Box style={{ background: 'rgba(233,240,251,0.05)', borderRadius: 8, padding: '8px 10px' }}>
+            <Text style={{ fontSize: 13, color: '#0891B2', fontFamily: "'Menlo','Courier New',monospace" }}>0 6 * * * → train → validate → deploy</Text>
+          </Box>
+          <Text style={{ fontSize: 12.5, color: 'rgba(233,240,251,0.75)', fontFamily: "'Menlo','Courier New',monospace" }}><span style={{ color: 'rgba(233,240,251,0.45)' }}>[08-28 06:41]</span> v07 训练完成</Text>
+          <Text style={{ fontSize: 12.5, color: 'rgba(233,240,251,0.75)', fontFamily: "'Menlo','Courier New',monospace" }}>  WAPE 3.71% → <span style={{ color: '#0891B2', fontWeight: 'bold' }}>3.67%</span> ✓</Text>
+          <Text style={{ fontSize: 12.5, color: 'rgba(233,240,251,0.75)', fontFamily: "'Menlo','Courier New',monospace" }}>  发布通过验证 · 切换版本</Text>
+          <Box style={{ marginTop: 'auto', flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <Text style={{ fontSize: 12, color: 'rgba(233,240,251,0.55)' }}>当前版本</Text>
+            <Box style={{ background: 'rgba(194,98,10,0.18)', border: '1px solid rgba(194,98,10,0.6)', borderRadius: 6, padding: '6px 10px' }}>
+              <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#C2620A', fontFamily: "'Menlo','Courier New',monospace" }}>● active v07</Text>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
+
+    {/* 价值句 */}
+    <Box style={{ height: 210, flexDirection: 'row', gap: 24 }}>
+      <Box style={{ width: '62%', flexDirection: 'column' }}>
+        <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#C2620A', letterSpacing: 2 }}>产业客户看到的是</Text>
+        <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#E9F0FB', marginTop: 6 }}>可用 · 可查 · 可审计</Text>
+        <Box style={{ flexDirection: 'column', gap: 8, marginTop: 14 }}>
+          <Text style={{ fontSize: 14.5, color: 'rgba(233,240,251,0.75)' }}><span style={{ color: '#0891B2' }}>●</span>  可用——自然语言发起分析，不需要算法团队</Text>
+          <Text style={{ fontSize: 14.5, color: 'rgba(233,240,251,0.75)' }}><span style={{ color: '#0891B2' }}>●</span>  可查——每次 EDM 结论沉淀为日志与上下文</Text>
+          <Text style={{ fontSize: 14.5, color: 'rgba(233,240,251,0.75)' }}><span style={{ color: '#0891B2' }}>●</span>  可审计——模型版本与验证指标全程留痕</Text>
+        </Box>
+      </Box>
+      <Box style={{ flex: 1, background: 'rgba(8,145,178,0.07)', border: '1px solid rgba(8,145,178,0.35)', borderLeft: '3px solid #0891B2', borderRadius: 10, padding: 20, flexDirection: 'column' }}>
+        <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#0891B2', letterSpacing: 2 }}>投资人看到的是</Text>
+        <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#E9F0FB', marginTop: 6 }}>可复制的产品闭环</Text>
+        <Text style={{ fontSize: 13.5, color: 'rgba(233,240,251,0.70)', lineHeight: 1.6, marginTop: 10 }}>聊天与 Cron 不是功能点缀，而是持续学习的运营入口——每一次交互，都在让模型变好。</Text>
+      </Box>
+    </Box>
+  </Box>
+
+  {/* C · 页脚条 */}
+  <Box style={{ height: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+    <Box style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      <Box style={{ width: 6, height: 6, background: '#0891B2' }} />
+      <Text style={{ fontSize: 12, color: 'rgba(233,240,251,0.40)' }}>烛龙 ZHULONG</Text>
+    </Box>
+    <Text style={{ fontSize: 12, color: 'rgba(233,240,251,0.40)', fontFamily: "'Menlo','Courier New',monospace" }}>05 / 07</Text>
+  </Box>
+</Slide>

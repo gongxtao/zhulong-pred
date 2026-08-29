@@ -438,3 +438,57 @@ feat-023 主体（见上条）之后的用户实测驱动迭代，全部收口�
   橙虚线复名「持续学习 P50」线尾「P50」（展示轨数据）、灰细虚线复名「静态预测」线尾
   「静态」（predStatic 数据）；tooltip/图例表同步还原。feature_list 的 feat-025 条目随
   revert 移除（注册表只留生效特性；本条 progress 即撤回审计记录）。
+
+## 2026-08-30 凌晨 · pred 双表内容对调根因排查 + 前端换读修复（用户裁决方案3）
+
+### 现象（用户报告）
+
+时空推演模块「持续学习 P50」线表现不如「静态预测」灰线——反常识（持续学习应更优）。
+
+### 根因（systematic-debugging 四阶段，证据链 5 路闭环）
+
+**生产库 `pred_dynamic` / `pred_static` 两表内容于 8/29 晚被管线交叉写入（对调）**：
+pred_dynamic 表实为「初始静态模型批回测」（劣轨）、pred_static 表实为「持续学习回放」（优轨）。
+前端映射无责——P50 线忠实读 pred_dynamic、灰线忠实读 pred_static，表里数据互换了。
+
+证据：
+1. 快照（8/28 晚构建，内嵌当时 pred_static）vs 当前 DB 同键：三区 × 720 键，
+   快照值 == 当前 pred_dynamic **720/720 逐值一致**；== 当前 pred_static **0/720**
+2. QwenPaw agent 8/29 启动自记录行数 dyn 68,043/static 68,040；当前实测 dyn 68,040/
+   static 68,043——**行数精确互换**；且当前 static 形状（946 起点/2018-08-03）=
+   17:10 时 dyn 的形状，当前 dyn（945×72 整）= 批回测形状
+3. 昨晚 ChatBI 对账（换前）dyn 2.94/static 3.23；当前实测 2018-06 AEP dyn 3.23/static 2.94
+   ——**数字对位互换**
+4. dyn 在所有窗口所有区一致差于 static +0.06~0.52、短时距差距最大（h1 1.19 vs 0.84）
+   ——全表内容替换特征
+5. 口径核查：两表内嵌 actual 与 energy_hourly 720/720 一致、两表互查 68,040 键一致
+   ——排除 actual 口径错位
+
+附带结案：8/29 深夜 verify §2「在线基线数据漂移」的真因即此对调（非漂移非回归），
+17:10 基线（3.39/88.8/54.2）本身没变，不用重录。
+
+### 处置（用户裁决：数据侧冻结不动 → 方案3 前端换读为稳定终态）
+
+- `web/src/lib/zl/supabase.ts` 文件头加 `SRC_STATIC='pred_dynamic'` / `SRC_DYN='pred_static'`
+  换读常量（醒目注释含证据指针与恢复条件），两处取数点（bootLayer1 步骤3、ensureWindow）
+  经常量换读；分位标定随静态源（同换前口径：初始静态模型残差）。下游全部不动。
+- 🔴 管线若将来把两表归位：恢复常量为直读表名 + 复跑 verify（supabase.ts 头注释有说明）。
+- ChatBI 一致性：`qwenpaw/skills/zhulong_analysis/SKILL.md` 增「数据现状·两表内容对调」节
+  （按内容语义换读表名），本地 `~/.qwenpaw/workspaces/zhulong/` 已同步；
+  qwenpaw/README.md 验证基准表加注。**云端 43.166.132.250 工作区未同步（SSH 不通）**——
+  需用户把 repo 版 SKILL.md 传上去，否则路演时聊天答案的表名口径与页面相反。
+
+### 验证
+
+- `npx tsc --noEmit` 0 错
+- `node scripts/verify.mjs` **51/51 全绿**（§2 在线基线 3.39/88.8/54.2 回归；重演窗
+  predDyn.AEP=73、持续学习分叉断言绿；ChatBI 8 项绿）
+- 浏览器 live 复核：srcBadge「在线 · Supabase」、四格 3.39%/88.8%；截图
+  `.shots/web_v11_trackswap_fix_live.png`
+
+### 遗留（移交 handoff 待办）
+
+- 云端 QwenPaw SKILL.md 同步（用户操作，SSH 不通）
+- 快照重建暂缓：build-snapshot.mjs 仍直读 pred_static——当前重建会把持续学习内容嵌成
+  静态轨；两表归位前不要重建快照（或先在脚本里同款换读）
+- 原型 zhulong.html 冻结未动：其在线直读两表，同款对调影响存在，按红线不改
