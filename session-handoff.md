@@ -90,8 +90,9 @@
     git 集成从仓库根构建；此前 CLI 直部无此问题）。修复 = `zhulong` 项目 rootDirectory=**web**
     （API PATCH v9/projects）。验证：main 生产部署 READY（431d07c, 23:15）+ 并行会话推
     gongxtao（5fec2ba PPT 页）preview 部署 READY（23:18）——push→自动构建链路全通。
-    ⚠️ 遗留：团队里还有一个误建的重复项目 **`guikesong`**（仓库根误跑 `vercel` 链出、同挂
-    此 GitHub 仓库、零部署）——建议在 Dashboard 删除，免得每次 push 双份构建干扰。
+    ~~⚠️ 遗留：误建重复项目 `guikesong`~~ → **已处理（8/29 深夜）**：用户在 Dashboard 删除
+    （API 404 实证）；仓库根残留的 `.vercel/` 死链接（gitignored）已一并清除，
+    `web/.vercel`（zhulong 活链接）保留。
 
 ## 指针
 
