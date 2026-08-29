@@ -9,10 +9,15 @@
 2. 本文件（当前状态 + 待办）
 3. `bash init.sh`
 4. `feature_list.json`（活跃特性，一次一个）
-5. `cd web && PORT=3100 npm run dev` 然后 `node scripts/verify.mjs`（50 项断言）
+5. `cd web && npx next dev -p 3100` 然后 `node scripts/verify.mjs`（51 项断言；
+   ⚠️ 8/29 深夜起 §2 在线基线因生产库数据漂移中断——见「待办」首条，属预期红）
 
 ## 当前状态（2026-08-29 深夜收班）
 
+- **聊天新建会话已上线（feat-024，专项 E2E 8/8）**：聊天抽屉头部「＋ 新会话」→
+  换 session_id（QwenPaw 旧上下文随 id 作废）+ 清空记录 + 系统提示；流式中按钮与发送
+  同锁禁用（防旧流污染新会话）。mock SSE 双 gate 确定性 E2E 验证（busy 禁用/重置/二次
+  发送独立回答）；verify §7 增对应断言（当前因 §2 数据漂移中断在套件前段，未跑及）。
 - **ChatBI 数据问答已上线（feat-023，verify 50/50）**：
   - 入口 = 右下角悬浮球 💬 → 右侧扩展式抽屉（互斥家族第五件）；5 预设 chips + 自由输入（预置问题已联动 NOW 锚点：双轨=2018-06 窗、指定日=2018-06-30，与页面数字互证）
     （textarea，Enter 发送 / Shift+Enter 换行，纸飞机按钮）；Agent 回答 markdown 表格渲染
@@ -61,6 +66,12 @@
 
 ## 待办 / 运维提示
 
+- **⚠️ 在线基线数据漂移（8/29 深夜，用户裁决=先落功能不改基线）**：17:10 重录基线
+  （3.39/88.8/54.2）之后管线重推过 pred_dynamic（现 68,040 行=945 起点×3区×24h 整、
+  max origin 2018-08-02，较 17:10 版少 1 天）+ 16:47 重训模型——页面 live 稳定值为
+  MAPE 3.57/cov90 83.2/cov50 45.7（快照同为 3.57），verify §2 `waitForFunction` 45s 超时
+  中断套件。**stash 铁证非代码回归**（干净 HEAD 同样超时）。回绿两条路：(a) 管线侧重推
+  17:10 版 dyn 数据；(b) 数据定稿后按 17:10 同款流程重录（固定等 12s 再读纪律）。
 - **基线漂移已兑现并重录**（见上，2026-08-29 17:10）——后续若再重放/改数据，跑 verify 取新值
   重记录 + 更新 verify.mjs 硬编码基线即可（同款流程）。
 - pred_dynamic 回放若再停滞（曾停在 2016-07-31 约 15 分钟），先查管道——它是故事的燃料。
@@ -76,7 +87,7 @@
 
 ## 指针
 
-- 特性状态：`feature_list.json`（feat-014~023 全 done；023 = ChatBI）
-- 会话日志：`progress.md`；验证：`web/scripts/verify.mjs`（50 项）；截图：`.shots/web_v10_chatbi_*`
+- 特性状态：`feature_list.json`（feat-014~024 全 done；023 = ChatBI；024 = 聊天新建会话）
+- 会话日志：`progress.md`；验证：`web/scripts/verify.mjs`（51 项）；截图：`.shots/web_v10_chatbi_*`
 - ChatBI 设计/计划：`docs/superpowers/specs/2026-08-29-chatbi-design.md`、`docs/superpowers/plans/2026-08-29-chatbi.md`
 - QwenPaw 配置材料：`qwenpaw/`（README + skills/zhulong_analysis）

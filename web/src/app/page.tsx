@@ -181,7 +181,8 @@ export default function Home() {
         <div className="chat-h">
           <h3>数据问答</h3>
           <span className="hint">随口一问 · 真实数据作答</span>
-          <button className="iconBtn" id="chatClose" title="关闭" aria-label="关闭" style={{ marginLeft: 'auto', width: 26, height: 26 }}>
+          <button id="chatNew" title="新建会话：清空当前对话与上下文" aria-label="新建会话">＋ 新会话</button>
+          <button className="iconBtn" id="chatClose" title="关闭" aria-label="关闭" style={{ width: 26, height: 26 }}>
             <svg viewBox="0 0 16 16"><path d="M4 4 L12 12 M12 4 L4 12" /></svg>
           </button>
         </div>
