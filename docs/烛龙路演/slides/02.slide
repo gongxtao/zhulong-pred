@@ -26,7 +26,7 @@
       <Text style={{ fontSize: 16, color: 'rgba(233,240,251,0.82)', lineHeight: 1.6, marginTop: 12 }}>当预测出现偏差，他参考往年同期负荷，乘以一个基于经验估计的修正因子，得到临时预测。</Text>
       <Text style={{ fontSize: 16, color: 'rgba(233,240,251,0.82)', lineHeight: 1.6, marginTop: 12 }}>若要从模型层面介入——合同结束后没有算法团队、没有迭代权限，只能重新走流程。</Text>
       <Box style={{ marginTop: 'auto', background: 'rgba(194,98,10,0.12)', borderLeft: '3px solid #C2620A', borderRadius: 8, padding: 14 }}>
-        <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#E9F0FB', lineHeight: 1.5 }>不是人不努力，是模型失效后没有持续学习的通道。</Text>
+        <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#E9F0FB', lineHeight: 1.5 }}>判断——不是人不努力，是模型失效后没有持续学习的通道。</Text>
       </Box>
     </Box>
 
