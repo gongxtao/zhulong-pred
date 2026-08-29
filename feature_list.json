@@ -50,9 +50,25 @@
     },
     {
       "id": "feat-007",
-      "name": "拆分式懒加载（首屏秒开 + 按需实时拉取）",
-      "description": "统一 store 架构：boot 只拉近 120 天小时 + energy_daily 视图全量 + 近 60 天 pred_static + 模型元数据（~32 请求 ≈4s）；跳转按需 ensureWindow（±80 天 range 查询 + 起点预测，2–3 请求）+ 右下角查询 toast；快照/仿真仅作失败兜底。详细实现规格见 progress.md「feat-007」节（含视图行口径转换、CAL 近期残差语义、拖拽不发请求等关键决策）",
+      "name": "正式工程 web/ 懒加载 store（M1）",
+      "description": "在 web/src/lib/ 实现懒加载数据层：boot 近 120 天小时 + energy_daily 视图 + 近 60 天 pred_static + 模型元数据（~32 请求）；ensureWindow 按需 range 查询（±80 天 + 起点预测）+ 并发去重 + toast；统一 store（hours/daily/pred/model），live 缺数据=NaN 禁 sim 填充；快照/仿真仅失败兜底。规格见 progress.md feat-007 节（含 5b/5c 补钉）",
       "dependencies": ["feat-006"],
+      "status": "not-started",
+      "evidence": "脚手架已就绪：Next 16+TS+Tailwind v4+echarts 6.1，dev :3100 验证 200（见 progress.md 06:10 节）"
+    },
+    {
+      "id": "feat-008",
+      "name": "M2-M5 特性平移（决策条/四格/主图+胶片/证据/抽屉/演示/主题）",
+      "description": "按原型 spec 逐特性移植到 web/src/components/：ECharts 选项逐项对照（echarts 6 兼容性验证）、THEMES 双 CVD 调色板、弹层四件套互斥、六幕演示、localStorage 主题",
+      "dependencies": ["feat-007"],
+      "status": "not-started",
+      "evidence": ""
+    },
+    {
+      "id": "feat-009",
+      "name": "M6 全量回归与提交",
+      "description": "web 工程 evaluate 断言对齐 handoff §5 基线（懒加载 CAL 语义变化后重测）；回归清单全过；双主题截图；~20:00 未过则提交原型兜底",
+      "dependencies": ["feat-008"],
       "status": "not-started",
       "evidence": ""
     }

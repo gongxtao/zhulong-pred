@@ -41,11 +41,22 @@
 - 验证：24.4s 加载、live=true、3.64/88.8/52.2 与快照一致、模型行/极涡话术/三区/六幕/拖拽/主题全过
 - 提交：225b921
 
-## 2026-08-29 05:40 · feat-007 拆分式懒加载（用户裁决，**未实现，下一会话执行**）
+## 2026-08-29 06:10 · 方向变更：冻结原型，转正式工程 web/（feat-007 归入新工程）
 
-**用户诉求**：不要首载全量 25s；拆分 + 实时拉取（看哪儿拉哪儿）。
-**前置已完成**：用户已建 `public.energy_daily` 视图（日峰聚合，14,953 行，anon 可读，
-字段 `zone / est_day / peak_mw / peak_ts_utc`，含 2004→2018 并集去重）。
+**用户裁决**："不希望在原型上面修改了，进入正式代码目录（src）"——Next.js + Tailwind 正式工程。
+**已完成（本会话）**：
+- `web/` 脚手架：Next.js 16.3 App Router + TS + Tailwind v4 + ESLint + **echarts 6.1**（npm）
+- `web/.env.local` + `.env.example`（NEXT_PUBLIC_SUPABASE_URL / ANON_KEY，anon 公开安全）
+- `web/README.md`（规格来源/命令/里程碑）；dev server 验证 HTTP 200（端口 3100）
+- 原型 `docs/prototype/zhulong.html` **冻结为提交兜底**（在线全量模式，`7ad8fe0` 为最后提交）
+
+**feat-007（懒加载）实现位置变更**：不再改原型，在 `web/src/lib/store.ts` 原生实现——
+规格（三层架构/统一 store/视图口径转换/ensureWindow/并发去重/拖拽冻结/事件窗预热）不变，见上一节。
+**移植基准**：原型即 spec——算法/配色（THEMES 双 CVD 调色板）/ECharts 选项/交互（弹层四件套、
+六幕演示、胶片 rAF 拖拽）逐特性对照移植；验收 = 同一套 evaluate 断言对 handoff §5 基线。
+**里程碑**：M1 懒加载 store → M2 决策条+四格 → M3 主图+胶片 → M4 证据层+抽屉 → M5 演示+主题 → M6 全量回归。
+**注意**：echarts 6（原型为 5.5）——选项兼容性总体良好，markPoint/markLine/appendToBody 需逐项验证。
+**兜底决策点**：若当日 ~20:00 新工程未过全量断言，提交原型版本。
 
 ### 架构（已与用户对齐）
 

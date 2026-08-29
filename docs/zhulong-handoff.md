@@ -108,12 +108,12 @@ THEMES = {light, dark}                 图表调色板（改图表色动这里�
 
 ## 6. 待办（按优先级）
 
-1. **feat-007 拆分式懒加载（当前活跃，规格见 progress.md 对应节）**：首屏只拉近 120 天 + `energy_daily`
-   视图（**用户已建好并授权**，14,953 行：zone/est_day/peak_mw/peak_ts_utc）+ 近 60 天 pred_static ≈4s；
-   跳转按需 range 查询 + toast；消灭首载全量 25s。实现后重测基线写入 §5
-2. ~~接 Supabase 真数据~~ ✅ v2 完成并已上线在线模式（feat-005/006）
-3. 可选：energy_forecasts 管道跑起来后切真前瞻；模拟器 cron 开启（"活的 NOW"）
-4. 赛后：Next.js + Tailwind 工程化移植（本原型当 spec，断言基线照搬）
+1. **正式工程 web/ 开发（当前主战场）**：Next 16 + TS + Tailwind v4 + echarts 6.1 脚手架已就绪
+   （dev :3100 验证过）；M1 懒加载 store（规格 = progress.md feat-007 节含补钉）→ M2-M5 特性平移
+   （原型即 spec）→ M6 全量回归（feat-007/008/009）
+2. **原型已冻结为提交兜底**（`7ad8fe0` 在线全量模式）；~20:00 决策点：新工程未过断言则提交原型
+3. ~~接 Supabase 真数据~~ ✅ v2 完成并已上线在线模式（feat-005/006）
+4. 可选：energy_forecasts 管道跑起来后切真前瞻；模拟器 cron 开启（"活的 NOW"）
 
 ## 7. 演示剧本（按 D）
 
