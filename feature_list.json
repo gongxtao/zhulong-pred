@@ -159,6 +159,14 @@
       "dependencies": ["feat-021"],
       "status": "done",
       "evidence": "复现探针：修复前 origin=10:29 小数时戳/tooltip 空/静态 13 点 → 修复后 origin 整点/tooltip 有数据行（实际 17,646 MW）/静态 48 点；verify 43/43（分叉断言升级 stPts≥40，实测 48/47；新增重演 tooltip 数据行断言）；tsc+eslint 零错"
+    },
+    {
+      "id": "feat-023",
+      "name": "ChatBI 数据问答（QwenPaw Agent 对话分析 pred_dynamic）",
+      "description": "顶栏 💬 → 聊天弹层（互斥家族第五件+预设 chips+降级态）→ /api/chat 代理（SSE 透传，env：QWENPAW_URL/AGENT_ID/TOKEN 不入仓）→ QwenPaw Agent（Skill：表字典/PostgREST 食谱/时区与回答纪律，Python 查 Supabase anon 只读）。设计 docs/superpowers/specs/2026-08-29-chatbi-design.md；计划 docs/superpowers/plans/2026-08-29-chatbi.md",
+      "dependencies": ["feat-022"],
+      "status": "in-progress",
+      "evidence": ""
     }
   ]
 }
