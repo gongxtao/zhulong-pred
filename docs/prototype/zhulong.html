@@ -1082,7 +1082,7 @@ function renderFilm(){
   const data=arr.map(d=>[d.ts,d.peak]);
   filmC.setOption({
     animationDuration:500,
-    grid:{left:10,right:10,top:14,bottom:14},
+    grid:{left:10,right:10,top:10,bottom:20}, /* bottom 留足轴标签空间（margin8+字高≈18px），否则年份下缘被裁 */
     tooltip:{trigger:'axis',appendToBody:true,backgroundColor:C.tipBg,borderColor:C.tipLine,textStyle:{color:C.ink,fontSize:11.5},
       extraCssText:'box-shadow:0 6px 20px rgba(15,23,42,.12);z-index:1000;',
       formatter:ps=>`${fmtFull(ps[0].value[0])}<br/>日峰值 <b style="font-family:JetBrains Mono">${fmt(ps[0].value[1])}</b> MW`},
