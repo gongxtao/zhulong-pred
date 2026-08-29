@@ -94,7 +94,7 @@ export default function Home() {
             </div>
           </div>
           <div id="legendTable" aria-hidden="true"></div>
-          <div id="freqSentence">在相似的天气与日历条件下重复 <i>100</i> 次，约 <i>90</i> 次的实际负荷会落入浅色带（P10–P90），<i>50</i> 次落入深色带（P25–P75）。<b>区间随时间张开——越远，越不确定。</b></div>
+          <div id="freqSentence">在相似的天气与日历条件下重复 <i>100</i> 次，约 <i>90</i> 次的实际负荷会落入这条区间带（P10–P90）。<b>区间随时间张开——越远，越不确定。</b></div>
         </div>
 
         {/* ③ 证据层：归因 / 审计（建议在顶部决策层，口径见主图 ⓘ 弹层） */}

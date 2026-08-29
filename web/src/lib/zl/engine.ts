@@ -101,7 +101,8 @@ function renderMain() {
 
   const series = [
     ...bandStack(fc, 'p10', 'p90', 'b90', C.b90),
-    ...bandStack(fc, 'p25', 'p75', 'b50', C.b50),
+    /* 内层 P25–P75 窄带已按用户裁决移除（2026-08-29）：P50 在宽带中央，窄带视觉突兀；
+       cov50 数字仍按需呈现于审计卡与悬停 */
     { name: '实际·后续', type: 'line', data: god, showSymbol: false, z: 3,
       lineStyle: { color: C.actual, type: 'dotted', width: 1.7, opacity: .7 }, itemStyle: { color: C.actual },
       endLabel: { show: god.length > 0, formatter: '真实', color: C.ink3, fontSize: 10, distance: 4 } },
@@ -128,21 +129,23 @@ function renderMain() {
       endLabel: { show: true, formatter: 'P50', color: C.fcHi, fontSize: 10, distance: 4 },
       markLine: { symbol: 'none', silent: true,
         lineStyle: { color: C.fcHi, width: 1, type: 'dashed', opacity: .7 },
-        data: state.opts.peak && peak ? [{
-          xAxis: peak.ts,
-          label: { formatter: `日峰 P50 ${fmt(peak.p50)} · ${peakEt}\n最坏 P90 ${fmt(peak90.p90)} · 建议备 ${fmt(prepMW)} MW`,
-            color: C.fcHi, fontSize: 10.5, fontWeight: 700, lineHeight: 16,
-            position: 'insideEndTop', distance: 6, align: 'left', offset: [6, 0] } }] : [] },
-      markArea: { silent: true,
-        itemStyle: { color: C.prepC },
-        label: { show: true, position: 'insideTopLeft', color: C.fcHi, fontSize: 9.5, fontWeight: 600, distance: 4 },
-        data: state.opts.peak && peak ? [[{ name: '预备窗', xAxis: peak.ts - 3 * HOUR }, { xAxis: peak.ts }]] : [] },
+        /* 文字标注移至 title 组件（图右上固定，永不裁切）；此线仅指示峰时刻 */
+        data: state.opts.peak && peak ? [{ xAxis: peak.ts, label: { show: false } }] : [] },
+      /* 预备窗琥珀竖带已按用户裁决移除（2026-08-29）：窗口时间在决策条/依据弹层按需呈现，主图保持干净 */
     },
   ];
   mainC.setOption({
     animationDuration: 650, animationDurationUpdate: 350,
     grid: { left: 58, right: 46, top: 44, bottom: 52 }, /* bottom 容纳双行轴标签 */
     legend: { show: false },
+    /* 日峰/最坏/建议备：固定右上角，峰时刻由 P50 系列的垂直虚线指示（防右缘裁切，用户实测被遮） */
+    title: state.opts.peak && peak ? {
+      text: `日峰 P50 ${fmt(peak.p50)} · ${peakEt}`,
+      subtext: `最坏 P90 ${fmt(peak90.p90)} · 建议备 ${fmt(prepMW)} MW`,
+      right: 52, top: 4,
+      textStyle: { color: C.fcHi, fontSize: 11.5, fontWeight: 700, fontFamily: 'JetBrains Mono' },
+      subtextStyle: { color: C.ink2, fontSize: 10.5, fontFamily: 'JetBrains Mono' },
+    } : { show: false },
     tooltip: { trigger: 'axis',
       axisPointer: { type: 'line', lineStyle: { color: C.axisLine, width: 1 } },
       backgroundColor: C.tipBg, borderColor: C.tipLine, padding: [9, 13], textStyle: { color: C.ink, fontSize: 12 },
@@ -363,7 +366,7 @@ function renderDecision() {
   $('basisPopover').innerHTML = `<h3>建议依据</h3>
     <div>${WD_ZH[etP(peak.ts).wd]} ${peakEt} 日峰 P50 <b class="num">${fmt(peak.p50)}</b>（最可能）→ P90 <b class="num">${fmt(peak90.p90)}</b>（最坏情形）MW · 距纪录 ${recGap >= 0 ? '+' : ''}${recGap.toFixed(1)}%</div>
     <div>较 30 日均值 <b class="num">${anom >= 0 ? '+' : ''}${anom.toFixed(1)}%</b> · 爬坡需求 <b class="num">${fmt(rampNeed)}</b> MW/h · 区间校准 <b style="color:${calOk ? 'var(--ok)' : 'var(--warn)'}">${calOk ? '✓ 通过' : '⚠ 偏离'}</b></div>
-    <div>建议容量 = P90 上界 − 97%×P50，向上取整至 50 MW；预备窗 = 峰前 3 小时（主图琥珀段）</div>
+    <div>建议容量 = P90 上界 − 97%×P50，向上取整至 50 MW；预备窗 = 峰前 3 小时</div>
     <div style="margin-top:4px"><span class="db-link" id="dbAuditLink">查看完整审计 ↗</span>　<span style="color:var(--ink3)">完整口径见主图右上 ⓘ</span></div>`;
   $('dbQMark').onclick = e => {
     e.stopPropagation();
@@ -619,7 +622,7 @@ function renderExtChips() {
 function renderLegendTable() {
   $('legendTable').innerHTML = [
     ['<span class="sw"></span>', '实际负荷', '截至 NOW'],
-    ['<span class="sw band"></span>', 'P10–P90 / P25–P75', '内深外浅'],
+    ['<span class="sw band"></span>', 'P10–P90 区间', '90% 可能落入'],
     ['<span class="sw dash"></span>', '预测 P50', '中位路径'],
     ['<span class="sw dot"></span>', '实际 · 后续', '上帝视角'],
     ['<span class="sw thin"></span>', '昨日同时刻', '参照'],

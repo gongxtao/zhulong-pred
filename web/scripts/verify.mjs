@@ -64,6 +64,23 @@ try {
   }));
   check('后台同步完成 → 在线徽章', phase2.badge.includes('在线'), phase2.badge);
   check('主图历史峰值线已移除（用户裁决）', phase2.legendHasRec === false);
+  const marks = await page.evaluate(() => {
+    const opt = window.__zlCharts.mainC.getOption();
+    const p50 = opt.series.find(s => s.name === '预测 P50');
+    const recLine = opt.series.find(s => s.name === '实际负荷');
+    return {
+      prepArea: p50 && p50.markArea ? p50.markArea.data.length : 0,
+      recLine: recLine && recLine.markLine ? JSON.stringify(recLine.markLine.data).includes('历史峰值') : false,
+    };
+  });
+  check('主图预备窗琥珀竖带已移除（用户裁决）', marks.prepArea === 0, `markArea ${marks.prepArea}`);
+  check('主图无历史峰值 markLine 残留', marks.recLine === false);
+  const bands = await page.evaluate(() => {
+    const names = window.__zlCharts.mainC.getOption().series.map(s => s.name);
+    return { b90: names.includes('b90'), b50: names.includes('b50') };
+  });
+  check('概率带：外层 P10–P90 保留', bands.b90 === true);
+  check('概率带：内层 P25–P75 窄带已移除（用户裁决）', bands.b50 === false);
   check('四格基线 12,926/−2.03%/18,261@16:00/3.57',
     phase2.quad[0] === '12,926MW' && phase2.quad[1].endsWith('2.03%') && phase2.quad[2].startsWith('18,261MW@16:00') && phase2.quad[3] === '3.57%',
     phase2.quad.join(' | '));
@@ -83,6 +100,7 @@ try {
   check('极涡话术在实时校准后保持', await page.evaluate(() => document.getElementById('basisCmp').textContent.includes('17.02%') && document.getElementById('basisCmp').textContent.includes('23.14%')));
   // 二次访问同一窗：不再重查
   sbRequests.length = 0;
+  await page.locator('#bnBackLive').waitFor({ timeout: 5000 }); /* 防与 liveMerge 重渲竞态 */
   await page.evaluate(() => document.getElementById('bnBackLive').click());
   await sleep(900);
   await page.evaluate(() => [...document.querySelectorAll('#extChips button')].find(b => b.textContent.includes('极地涡旋')).click());
