@@ -5,33 +5,110 @@
     </Box>
 
     <Box style={{ flexDirection: 'row', gap: 28, flex: 1, marginTop: 16, alignItems: 'stretch' }}>
-        <Box style={{ width: 700, position: 'relative', height: 500 }}>
-            <Box style={{ position: 'absolute', left: 349, top: 92, width: 2, height: 66, background: '#CBD5E1' }} />
-            <Box style={{ position: 'absolute', left: 202, top: 242, width: 68, height: 2, background: '#CBD5E1' }} />
-            <Box style={{ position: 'absolute', left: 430, top: 242, width: 68, height: 2, background: '#CBD5E1' }} />
-            <Box style={{ position: 'absolute', left: 349, top: 318, width: 2, height: 74, background: '#CBD5E1' }} />
-            <Box style={{ position: 'absolute', left: 210, top: 8, width: 280, height: 84, background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: 10, alignItems: 'center', justifyContent: 'center', padding: 10 }}>
-                <Text style={{ fontSize: 16.5, fontWeight: 'bold', color: '#0A1D37' }}>① 数据上下文（读取）</Text>
-                <Text style={{ fontSize: 12, color: '#64748B', marginTop: 6, textAlign: 'center' }}>新增负荷 · 天气 · 历史分布 · 模型表现 · EDM 日志</Text>
+        <Box style={{ width: 700, position: 'relative', height: 545 }}>
+            {/* L1 交互层 */}
+            <Box style={{ position: 'absolute', left: 0, top: 0, width: 700, height: 54, background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 10, flexDirection: 'row', alignItems: 'center' }}>
+                <Box style={{ width: 100, alignItems: 'center' }}>
+                    <Text style={{ fontSize: 13.5, fontWeight: 'bold', color: '#475569' }}>交互层</Text>
+                </Box>
+                <Box style={{ flex: 1, flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                    <Box style={{ padding: '5px 12px', background: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: 6 }}>
+                        <Text style={{ fontSize: 12, color: '#0F2039' }}>聊天入口（自然语言）</Text>
+                    </Box>
+                    <Box style={{ padding: '5px 12px', background: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: 6 }}>
+                        <Text style={{ fontSize: 12, color: '#0F2039' }}>Cron 定时任务</Text>
+                    </Box>
+                    <Box style={{ padding: '5px 12px', background: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: 6 }}>
+                        <Text style={{ fontSize: 12, color: '#0F2039' }}>EDM 日志沉淀</Text>
+                    </Box>
+                </Box>
             </Box>
-            <Box style={{ position: 'absolute', left: 2, top: 198, width: 200, height: 92, background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: 10, alignItems: 'center', justifyContent: 'center', padding: 10 }}>
-                <Text style={{ fontSize: 16.5, fontWeight: 'bold', color: '#0A1D37' }}>② EDM</Text>
-                <Text style={{ fontSize: 12, color: '#64748B', marginTop: 6, textAlign: 'center' }}>数据漂移检测 · 结论沉淀为日志与上下文</Text>
+            {/* 箭头 1 */}
+            <Box style={{ position: 'absolute', left: 0, top: 55, width: 700, height: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 }}>
+                <Text style={{ fontSize: 14, color: '#94A3B8' }}>↓</Text>
+                <Text style={{ fontSize: 11, color: '#94A3B8' }}>自然语言 / 定时触发</Text>
             </Box>
-            <Box style={{ position: 'absolute', left: 498, top: 198, width: 200, height: 92, background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: 10, alignItems: 'center', justifyContent: 'center', padding: 10 }}>
-                <Text style={{ fontSize: 16.5, fontWeight: 'bold', color: '#0A1D37' }}>③ 训练验证</Text>
-                <Text style={{ fontSize: 12, color: '#64748B', marginTop: 6, textAlign: 'center' }}>训练 Skill · 时序验证统一口径</Text>
+            {/* L2 Agent 层 */}
+            <Box style={{ position: 'absolute', left: 0, top: 72, width: 700, height: 60, background: '#22D3EE', borderRadius: 10, flexDirection: 'row', alignItems: 'center' }}>
+                <Box style={{ width: 100, alignItems: 'center' }}>
+                    <Text style={{ fontSize: 13.5, fontWeight: 'bold', color: '#0A1D37' }}>Agent 层</Text>
+                </Box>
+                <Box style={{ flex: 1, flexDirection: 'column' }}>
+                    <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#0A1D37' }}>垂直智能体 —— 决定何时学、怎么学</Text>
+                    <Text style={{ fontSize: 11.5, color: '#0A1D37', opacity: 0.72, marginTop: 3 }}>读取数据上下文与 EDM 日志 · 在约束内自主判断是否更新、如何更新</Text>
+                </Box>
             </Box>
-            <Box style={{ position: 'absolute', left: 210, top: 392, width: 280, height: 84, background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: 10, alignItems: 'center', justifyContent: 'center', padding: 10 }}>
-                <Text style={{ fontSize: 16.5, fontWeight: 'bold', color: '#0A1D37' }}>④ 发布约束</Text>
-                <Text style={{ fontSize: 12, color: '#64748B', marginTop: 6, textAlign: 'center' }}>只能使用已到达数据 · 版本化管理</Text>
+            {/* 箭头 2 */}
+            <Box style={{ position: 'absolute', left: 0, top: 133, width: 700, height: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 }}>
+                <Text style={{ fontSize: 14, color: '#94A3B8' }}>↓</Text>
+                <Text style={{ fontSize: 11, color: '#94A3B8' }}>调用训练 · 验证 · 部署 Skill</Text>
             </Box>
-            <Box style={{ position: 'absolute', left: 270, top: 158, width: 160, height: 160, borderRadius: 80, background: '#22D3EE', alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ fontSize: 27, fontWeight: 'bold', color: '#0A1D37' }}>Agent</Text>
-                <Text style={{ fontSize: 12, color: '#0A1D37', opacity: 0.72, marginTop: 4 }}>垂直智能体</Text>
+            {/* L3 Harness 能力层 */}
+            <Box style={{ position: 'absolute', left: 0, top: 150, width: 700, height: 172, background: '#0A1D37', borderRadius: 12, padding: 14 }}>
+                <Box style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#F8FAFC' }}>Harness 能力层</Text>
+                    <Text style={{ fontSize: 11.5, color: '#22D3EE', marginLeft: 'auto' }}>把持续学习变成标准化、可复用的工程能力</Text>
+                </Box>
+                <Box style={{ flexDirection: 'row', gap: 8, marginTop: 12, alignItems: 'stretch' }}>
+                    <Box style={{ flex: 1, background: 'rgba(34,211,238,0.08)', border: '1px solid rgba(34,211,238,0.35)', borderRadius: 8, padding: 10, flexDirection: 'column' }}>
+                        <Text style={{ fontSize: 12.5, fontWeight: 'bold', color: '#22D3EE' }}>① EDM 漂移检测</Text>
+                        <Text style={{ fontSize: 10.5, color: '#CBD5E1', marginTop: 5 }}>监测数据分布变化</Text>
+                        <Text style={{ fontSize: 10.5, color: '#CBD5E1', marginTop: 2 }}>结论沉淀为日志</Text>
+                    </Box>
+                    <Box style={{ flex: 1, background: 'rgba(34,211,238,0.08)', border: '1px solid rgba(34,211,238,0.35)', borderRadius: 8, padding: 10, flexDirection: 'column' }}>
+                        <Text style={{ fontSize: 12.5, fontWeight: 'bold', color: '#22D3EE' }}>② 训练 Skill</Text>
+                        <Text style={{ fontSize: 10.5, color: '#CBD5E1', marginTop: 5 }}>标准化训练能力</Text>
+                        <Text style={{ fontSize: 10.5, color: '#CBD5E1', marginTop: 2 }}>训练前读 EDM 日志</Text>
+                    </Box>
+                    <Box style={{ flex: 1, background: 'rgba(34,211,238,0.08)', border: '1px solid rgba(34,211,238,0.35)', borderRadius: 8, padding: 10, flexDirection: 'column' }}>
+                        <Text style={{ fontSize: 12.5, fontWeight: 'bold', color: '#22D3EE' }}>③ 时序验证</Text>
+                        <Text style={{ fontSize: 10.5, color: '#CBD5E1', marginTop: 5 }}>统一时序口径评估</Text>
+                        <Text style={{ fontSize: 10.5, color: '#CBD5E1', marginTop: 2 }}>杜绝未来信息泄漏</Text>
+                    </Box>
+                    <Box style={{ flex: 1, background: 'rgba(34,211,238,0.08)', border: '1px solid rgba(34,211,238,0.35)', borderRadius: 8, padding: 10, flexDirection: 'column' }}>
+                        <Text style={{ fontSize: 12.5, fontWeight: 'bold', color: '#22D3EE' }}>④ 版本化部署</Text>
+                        <Text style={{ fontSize: 10.5, color: '#CBD5E1', marginTop: 5 }}>发布 active 模型</Text>
+                        <Text style={{ fontSize: 10.5, color: '#CBD5E1', marginTop: 2 }}>可回滚 · 可审计</Text>
+                    </Box>
+                </Box>
+                <Text style={{ fontSize: 11, color: '#94A3B8', marginTop: 10 }}>四项能力全部版本化管理，对外输出唯一的 active 模型</Text>
             </Box>
-            <Text style={{ position: 'absolute', left: 0, top: 486, width: 700, fontSize: 13, color: '#94A3B8', textAlign: 'center' }}>Agent 决定何时学、怎么学；Harness 保证它学得可靠、可审计</Text>
-            <Box style={{ position: 'absolute', left: 175, top: 512, width: 350, flexDirection: 'row', justifyContent: 'center', gap: 8 }}>
+            {/* 箭头 3 */}
+            <Box style={{ position: 'absolute', left: 0, top: 323, width: 700, height: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 }}>
+                <Text style={{ fontSize: 14, color: '#94A3B8' }}>↓</Text>
+                <Text style={{ fontSize: 11, color: '#94A3B8' }}>只读已到达数据</Text>
+            </Box>
+            {/* L4 数据层 */}
+            <Box style={{ position: 'absolute', left: 0, top: 340, width: 700, height: 70, background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 10, flexDirection: 'row', alignItems: 'center' }}>
+                <Box style={{ width: 100, alignItems: 'center' }}>
+                    <Text style={{ fontSize: 13.5, fontWeight: 'bold', color: '#475569' }}>数据层</Text>
+                </Box>
+                <Box style={{ flex: 1, flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+                    <Box style={{ padding: '5px 10px', background: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: 6 }}>
+                        <Text style={{ fontSize: 11.5, color: '#0F2039' }}>新增负荷</Text>
+                    </Box>
+                    <Box style={{ padding: '5px 10px', background: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: 6 }}>
+                        <Text style={{ fontSize: 11.5, color: '#0F2039' }}>天气</Text>
+                    </Box>
+                    <Box style={{ padding: '5px 10px', background: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: 6 }}>
+                        <Text style={{ fontSize: 11.5, color: '#0F2039' }}>历史分布</Text>
+                    </Box>
+                    <Box style={{ padding: '5px 10px', background: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: 6 }}>
+                        <Text style={{ fontSize: 11.5, color: '#0F2039' }}>模型表现</Text>
+                    </Box>
+                    <Box style={{ padding: '5px 10px', background: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: 6 }}>
+                        <Text style={{ fontSize: 11.5, color: '#0F2039' }}>EDM 日志</Text>
+                    </Box>
+                </Box>
+            </Box>
+            {/* 约束边界 */}
+            <Box style={{ position: 'absolute', left: 0, top: 418, width: 700, height: 42, background: '#FFFBEB', border: '1px solid #F59E0B', borderRadius: 10, flexDirection: 'row', alignItems: 'center', padding: '0 16px', gap: 10 }}>
+                <Text style={{ fontSize: 12.5, fontWeight: 'bold', color: '#B45309' }}>约束边界</Text>
+                <Text style={{ fontSize: 12, color: '#92400E' }}>只能使用已到达数据 · 版本化管理 · 全程日志可审计 —— 产业客户需要的『可审计的自主权』</Text>
+            </Box>
+            {/* 底部注解 */}
+            <Text style={{ position: 'absolute', left: 0, top: 470, width: 700, fontSize: 12, color: '#64748B', textAlign: 'center' }}>调用链自上而下：入口触发 → Agent 决策 → Harness 执行；数据层与约束边界全程兜底</Text>
+            <Box style={{ position: 'absolute', left: 0, top: 494, width: 700, flexDirection: 'row', justifyContent: 'center', gap: 8 }}>
                 <Box style={{ padding: '3px 10px', background: '#F1F5F9', borderRadius: 6 }}>
                     <Text style={{ fontSize: 11.5, color: '#64748B' }}>数据</Text>
                 </Box>
@@ -44,7 +121,7 @@
                 <Box style={{ padding: '3px 10px', background: '#F1F5F9', borderRadius: 6 }}>
                     <Text style={{ fontSize: 11.5, color: '#64748B' }}>反馈</Text>
                 </Box>
-                <Text style={{ fontSize: 11.5, color: '#94A3B8', alignSelf: 'center' }}>—— Harness 四要素</Text>
+                <Text style={{ fontSize: 11.5, color: '#94A3B8', alignSelf: 'center' }}>—— Harness 四要素贯穿全层</Text>
             </Box>
         </Box>
 
