@@ -295,20 +295,6 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--actual);outline-off
 #basisPopover b,#sqTip b{color:var(--ink)}
 #basisPopover .num,#sqTip .num{color:var(--ink)}
 
-/* ============ 数据加载遮罩（在线拉取 Supabase） ============ */
-#loader{position:fixed;inset:0;z-index:90;background:var(--bg0);display:flex;align-items:center;justify-content:center;
-  transition:opacity .45s ease}
-#loader.off{opacity:0;pointer-events:none}
-.ld-box{text-align:center;max-width:420px;padding:0 24px}
-.ld-title{font-family:var(--serif);font-size:26px;font-weight:700;letter-spacing:.3em;margin:14px 0 6px;color:var(--ink)}
-.ld-sub{font-size:12.5px;color:var(--ink2);margin-bottom:18px}
-.ld-bar{height:5px;border-radius:3px;background:var(--bg3);overflow:hidden;margin:0 6px}
-.ld-bar .fill{height:100%;width:0%;border-radius:3px;background:linear-gradient(90deg,var(--actual),var(--actual-hi));transition:width .3s ease}
-.ld-detail{font-family:var(--mono);font-size:10.5px;color:var(--ink3);margin-top:10px;min-height:16px;letter-spacing:.02em}
-#ldSkip{margin-top:16px;font-size:11.5px;color:var(--ink3);background:var(--bg1);border:1px solid var(--line);
-  border-radius:7px;padding:6px 14px;visibility:hidden}
-#ldSkip:hover{color:var(--actual-hi);border-color:var(--actual)}
-
 /* ============ 按需查询 toast ============ */
 #sbToast{position:fixed;right:18px;bottom:18px;z-index:70;display:none;align-items:center;gap:8px;
   background:var(--bg1);border:1px solid var(--line2);border-radius:9px;padding:8px 14px;
@@ -421,6 +407,8 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--actual);outline-off
       <div id="filmWrap">
         <div id="filmChart"></div>
         <div id="filmEvents"></div>
+        <span id="filmLoading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+          font-size:11px;color:var(--ink3);letter-spacing:.05em">14 年总览查询中…</span>
         <div id="filmHandle" aria-hidden="true"><div class="bar"></div><div class="grip">NOW</div></div>
       </div>
     </div>
@@ -506,21 +494,6 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--actual);outline-off
 
 <!-- 按需查询 toast -->
 <div id="sbToast" role="status"><span class="spin"></span><span id="sbToastText">查询生产库…</span></div>
-<!-- 数据加载遮罩 -->
-<div id="loader">
-  <div class="ld-box">
-    <svg width="44" height="44" viewBox="0 0 26 26" fill="none" style="margin:0 auto;display:block">
-      <path d="M2.5 13 C6 7.5 20 7.5 23.5 13 C20 18.5 6 18.5 2.5 13 Z" stroke="#0E7490" stroke-width="1.4"/>
-      <circle cx="13" cy="13" r="3.4" stroke="#0E7490" stroke-width="1.4"/>
-      <circle cx="13" cy="13" r="1.1" fill="#0E7490"/>
-    </svg>
-    <div class="ld-title">烛龙 ZHULONG</div>
-    <div class="ld-sub">正在实时查询生产数据库（Supabase）</div>
-    <div class="ld-bar"><div class="fill" id="ldFill"></div></div>
-    <div class="ld-detail" id="ldDetail">准备中…</div>
-    <button id="ldSkip">跳过，使用内嵌快照</button>
-  </div>
-</div>
 <!-- 演示模式 -->
 <div id="demoLayer">
   <div class="veil"></div>
@@ -568,7 +541,7 @@ const THEMES={
 };
 let C=THEMES.light;
 /* 启动前应用持久化主题（写在渲染之前，避免首帧闪色） */
-(function(){let t='light';try{t=localStorage.getItem('zl-theme')||'light'}catch(e){}
+(function(){let t='dark';try{t=localStorage.getItem('zl-theme')||'dark'}catch(e){} /* 默认深色（用户裁决）；已保存偏好优先 */
   if(t==='dark'){document.documentElement.dataset.theme='dark';C=THEMES.dark}})();
 const ZONES = {
   AEP:   {label:'AEP · 美国电力（俄亥俄河谷）', base:13400, amp:3600, seas:.16, wtr:.09, cool:46, heat:130, wknd:.905, tOff:0},
@@ -1060,7 +1033,7 @@ function renderStatusQuad(){
   $('sqTip').style.display='none'; /* 重渲即关：防悬空 */
   $('statusQuad').innerHTML=`
     <div class="sq" title="${WD_ZH[etP(org).wd]} ${fmtHM(org)}（美东）${live?'':' · 重演中，拖动胶片回放任一天'}">
-      <div class="sq-l">${live?'现在负荷':'现在 · 重演起点'}${live?'':'<span class="rp">↺</span>'}<span class="db-q sq-i" data-sq="0" role="button" tabindex="0">i</span></div>
+      <div class="sq-l">${live?'现在负荷':'现在 · 重演起点'}${live?'':'<span class="rp" id="sqReplay" style="cursor:pointer" title="回到当前（实时）">↺</span>'}<span class="db-q sq-i" data-sq="0" role="button" tabindex="0">i</span></div>
       <div class="sq-v num">${fmt(nowV)}<small>MW</small></div>
       <div class="sq-s">${live?`<span class="${dPct>=0?'up':'down'}">${dPct>=0?'▲ +':'▼ '}${dPct.toFixed(1)}%</span> 较昨日`
         :`${WD_ZH[etP(org).wd]} ${fmtHM(org)} · 拖动胶片回放`}</div>
@@ -1080,6 +1053,7 @@ function renderStatusQuad(){
       <div class="sq-v num">${mapeShow.toFixed(2)}<small>%</small></div>
       <div class="sq-s">${mapeShow<3?'<span class="badge ok">✓ 优于 3%</span>':'<span class="badge warn">劣于 3%</span>'} P90 命中 <b class="num">${cov90.toFixed(1)}%</b></div>
     </div>`;
+  const rp=$('sqReplay');if(rp)rp.onclick=()=>backToLive();
 }
 /* 四格 ⓘ 解释（共用 sqTip 弹层） */
 const SQ_TIPS=[
@@ -1103,6 +1077,7 @@ $('statusQuad').addEventListener('click',e=>{
    ===================================================================== */
 function renderFilm(){
   const arr=daily[state.zone];
+  const fl=$('filmLoading');if(fl)fl.style.display=arr.length?'none':'flex'; /* 渐进启动：日峰视图未到时占位 */
   const data=arr.map(d=>[d.ts,d.peak]);
   filmC.setOption({
     animationDuration:500,
@@ -1148,6 +1123,13 @@ function renderOriginDate(){
 /* =====================================================================
    渲染 · ⓪ 决策层（最顶层结论：建议 · 峰值 · 置信）
    ===================================================================== */
+/* 重演态快捷操作：↺ 回到当前；上帝视角 tag 开关（与 ☰ 复选框双向同步） */
+function backToLive(){setOrigin(NOW_DEFAULT,'live')}
+function toggleGod(){
+  state.opts.god=!state.opts.god;
+  const cb=$('optGod');if(cb)cb.checked=state.opts.god;
+  renderMain();renderDecision();
+}
 function renderDecision(){
   const z=state.zone,org=state.origin;
   $('basisPopover').style.display='none'; /* 重渲即关：弹层锚点随 innerHTML 更换，防止悬空/陈旧 */
@@ -1156,10 +1138,12 @@ function renderDecision(){
     bn.className='replay';
     bn.innerHTML=`
       <div class="db-strip">
-        <span class="db-tag">↺ 时光机 · 重演</span>
+        <span class="db-tag" id="replayTag" style="cursor:pointer" title="回到当前（实时）">↺ 时光机 · 重演</span>
         <span class="db-msg">起点 <b class="win">${fmtFull(org)}</b>——此刻之后的预测，正与真实历史对质</span>
-        <span class="sevTag" style="background:#E0F2FE;color:#0E7490">上帝视角 ${state.opts.god?'开':'关'}</span>
+        <span class="sevTag" id="godTag" style="background:#E0F2FE;color:#0E7490;cursor:pointer" title="点击开关上帝视角（真实后续）">上帝视角 ${state.opts.god?'开':'关'}</span>
       </div>`;
+    $('replayTag').onclick=()=>backToLive();
+    $('godTag').onclick=e=>{e.stopPropagation();toggleGod()};
     return;
   }
   const fc=forecastAt(z,org).filter(p=>p.ts<=org+24*HOUR);
@@ -1169,9 +1153,10 @@ function renderDecision(){
   const winFrom=fmtHM(peak.ts-3*HOUR);
   const arr=daily[z],d0=locDay(org);
   const last30=arr.filter(d=>d.di<d0&&d.di>=d0-30);
-  const m30=last30.reduce((s,d)=>s+d.peak,0)/last30.length;
-  const anom=(peak.p50-m30)/m30*100;
-  const recGap=(peak90.p90-RECORD[z].v)/RECORD[z].v*100;
+  const m30=last30.length?last30.reduce((s,d)=>s+d.peak,0)/last30.length:NaN;
+  const anom=last30.length?(peak.p50-m30)/m30*100:NaN; /* 渐进启动：日峰视图未到时暂缺 */
+  const recOk=RECORD[z].v>0;
+  const recGap=recOk?(peak90.p90-RECORD[z].v)/RECORD[z].v*100:NaN;
   const bt=BT[z];
   const cov90=bt.reduce((s,d)=>s+d.cov90,0)/bt.length;
   const sev=anom>8?'high':anom>3?'mid':'low';
@@ -1186,8 +1171,8 @@ function renderDecision(){
       <span class="sevTag sev-${sev}-bg">${sev==='high'?'⚠ 高风险':sev==='mid'?'⚠ 关注':'✓ 平稳'}</span>
     </div>`;
   $('basisPopover').innerHTML=`<h3>建议依据</h3>
-    <div>${WD_ZH[etP(peak.ts).wd]} ${peakEt} 日峰 P50 <b class="num">${fmt(peak.p50)}</b>（最可能）→ P90 <b class="num">${fmt(peak90.p90)}</b>（最坏情形）MW · 距纪录 ${recGap>=0?'+':''}${recGap.toFixed(1)}%</div>
-    <div>较 30 日均值 <b class="num">${anom>=0?'+':''}${anom.toFixed(1)}%</b> · 爬坡需求 <b class="num">${fmt(rampNeed)}</b> MW/h · 区间校准 <b style="color:${calOk?'var(--ok)':'var(--warn)'}">${calOk?'✓ 通过':'⚠ 偏离'}</b></div>
+    <div>${WD_ZH[etP(peak.ts).wd]} ${peakEt} 日峰 P50 <b class="num">${fmt(peak.p50)}</b>（最可能）→ P90 <b class="num">${fmt(peak90.p90)}</b>（最坏情形）MW${recOk?` · 距纪录 ${recGap>=0?'+':''}${recGap.toFixed(1)}%`:''}</div>
+    <div>${Number.isFinite(anom)?`较 30 日均值 <b class="num">${anom>=0?'+':''}${anom.toFixed(1)}%</b> · `:''}爬坡需求 <b class="num">${fmt(rampNeed)}</b> MW/h · 区间校准 <b style="color:${calOk?'var(--ok)':'var(--warn)'}">${calOk?'✓ 通过':'⚠ 偏离'}</b></div>
     <div>建议容量 = P90 上界 − 97%×P50，向上取整至 50 MW；预备窗 = 峰前 3 小时（主图琥珀段）</div>
     <div style="margin-top:4px"><span class="db-link" id="dbAuditLink">查看完整审计 ↗</span>　<span style="color:var(--ink3)">完整口径见主图右上 ⓘ</span></div>`;
   $('dbQMark').onclick=e=>{e.stopPropagation();
@@ -1459,7 +1444,7 @@ document.querySelectorAll('#rangeSeg button').forEach(b=>b.onclick=()=>{
 });
 ['optTemp','optYday','optGod','optPeak'].forEach(id=>{
   $(id).addEventListener('change',()=>{state.opts[id.slice(3).toLowerCase()]=$(id).checked;
-    renderMain();renderStatusQuad()});
+    renderMain();renderStatusQuad();renderDecision()});
 });
 /* 弹层开合（anchor='left' 时以按钮左缘对齐——供页面左侧的入口用） */
 function togglePop(pop,btn,anchor){
@@ -1542,6 +1527,9 @@ document.querySelectorAll('#drawerTabs button[data-t]').forEach(b=>b.onclick=()=
   state.drawerTab=b.dataset.t;
   document.querySelectorAll('#drawerTabs button').forEach(x=>x.classList.toggle('on',x===b));
   document.querySelectorAll('.drawerPane').forEach(p=>p.classList.toggle('on',p.id==='pane-'+state.drawerTab));
+  if((b.dataset.t==='heat'||b.dataset.t==='ext')&&!store.daily.size){ /* 渐进启动：等日峰视图就绪再渲 */
+    dailyReady.then(()=>{if(state.drawerTab==='heat')renderHeat();else if(state.drawerTab==='ext')renderExtremes()});
+  }
   if(b.dataset.t==='sm'&&SRC==='live'){ /* 区域对比：确保三区在当前起点都有数据 */
     for(const z of Object.keys(ZONES))if(z!==state.zone)
       ensureWindow(z,state.mode==='live'?NOW_DEFAULT:state.origin).then(()=>renderSM());
@@ -1741,27 +1729,14 @@ function calFrom(rows){ /* 近期残差分位（boot 尾窗计算；全局共用
     }
   }
 }
-async function bootLayer1(){
-  const counts={};const EXPECT=28100;
-  const prog=k=>n=>{counts[k]=n;const t=Object.values(counts).reduce((s,v)=>s+v,0);
-    ldSet(Math.min(t/EXPECT,.98),`已查询 ${t.toLocaleString('en-US')} 行 · 近窗 + 14 年日峰 + 模型回测`)};
-  /* 1) 日峰视图（三区全量，胶片/热力图/极值/纪录；排序含 zone 保证分页稳定） */
-  const dv=await sbPage('energy_daily',{order:'zone.asc,est_day.asc',select:'zone,est_day,peak_mw,peak_ts_utc'},prog('dv'));
-  for(const r of dv){
-    if(!store.daily.has(r.zone))store.daily.set(r.zone,[]);
-    const ts=Date.parse(r.peak_ts_utc)-HOUR; /* 视图为区间右端 → 现有口径 = 小时起点 */
-    store.daily.get(r.zone).push({ts,peak:r.peak_mw,ph:etP(ts).h,di:locDay(ts)});
-  }
-  applyAnchors(); /* 视图就位即可定 D1，供近窗边界 */
-  /* 2) 近 120 天小时 ×3 区（并发；决策/四格/回测/相似日候选全覆盖） */
-  const lo=D1-119;
-  await Promise.all(Object.keys(ZONES).map(z=>fetchHoursRange(z,lo,D1+1,prog('h'+z))));
-  ldSet(.99,'模型回测与元数据…');
-  /* 3) 近 70 天 pred_static（模型注入 + 近期残差分位） */
-  const psRows=await sbPage('pred_static',{order:'zone.asc,forecast_origin_utc.asc',select:PRED_COLS,
-    forecast_origin_utc:`gte.${new Date(dayTs(D1-70)).toISOString()}`},prog('ps'));
-  ingestPred(psRows);calFrom(psRows);
-  /* 4) 模型元数据 */
+/* ---------- 渐进式启动：首屏关键路径（≈2-3s）与后台补齐（14 年总览）分离，页面秒开 ---------- */
+function presetAnchorsLive(){ /* 视图到达前的常量锚——与 applyAnchors（视图口径）完全一致：T_MAX=最后一个数据日的日末 */
+  T_MIN=Date.UTC(2004,9,1,5);T_MAX=Date.UTC(2018,7,4,4);
+  NOW_DEFAULT=Math.min(Date.UTC(2018,6,31,10),T_MAX-49*HOUR);
+  state.origin=NOW_DEFAULT;state.mode='live';
+  D0=locDay(T_MIN);D1=locDay(T_MAX-1);
+}
+async function fetchModelMeta(){
   const H={apikey:SB.KEY};
   const [mv,tt]=await Promise.all([
     fetch(`${SB.URL}/model_versions?select=model_id,status,created_at&status=eq.active`,{headers:H}).then(r=>r.ok?r.json():[]),
@@ -1772,6 +1747,67 @@ async function bootLayer1(){
     trials:tt.map(t=>({n:t.trial_number,wape:r1(t.mean_zone_wape*100,2),mae:Math.round(t.mean_zone_mae_mw)})),
     zones:Object.fromEntries(Object.entries(vm).map(([z,v])=>[z,{wape:r1(v.overall.wape*100,2),
       lastDayWape:r1(v.last_day_same_hour_baseline.wape*100,2),lastWeekWape:r1(v.last_week_same_hour_baseline.wape*100,2)}]))};
+}
+async function bootCritical(){ /* 首屏关键路径：当前区近窗 + 模型回测尾 + 元数据（并行） */
+  presetAnchorsLive();
+  await Promise.all([
+    fetchHoursRange('AEP',D1-119,D1+1),
+    sbPage('pred_static',{order:'zone.asc,forecast_origin_utc.asc',select:PRED_COLS,
+      forecast_origin_utc:`gte.${new Date(dayTs(D1-70)).toISOString()}`})
+      .then(rows=>{ingestPred(rows);calFrom(rows)}),
+    fetchModelMeta(),
+  ]);
+}
+let dailyReady=Promise.resolve();
+function bootBackground(){ /* 后台补齐：14 年日峰视图（3 区并行）→ 胶片/纪录线/热力图就绪 → 预热 */
+  dailyReady=Promise.all(Object.keys(ZONES).map(z=>
+    sbPage('energy_daily',{zone:`eq.${z}`,order:'zone.asc,est_day.asc',select:'zone,est_day,peak_mw,peak_ts_utc'})))
+  .then(dv=>{
+    for(const rows of dv)for(const r of rows){
+      if(!store.daily.has(r.zone))store.daily.set(r.zone,[]);
+      const ts=Date.parse(r.peak_ts_utc)-HOUR; /* 视图=区间右端 → 小时起点口径 */
+      store.daily.get(r.zone).push({ts,peak:r.peak_mw,ph:etP(ts).h,di:locDay(ts)});
+    }
+  });
+  return dailyReady.then(async()=>{
+    applyAnchors();
+    buildDaily();
+    cacheSave();
+    try{renderAll()}catch(e){console.error('[bgRender]',e)}
+    dbgHook();
+    const fl=$('filmLoading');fl&&fl.remove();
+    setTimeout(()=>{ensureWindow('AEP',EVENTS[0].c);ensureWindow('AEP',EVENTS[1].c)},600); /* 演示事件窗预热 */
+  });
+}
+/* ---------- localStorage 缓存（SWR：刷新秒开，后台静默校验） ---------- */
+const CK='zl-cache-v1';
+function cacheSave(){
+  try{
+    const hours={};
+    for(const [z,m] of store.hours)hours[z]=[...m.entries()].map(([di,p])=>[di,[...p.L],[...p.T],[...p.H],[...p.W],[...p.P]]);
+    const daily={};
+    for(const [z,a] of store.daily)daily[z]=a.map(d=>[d.di,d.peak,d.ph]);
+    const pred={};
+    for(const [z,m] of store.pred)pred[z]=[...m.entries()].map(([o,row])=>[o,row]);
+    localStorage.setItem(CK,JSON.stringify({savedAt:Date.now(),hours,daily,pred,cal:store.cal,model:store.model}));
+  }catch(e){/* 配额等异常静默 */}
+}
+function cacheLoad(){
+  try{const c=JSON.parse(localStorage.getItem(CK));
+    if(!c||!c.savedAt||Date.now()-c.savedAt>7*864e5||!c.daily||!c.daily.AEP||!c.daily.AEP.length)return null;
+    return c}catch(e){return null}
+}
+function cacheHydrate(c){
+  const F=a=>Float64Array.from(a,v=>v==null?NaN:v); /* JSON 把 NaN 存成 null，还原 */
+  for(const z in c.hours||{}){const m=new Map();
+    for(const [di,L,T,H,W,P] of c.hours[z])
+      m.set(di,{L:F(L),T:F(T),H:F(H),W:F(W),P:F(P)});
+    store.hours.set(z,m)}
+  for(const z in c.daily||{})store.daily.set(z,c.daily[z].map(([di,peak,ph])=>({ts:dayTs(di)+ph*HOUR,peak,ph,di})));
+  for(const z in c.pred||{}){const m=new Map();
+    for(const [o,row] of c.pred[z])m.set(o,row);
+    store.pred.set(z,m);store.predOrigins.set(z,[...m.keys()].sort((a,b)=>a-b))}
+  store.cal=c.cal||{};store.model=c.model||null;
 }
 /* 按需拉取：ensureWindow（per-zone 串行队列 + toast），跳转/切区/松手统一走这里 */
 function sbToast(on,text){const t=document.getElementById('sbToast');if(!t)return;
@@ -1853,19 +1889,32 @@ function loadSnapshot(){
 (async function boot(){
   const t0=performance.now();
   window.__renderLog=[{z:'boot'}];
-  setTimeout(()=>$('ldSkip').style.visibility='visible',4000);
-  $('ldSkip').onclick=()=>{LD_ABORT=true};
-  try{await bootLayer1();SRC='live'}
-  catch(e){console.warn('在线拉取未完成：',e.message);
+  const cached=cacheLoad();
+  let started=false;
+  const engine=()=>{try{startEngine(SRC)}catch(e){console.error('[startEngine]',e)};started=true;dbgHook()};
+  if(cached){ /* 刷新秒开：缓存先行渲染，后台静默校验（SWR） */
+    cacheHydrate(cached);applyAnchors();
+    SRC='live'; /* 缓存即真数据（同源库导出），缺 SRC 会让 loadAt 走仿真——曾致混算垃圾值 */
+    engine();
+    bootCritical().then(()=>bootBackground()).catch(e=>console.warn('[swr]',e.message));
+    console.info(`[烛龙] 数据源=${SRC}（缓存命中） · 首屏 ${performance.now()-t0|0}ms`);
+    return;
+  }
+  sbToast(true,'连接生产库 · 近期数据…');
+  try{
+    await bootCritical();
+    SRC='live';
+    engine();
+    sbToast(true,'生产库 · 14 年日峰总览…');
+    bootBackground().then(()=>sbToast(false)).catch(e=>{console.warn('[bg]',e);sbToast(false)});
+  }catch(e){
+    console.warn('在线拉取未完成：',e.message);sbToast(false);
     try{const zd=await loadSnapshot();storeFromSnapshot(zd);SRC='snapshot'}
-    catch(e2){SRC='sim'}}
-  document.getElementById('loader').classList.add('off');
-  setTimeout(()=>{const l=document.getElementById('loader');l&&l.remove()},500);
-  applyAnchors();
-  try{startEngine(SRC)}catch(e){console.error('[startEngine]',e)}
-  dbgHook();
-  if(SRC==='live'){ensureWindow('AEP',EVENTS[0].c);ensureWindow('AEP',EVENTS[1].c)} /* 演示事件窗预热（补钉 5c） */
-  console.info(`[烛龙] 数据源=${SRC} · 启动 ${(performance.now()-t0)/1000|0}s`);
+    catch(e2){SRC='sim'}
+    applyAnchors();
+    engine();
+  }
+  console.info(`[烛龙] 数据源=${SRC} · 首屏 ${(performance.now()-t0)/1000|0}s`);
 })();
 function renderLegendTable(){
   $('legendTable').innerHTML=[

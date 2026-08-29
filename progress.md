@@ -119,6 +119,41 @@ handoff §5 已更新）**。截图 .shots/v20_lazy_{light,dark}.jpeg。
 - 视图/多区分页排序必须含唯一键（zone,day），否则翻页可能丢行
 - 删常量（REAL）必须全量 grep 引用——一次 ReferenceError 让 startEngine 半途死、页面停在半刈化状态
 
+## 2026-08-29 15:20 · 渐进式启动 + 可点击的重演控件（用户反馈两问题，仅原型）
+
+**问题 1（用户）**：每次刷新都长时间等待——boot 虽是懒加载（40 请求），但**阻断式**遮罩等全部完成（~12s）。
+**修法**：渐进式启动——
+- 删除整页遮罩，页面**秒开**（静态骨架立即渲染）
+- `bootCritical()` 首屏关键路径（当前区近 120 天 + 模型回测尾 + 元数据，并行 ≈2-3s）→ startEngine
+- `bootBackground()` 后台补齐：14 年日峰视图**按区并行**（原串行 15 页 ≈13s → 3 流 ≈5s）→ 胶片/纪录线
+  渲染 → 事件窗预热；期间 toast 非阻断提示，胶片区显示「14 年总览查询中…」占位
+- **localStorage 缓存（SWR）**：`zl-cache-v1`（hours/daily/pred/cal/model，~370KB）——刷新秒开，
+  后台 bootCritical+bootBackground 静默校验
+- 渐进容错：renderDecision 对日峰未到时跳过距纪录/较30日段；heat/ext tab 等 `dailyReady`；
+  buildDaily 对空 daily 天然安全（RECORD.v=−1 守卫）
+
+**问题 2（用户）**：上帝视角/↺ 刷新图标"点不动"——它们是**死文本**（标签装饰字符/静态 tag）。
+**修法**：全部变成真控件——
+- 重演 banner「↺ 时光机 · 重演」→ 点击=回到当前（`backToLive`）
+- banner「上帝视角 开/关」tag → 点击开关（`toggleGod`，与 ☰ 复选框双向同步）
+- 四格「现在 · 重演起点 ↺」→ 点击=回到当前
+- ☰ 叠加开关变更后同步重渲 banner（修掉 tag 状态陈旧）
+
+**过程中修掉的两个真 bug（实证定位）**：
+1. 缓存路径漏设 `SRC='live'` → 刷新后 loadAt 走仿真公式与真模型预测混算（MAPE 11.55% 垃圾值、徽章"仿真"）——已补
+2. `presetAnchorsLive` 的 T_MAX（最后数据时刻 08-03T04Z）与 `applyAnchors`（最后数据日日末 08-04T04Z）
+   差一天 → 冷/热启动 D1 不一致（3.64 vs 3.57 漂移）——预设统一为日末口径，两路径确定一致，基线应回 3.57
+3. 缓存 JSON 把 NaN 存为 null → Float64Array.from 变 0——hydrate 时映射回 NaN
+
+**验证状态**：init.sh 语法门全绿；冷启动机制实测（页面秒开、关键路径完成即出首屏、后台补齐）在断连前已过；
+SRC/D1/NaN 三修复后**浏览器回归未跑**（chrome-devtools MCP 连接中断）——待手动或下会话验证：
+刷新两次（冷→缓存）、检查徽章/基线 3.57/85.6/49.0、点 ↺ 与上帝视角 tag、拖 2010 松手加载。
+
+**web/ 工程**：用户指示"只管原型"——本节改动**未同步 web/**，移植时需带上（boot/toggleGod/backToLive/缓存）。
+
+**追加（同日 15:40）**：①默认主题改深色（localStorage 无偏好时 fallback 'dark'；已保存的偏好仍优先）；
+②确认浏览器由另一会话占用——本会话不再触碰浏览器实例，验证改为用户手动清单。
+
 ## 2026-08-29 12:15 · feat-008 原型 v3 → web/ 正式工程平移完成（M1-M5 一次过）
 
 **架构**：React 只提供静态骨架（page.tsx 照抄原型 body，id/class 逐一对齐保断言口径），
