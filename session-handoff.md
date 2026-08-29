@@ -85,8 +85,13 @@
 - **git push 已完成（8/29 深夜，用户裁决）**：gongxtao=4bc99ac、main=ffb1a87（merge）——
     此前 CLI 直部导致「线上领先 git」的局面已消除，git 与线上代码同源。
 - 本机 vercel.app DNS 污染，线上兜底 = 本地 dev（feat-012 记录）。
-- **push 后 Vercel 若挂 git 自动部署会触发**：聊天 env 三条已在 Production，部署 Ready
-    与线上终验换网络后核（见上「ChatBI 线上终验」条）。
+- **Vercel git 自动部署已修复并双路验证（8/29 深夜）**：push 后 git 构建报
+    「Couldn't find any pages or app directory」——根因项目未设 Root Directory（工程在 `web/`，
+    git 集成从仓库根构建；此前 CLI 直部无此问题）。修复 = `zhulong` 项目 rootDirectory=**web**
+    （API PATCH v9/projects）。验证：main 生产部署 READY（431d07c, 23:15）+ 并行会话推
+    gongxtao（5fec2ba PPT 页）preview 部署 READY（23:18）——push→自动构建链路全通。
+    ⚠️ 遗留：团队里还有一个误建的重复项目 **`guikesong`**（仓库根误跑 `vercel` 链出、同挂
+    此 GitHub 仓库、零部署）——建议在 Dashboard 删除，免得每次 push 双份构建干扰。
 
 ## 指针
 
