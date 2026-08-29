@@ -45,7 +45,8 @@
 ## 验证协议
 
 ```bash
-bash init.sh          # 结构性检查（快照/语法/密钥）
+bash init.sh                          # 结构性检查（快照/语法/密钥）
+cd web && node scripts/verify.mjs     # web 主交付物 30 项断言（秒开/基线/回归，一键全量）
 ```
 
 浏览器断言（chrome-devtools MCP，`file:///.../docs/prototype/zhulong.html`）：
