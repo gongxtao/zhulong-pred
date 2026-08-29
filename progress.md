@@ -98,3 +98,23 @@
 
 **会话恢复**：bash init.sh → 读 CLAUDE.md + docs/zhulong-handoff.md → 本文件本节 → feature_list feat-007。
 **本地服务**：python3 http.server 4173 已随本会话结束而停，重启：`cd docs/prototype && python3 -m http.server 4173 --bind 127.0.0.1`（或 0.0.0.0 局域网）。
+
+## 2026-08-29 11:30 · feat-007 懒加载在原型上完整落地（用户裁决变更实现位置）
+
+**实现**（按规格 8 条 + 补钉 5b/5c 全部落地）：
+- 统一 store（hours/daily/pred/predOrigins/cal/model）为唯一后端，消灭 ZD/REAL 双后端
+- bootLayer1：energy_daily 视图（唯一排序 zone,est_day）+ 近 120 天×3 区 + 近 70 天 pred_static + 模型元数据
+  （~40 请求 ≈12s）；极涡/热浪窗预热（演示第四幕秒跳）
+- ensureWindow：per-zone 串行队列 + toast；pred 覆盖 [origin−48h, origin]（含偏差带昨日起点）
+- 拖拽冻结：未加载区主图不重渲（防 NaN 空洞），提示「松手加载」，松手统一 setOrigin→ensure→render
+- setOrigin/setZone 异步化 + originToken 令牌防过期渲染；renderAll try/catch 诊断日志（window.__renderLog）
+- sbFetch 重试 ×3（600ms 递增退避）——实测网关有瞬时 5xx
+- loadAt/tempAt live 缺数据=NaN 禁仿真填充；快照兜底走 storeFromSnapshot 全量灌入
+
+**实测**：boot 12s/40 请求；跳极涡 0.6s（预热）；拖 2010 松手 ≈1s 加载渲染；回到当前即时；
+三区 5.43/5.40/3.57；热力图/极端日/六幕/主题全过零错误。**新基线 AEP 3.57/85.6/49.0（CAL 语义变化，
+handoff §5 已更新）**。截图 .shots/v20_lazy_{light,dark}.jpeg。
+
+**踩坑记录**（handoff §4 已有，新增两条）：
+- 视图/多区分页排序必须含唯一键（zone,day），否则翻页可能丢行
+- 删常量（REAL）必须全量 grep 引用——一次 ReferenceError 让 startEngine 半途死、页面停在半刈化状态

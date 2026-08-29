@@ -309,6 +309,15 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--actual);outline-off
   border-radius:7px;padding:6px 14px;visibility:hidden}
 #ldSkip:hover{color:var(--actual-hi);border-color:var(--actual)}
 
+/* ============ 按需查询 toast ============ */
+#sbToast{position:fixed;right:18px;bottom:18px;z-index:70;display:none;align-items:center;gap:8px;
+  background:var(--bg1);border:1px solid var(--line2);border-radius:9px;padding:8px 14px;
+  font-size:12px;color:var(--ink2);box-shadow:0 8px 28px rgba(15,23,42,.14)}
+#sbToast.on{display:flex}
+#sbToast .spin{width:11px;height:11px;border-radius:50%;border:2px solid var(--line2);border-top-color:var(--actual);
+  animation:sbRot .8s linear infinite;flex-shrink:0}
+@keyframes sbRot{to{transform:rotate(360deg)}}
+
 /* ============ 演示模式 ============ */
 #demoLayer{position:fixed;inset:0;z-index:50;pointer-events:none;display:none}
 #demoLayer.on{display:block}
@@ -495,6 +504,8 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--actual);outline-off
 <!-- 弹层：状态格指标解释（四格标签 ⓘ 共用一个） -->
 <div id="sqTip" role="dialog" aria-label="指标解释"></div>
 
+<!-- 按需查询 toast -->
+<div id="sbToast" role="status"><span class="spin"></span><span id="sbToastText">查询生产库…</span></div>
 <!-- 数据加载遮罩 -->
 <div id="loader">
   <div class="ld-box">
@@ -565,23 +576,36 @@ const ZONES = {
   DOM:   {label:'DOM · 多米尼恩（弗吉尼亚）',   base:11900, amp:3300, seas:.15, wtr:.10, cool:40, heat:120, wknd:.92,  tOff:.6},
 };
 const HOUR=3600e3, DAY=86400e3;
-/* ===== 数据源（三级，启动时异步解析）：在线 Supabase → 内嵌快照 → 内置仿真 ===== */
-let ZD=null, REAL=null;
+/* ===== 数据源（三级，懒加载架构）：在线 Supabase（boot 近窗+视图，按需 ensureWindow）
+        → 内嵌快照（一次性填充 store）→ 内置仿真。store 是唯一后端 ===== */
+let SRC='sim';                                 /* 'live' | 'snapshot' | 'sim' */
+const store={
+  hours:new Map(),   /* zone -> Map(di -> {L,T,H,W,P: Float64Array(24)}) */
+  daily:new Map(),   /* zone -> [{ts,peak,ph,di}] 升序（视图/快照/仿真） */
+  pred:new Map(),    /* zone -> Map(originTs -> (number|null)[24]) */
+  predOrigins:new Map(), /* zone -> number[] 升序 */
+  cal:{},            /* zone -> [{z50,z90} ×24]（近期残差分位） */
+  model:null,
+};
 let T_MIN = Date.UTC(2004,9,1,5);
 let T_MAX = Date.UTC(2018,7,3,9);
 let NOW_DEFAULT = Date.UTC(2018,7,1,5);      // 演示锚点（仿真口径）
-function applyData(zd){ /* 数据就位后初始化查表层与时间锚 */
-  ZD=zd||null;
-  window.ZL_DATA=ZD; /* 同步到 window 便于断言/调试 */
-  REAL=ZD?{
-    idx(z,ts){const zz=ZD.zones[z];if(!zz)return -1;const i=Math.round((ts-zz.t0)/HOUR);return i>=0&&i<zz.n?i:-1},
-  }:null;
-  if(ZD){ /* NOW=2018-07-31 05:00 EST（峰前清晨，留足 48h 预测窗） */
-    T_MIN=Math.min(...Object.values(ZD.zones).map(x=>x.t0));
-    T_MAX=Math.max(...Object.values(ZD.zones).map(x=>x.t0+(x.n-1)*HOUR));
-    NOW_DEFAULT=Math.min(Date.UTC(2018,6,31,10),T_MAX-49*HOUR);
+function applyAnchors(){ /* T_MIN/T_MAX/NOW/D0/D1 从 store 推导（live/snapshot） */
+  const dz=[...store.daily.values()].flat();
+  if(dz.length){
+    T_MIN=Math.min(...dz.map(d=>dayTs(d.di)));
+    T_MAX=Math.max(...dz.map(d=>dayTs(d.di+1)-HOUR));
+    NOW_DEFAULT=Math.min(Date.UTC(2018,6,31,10),T_MAX-49*HOUR); /* NOW=2018-07-31 05:00 EST */
     state.origin=NOW_DEFAULT;state.mode='live';
   }
+  D0=locDay(T_MIN);D1=locDay(T_MAX-1);
+}
+function dbgHook(){ /* window.ZL_DATA 断言钩子（懒加载形态） */
+  const n=z=>store.hours.get(z)?.size||0;
+  window.ZL_DATA={src:SRC,live:SRC==='live',
+    hours:{AEP:n('AEP'),DAYTON:n('DAYTON'),DOM:n('DOM')},
+    daily:{AEP:store.daily.get('AEP')?.length||0,DAYTON:store.daily.get('DAYTON')?.length||0,DOM:store.daily.get('DOM')?.length||0},
+    model:store.model};
 }
 const H_FC = 48;
 
@@ -648,13 +672,17 @@ function simLoadAt(zone,ts){
   L*=1+(rnd2(zone,ts)-.5)*0.045;
   return L;
 }
-/* 真数据查表 REAL 在 applyData() 中初始化（O(1)；缺测已插值；区间外回退仿真——仅 DOM 2005-05 前回放会触及） */
+/* 查表（store 为唯一后端；live/snapshot 缺数据=NaN——禁止仿真填充，防假数据；sim 模式走公式） */
+function packAt(zone,ts){
+  const m=store.hours.get(zone);if(!m)return null;
+  return m.get(locDay(ts))||null;
+}
 function tempAt(ts,tOff=0){ /* 真模式下 tOff 无效（真温度即区域加权实测）；所有调用方均针对当前区 */
-  if(REAL){const i=REAL.idx(state.zone,ts);if(i>=0)return ZD.zones[state.zone].temps[i]}
+  if(SRC!=='sim'){const p=packAt(state.zone,ts);if(p){const v=p.T[etP(ts).h];if(Number.isFinite(v))return v}}
   return simTempAt(ts,tOff);
 }
 function loadAt(zone,ts){
-  if(REAL){const i=REAL.idx(zone,ts);if(i>=0)return ZD.zones[zone].loads[i]}
+  if(SRC!=='sim'){const p=packAt(zone,ts);if(p){const v=p.L[etP(ts).h];if(Number.isFinite(v))return v}return NaN}
   return simLoadAt(zone,ts);
 }
 /* 当前温度段的负荷灵敏度（MW/°C），由区域冷/热负荷系数导出 */
@@ -664,32 +692,22 @@ function sensAt(zone,ts){
   if(t<16)return c.heat*1.2*Math.pow(16-t,0.2);
   return 0;
 }
-/* 日峰值序列（时光机胶片 / 热力图 / 极端日） */
-const D0=locDay(T_MIN), D1=locDay(T_MAX-1);
+/* 日峰值序列（时光机胶片 / 热力图 / 极端日）：live/snapshot 直接用 store.daily（视图/快照），
+   sim 用公式逐日扫 */
+let D0=locDay(T_MIN), D1=locDay(T_MAX-1);
 const daily={}; // zone → [{ts,peak,ph,di}]
 const RECORD={}; // zone → {v,ts} 历史峰值
 function buildDaily(){
   for(const z of Object.keys(ZONES)){
-    const arr=[];let rec={v:-1,ts:0};
-    if(REAL){ /* 真数据：直接扫网格，按美东日切分 */
-      const zz=ZD.zones[z];
-      let pk=-1,ph=0,day=-1;
-      const push=()=>{if(day>=0&&pk>0)arr.push({ts:dayTs(day)+ph*HOUR,peak:pk,ph,di:day})};
-      for(let i=0;i<zz.n;i++){
-        const ts=zz.t0+i*HOUR,di=locDay(ts);
-        if(di!==day){push();day=di;pk=-1;ph=0}
-        const v=zz.loads[i];
-        if(v>pk){pk=v;ph=etP(ts).h}
-      }
-      push();
-    } else {
+    const arr=[...(store.daily.get(z)||[])].sort((a,b)=>a.di-b.di);
+    if(!arr.length){ /* sim：逐日扫 */
       for(let di=D0;di<=D1;di++){
         const t0=dayTs(di);let pk=-1,ph=0;
         for(let h=0;h<24;h++){const v=loadAt(z,t0+h*HOUR);if(v>pk){pk=v;ph=h}}
         arr.push({ts:t0+ph*HOUR,peak:pk,ph,di});
-        if(pk>rec.v)rec={v:pk,ts:t0+ph*HOUR};
       }
     }
+    let rec={v:-1,ts:0};
     for(const d of arr)if(d.peak>rec.v)rec={v:d.peak,ts:d.ts};
     daily[z]=arr;RECORD[z]=rec;
   }
@@ -699,13 +717,16 @@ const _dMean={};
 function dayMean(zone,di){const k=zone+':'+di;
   if(_dMean[k]==null){let s=0;for(let h=0;h<24;h++)s+=loadAt(zone,dayTs(di)+h*HOUR);_dMean[k]=s/24}
   return _dMean[k]}
-/* 相似日候选：与「目标日」同星期、就近取 10 个、且不晚于 dLimit（防未来信息泄露） */
+/* 相似日候选：与「目标日」同星期、就近取 10 个、且不晚于 dLimit（防未来信息泄露）；
+   live 模式仅取已加载日（ensureWindow 保证候选窗），并按各区实际起始日设下界 */
 function candsFor(zone,wdT,dLimit){
   const c=[];
-  const dFloor=REAL?locDay(ZD.zones[zone].t0)+2:D0+2; /* 真模式下按各区实际起始日 */
+  const first=store.daily.get(zone)?.[0];
+  const dFloor=first?first.di+2:D0+2;
+  const have=SRC==='sim'?()=>true:di=>store.hours.get(zone)?.has(di);
   for(let di=dLimit;di>=dLimit-70&&c.length<10;di--){
     if(di<dFloor)break;
-    if(wdT<0||LOC(dayTs(di)).getUTCDay()===wdT)c.push(di);
+    if(have(di)&&(wdT<0||LOC(dayTs(di)).getUTCDay()===wdT))c.push(di);
   }
   return c;
 }
@@ -742,21 +763,24 @@ function forecastAt(zone,originTs){
   /* 真模型注入：取 ≤24h 内最近的 pred_static 日起点，按偏移重索引（mh = 起点偏移 + 页面 horizon）→
      生产模型 p50 + 真残差分位带；超出模型 24h 视界的部分回退相似日基线（口径注明）。
      审计卡回测因此审计的正是页面展示的预测路径。 */
-  if(ZD&&ZD.pred&&ZD.pred[zone]){
-    const P=ZD.pred[zone];
-    let lo=0,hi=P.origins.length-1,best=-1;
-    while(lo<=hi){const m=(lo+hi)>>1;if(P.origins[m]<=originTs){best=m;lo=m+1}else hi=m-1}
-    if(best>=0&&originTs-P.origins[best]<24*HOUR){
-      const off=Math.round((originTs-P.origins[best])/HOUR);
-      const row=P.preds[best];
-      for(let h=1;h<=H_FC;h++){
-        const mh=off+h;
-        if(mh<1||mh>24)continue;
-        const p=out[h-1],mp=row&&row[mh-1];
-        if(mp!=null&&mp>0){
-          p.p50=mp;
-          const c=P.cal[mh-1];
-          p.p10=mp*(1-c.z90);p.p90=mp*(1+c.z90);p.p25=mp*(1-c.z50);p.p75=mp*(1+c.z50);
+  {
+    const O=store.predOrigins.get(zone);
+    if(O&&O.length){
+      let lo=0,hi=O.length-1,best=-1;
+      while(lo<=hi){const m=(lo+hi)>>1;if(O[m]<=originTs){best=m;lo=m+1}else hi=m-1}
+      if(best>=0&&originTs-O[best]<24*HOUR){
+        const off=Math.round((originTs-O[best])/HOUR);
+        const row=store.pred.get(zone).get(O[best]);
+        const cal=store.cal[zone];
+        for(let h=1;h<=H_FC;h++){
+          const mh=off+h;
+          if(mh<1||mh>24)continue;
+          const p=out[h-1],mp=row&&row[mh-1];
+          if(mp!=null&&mp>0){
+            p.p50=mp;
+            const c=cal[mh-1];
+            p.p10=mp*(1-c.z90);p.p90=mp*(1+c.z90);p.p25=mp*(1-c.z50);p.p75=mp*(1+c.z50);
+          }
         }
       }
     }
@@ -1203,8 +1227,8 @@ function renderAttrib(){
       <span class="vl">${other>=0?'+':''}${fmt(other)} MW · ${pctOf(other)}</span></div>
     <div class="attNote">温度贡献 = Δ温度 × 当前灵敏度（<span class="num">${Math.round(sensAt(z,org))}</span> MW/°C）；余项不拆分、不虚构精度。同类日离散 ±<span class="num">${sigma.toFixed(1)}</span>%。</div>`;
   let hum,wind,prec;
-  if(REAL){const i=REAL.idx(z,org);
-    hum=ZD.zones[z].hum[i]??0;wind=ZD.zones[z].wind[i]??0;prec=ZD.zones[z].prec[i]??0}
+  const wp=packAt(z,org);
+  if(wp){hum=wp.H[etP(org).h]??0;wind=wp.W[etP(org).h]??0;prec=wp.P[etP(org).h]??0}
   else{hum=58+Math.round(rnd2('h',org)*30);wind=6+Math.round(rnd2('w',org)*16);prec=rnd2('p',org)<.75?0:Math.round(rnd2('p2',org)*40)/10}
   $('wxGrid').innerHTML=[
     ['气温',T1.toFixed(1)+'°C'],['湿度',hum+'%'],['风速',wind+'km/h'],['降水',prec+'mm'],
@@ -1248,7 +1272,7 @@ function renderCred(){
     ?`基线对比：持久性（昨日同时）MAPE <b class="num">${pers.toFixed(2)}%</b> → 本模型 <b class="num">${mape.toFixed(2)}%</b> <b style="color:var(--ok)">误差 ↓${impr}%</b>`
     :`基线对比：持久性（昨日同时）MAPE <b class="num">${pers.toFixed(2)}%</b> → 本模型 <b class="num">${mape.toFixed(2)}%</b> <b style="color:var(--warn)">天气突变段落后于基线</b>（相似日盲区，正是接入气象预报的论据，见口径）`;
   /* 生产模型行（真数据模式）：来自训练管道的独立验证 */
-  const M=ZD&&ZD.model, mz=M&&M.zones&&M.zones[z];
+  const M=store.model, mz=M&&M.zones&&M.zones[z];
   $('modelLine').innerHTML=(M&&M.modelId&&mz)?`
     <span class="hint">生产模型</span> <b class="num">${M.modelId.slice(0,20)}</b> · ${M.trials.length} 组试验 · 本区验证 WAPE <b class="num">${mz.wape}%</b>
     <span class="hint">vs 昨日基线</span> <b class="num">${mz.lastDayWape}%</b> <b style="color:var(--ok)">↓${Math.round((1-mz.wape/mz.lastDayWape)*100)}%</b>`:'';
@@ -1262,7 +1286,7 @@ function replayBT(){
 }
 /* 口径（仅 ⓘ 弹层，无展开卡——彻底避免展开改变布局） */
 function renderCaliber(){
-  const real=!!REAL;
+  const real=SRC!=='sim';
   const rows=[
     ['负荷', real
       ?'PJM 负荷区小时级<b>估算平均功率</b>（MW）；小时区间内数值上 ≈ MWh。<b>2004-10 至 2018-08 真值</b>（真实历史 + 模拟未来流，快照内嵌本页、断网可用）。'
@@ -1395,6 +1419,7 @@ function renderExtremes(){
    汇总渲染
    ===================================================================== */
 function renderAll(){
+  try{
   renderMain();renderDecision();renderStatusQuad();renderAttrib();renderCred();
   renderFilm();renderOriginDate();
   renderSM();
@@ -1402,6 +1427,7 @@ function renderAll(){
   if(state.drawerTab==='ext')renderExtremes();
   renderExtChips();
   $('zoneCap').textContent=ZONES[state.zone].label;
+  }catch(e){console.error('[renderAll]',state.zone,state.origin,e);window.__renderLog?.push({z:state.zone,err:''+e})}
 }
 function renderExtChips(){
   const box=$('extChips');box.innerHTML='';
@@ -1415,11 +1441,15 @@ function renderExtChips(){
 /* =====================================================================
    交互
    ===================================================================== */
-function setZone(z){
+let originToken=0; /* 导航令牌：新跳转使旧异步渲染失效 */
+async function setZone(z){
   if(z===state.zone)return;
   state.zone=z;
   document.querySelectorAll('#zoneSeg button').forEach(b=>b.classList.toggle('on',b.dataset.zone===z));
-  renderAll();
+  const tok=++originToken;
+  if(SRC==='live')await ensureWindow(z,state.origin);
+  if(tok!==originToken)return;
+  renderAll();dbgHook();
 }
 $('zoneSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setZone(b.dataset.zone)});
 document.querySelectorAll('#rangeSeg button').forEach(b=>b.onclick=()=>{
@@ -1466,16 +1496,19 @@ $('csvBtn').onclick=()=>{
   a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
   a.download=`zhulong_${state.zone}_${new Date(state.origin).toISOString().slice(0,10)}.csv`;a.click();
 };
-/* 时光机：起点切换 */
-function setOrigin(ts,mode){
+/* 时光机：起点切换（live 模式先 ensureWindow 再渲染——避免 NaN 闪烁） */
+async function setOrigin(ts,mode){
   state.origin=clamp(ts,T_MIN+72*HOUR,T_MAX-48*HOUR);
   state.mode=mode||((state.origin===NOW_DEFAULT)?'live':'replay');
-  renderAll();
+  const tok=++originToken;
+  if(SRC==='live')await ensureWindow(state.zone,state.origin);
+  if(tok!==originToken)return;
+  renderAll();dbgHook();
 }
 function jumpTo(ts){setOrigin(ts,'replay');positionHandle(true)}
 $('stepPrev').onclick=()=>setOrigin(state.origin-DAY);
 $('stepNext').onclick=()=>setOrigin(state.origin+DAY);
-/* 胶片拖拽：拖动中轻量刷新（主图+手柄），松手后全量渲染 */
+/* 胶片拖拽：rAF 轻量刷新——已加载区实时预览；未加载区冻结主图（补钉：防空洞），松手统一 setOrigin */
 const filmWrap=$('filmWrap');
 let dragging=false,dragRaf=0;
 function filmXToTs(clientX){
@@ -1494,15 +1527,25 @@ filmWrap.addEventListener('pointermove',e=>{
   if(dragRaf)return;
   dragRaf=requestAnimationFrame(()=>{
     dragRaf=0;state.origin=ts;
-    positionHandle(false);renderMain();renderOriginDate();
+    positionHandle(false);renderOriginDate();
+    if(SRC!=='live'||windowReady(state.zone,state.origin,RANGES[state.range].back)){
+      sbToast(false);
+      renderMain();
+    }else{
+      sbToast(true,'松手加载这段历史 · '+fmtMD(state.origin));
+    }
   });
 });
-filmWrap.addEventListener('pointerup',()=>{if(!dragging)return;dragging=false;renderAll()});
+filmWrap.addEventListener('pointerup',()=>{if(!dragging)return;dragging=false;setOrigin(state.origin)});
 /* 抽屉 */
 document.querySelectorAll('#drawerTabs button[data-t]').forEach(b=>b.onclick=()=>{
   state.drawerTab=b.dataset.t;
   document.querySelectorAll('#drawerTabs button').forEach(x=>x.classList.toggle('on',x===b));
   document.querySelectorAll('.drawerPane').forEach(p=>p.classList.toggle('on',p.id==='pane-'+state.drawerTab));
+  if(b.dataset.t==='sm'&&SRC==='live'){ /* 区域对比：确保三区在当前起点都有数据 */
+    for(const z of Object.keys(ZONES))if(z!==state.zone)
+      ensureWindow(z,state.mode==='live'?NOW_DEFAULT:state.origin).then(()=>renderSM());
+  }
   $('drawer').classList.remove('folded');
   if(state.drawerTab==='heat')renderHeat();
   if(state.drawerTab==='ext')renderExtremes();
@@ -1600,14 +1643,23 @@ const SB={URL:'https://guhooxzoitrexucnxvew.supabase.co/rest/v1',
   KEY:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd1aG9veHpvaXRyZXh1Y254dmV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4OTk5MjMsImV4cCI6MjEwMzQ3NTkyM30.mRnANC3mIqof3syzYOQKZRBuKlGmtHCT7Vzd7EJb1EA'};
 let LD_ABORT=false;
 function ldSet(pct,detail){$('ldFill').style.width=(pct*100).toFixed(1)+'%';if(detail)$('ldDetail').textContent=detail}
+async function sbFetch(table,q){ /* 带重试的单页请求（网关瞬时 5xx/断连重试 3 次） */
+  let lastErr;
+  for(let i=0;i<3;i++){
+    if(LD_ABORT)throw new Error('用户跳过在线拉取');
+    try{
+      const r=await fetch(`${SB.URL}/${table}?${q}`,{headers:{apikey:SB.KEY}});
+      if(r.ok)return r.json();
+      lastErr=new Error(`${table} HTTP ${r.status}`);
+    }catch(e){lastErr=e}
+    await new Promise(rs=>setTimeout(rs,600*(i+1)));
+  }
+  throw lastErr;
+}
 async function sbPage(table,params,onRows){
   const rows=[];let off=0;
   for(;;){
-    if(LD_ABORT)throw new Error('用户跳过在线拉取');
-    const q=new URLSearchParams({limit:1000,offset:off,...params});
-    const r=await fetch(`${SB.URL}/${table}?${q}`,{headers:{apikey:SB.KEY}});
-    if(!r.ok)throw new Error(`${table} HTTP ${r.status}`);
-    const page=await r.json();
+    const page=await sbFetch(table,new URLSearchParams({limit:1000,offset:off,...params}));
     rows.push(...page);onRows&&onRows(rows.length);
     if(page.length<1000)break;
     off+=1000;
@@ -1634,93 +1686,186 @@ function gridFrom(map){ /* 列式网格 + 缺测线性插值（首尾前向/后�
   };
   return {t0,n,loads:mk('load_mw'),temps:mk('temperature_2m_c'),hum:mk('relative_humidity_2m_pct'),wind:mk('wind_speed_10m_kmh'),prec:mk('precipitation_mm')};
 }
-async function fetchLiveData(){
-  const ZS=['AEP','DAYTON','DOM'];
-  const COLS='interval_end_utc,load_mw,temperature_2m_c,relative_humidity_2m_pct,wind_speed_10m_kmh,precipitation_mm';
-  const EXPECT=402657; /* 360,969 小时 + 41,688 回测行 */
-  const counts={};
-  const prog=()=>{const t=Object.values(counts).reduce((s,v)=>s+v,0);
-    ldSet(Math.min(t/EXPECT,.98),`已查询 ${t.toLocaleString('en-US')} / ${EXPECT.toLocaleString('en-US')} 行 · 生产库`)};
-  const jobs=[];
-  for(const z of ZS){
-    jobs.push(sbPage('energy_hourly',{zone:`eq.${z}`,order:'interval_end_utc.asc',select:COLS},n=>{counts['h'+z]=n;prog()}));
-    jobs.push(sbPage('energy_hourly_future',{zone:`eq.${z}`,order:'interval_end_utc.asc',select:COLS},n=>{counts['f'+z]=n;prog()}));
+/* ---------- 懒加载：store 填充与按需拉取 ---------- */
+const COLS='zone,interval_end_utc,load_mw,temperature_2m_c,relative_humidity_2m_pct,wind_speed_10m_kmh,precipitation_mm';
+const PRED_COLS='zone,forecast_origin_utc,forecast_horizon_hour,actual_load_mw,predicted_load_mw';
+function putHours(rows){
+  for(const r of rows){
+    if(!store.hours.has(r.zone))store.hours.set(r.zone,new Map());
+    const m=store.hours.get(r.zone);
+    const ts=Date.parse(r.interval_end_utc),di=locDay(ts),h=etP(ts).h;
+    let p=m.get(di);
+    if(!p){p={L:new Float64Array(24).fill(NaN),T:new Float64Array(24).fill(NaN),H:new Float64Array(24).fill(NaN),
+      W:new Float64Array(24).fill(NaN),P:new Float64Array(24).fill(NaN)};m.set(di,p)}
+    if(r.load_mw!=null)p.L[h]=r.load_mw;
+    if(r.temperature_2m_c!=null)p.T[h]=r.temperature_2m_c;
+    if(r.relative_humidity_2m_pct!=null)p.H[h]=r.relative_humidity_2m_pct;
+    if(r.wind_speed_10m_kmh!=null)p.W[h]=r.wind_speed_10m_kmh;
+    if(r.precipitation_mm!=null)p.P[h]=r.precipitation_mm;
   }
-  const all=await Promise.all(jobs);
-  ldSet(.985,'构建网格（去重∪插值）…');
-  const zones={};
-  ZS.forEach((z,zi)=>{
-    const map=new Map();
-    for(const row of all[zi*2])map.set(Date.parse(row.interval_end_utc),row);
-    for(const row of all[zi*2+1]){const ts=Date.parse(row.interval_end_utc);if(!map.has(ts))map.set(ts,row)}
-    const g=gridFrom(map);
-    zones[z]={t0:g.t0,n:g.n,
-      loads:[...g.loads].map(v=>r1(v,1)),temps:[...g.temps].map(v=>r1(v,1)),
-      hum:[...g.hum].map(v=>Math.round(v)),wind:[...g.wind].map(v=>r1(v,1)),prec:[...g.prec].map(v=>r1(v,1))};
-  });
+}
+async function fetchHoursRange(zone,diLo,diHi,onRows){
+  const and=`(interval_end_utc.gte.${new Date(dayTs(diLo)).toISOString()},interval_end_utc.lt.${new Date(dayTs(diHi+1)).toISOString()})`;
+  const params={zone:`eq.${zone}`,and,order:'interval_end_utc.asc',select:COLS};
+  const [a,b]=await Promise.all([sbPage('energy_hourly',params,onRows),sbPage('energy_hourly_future',params,onRows)]);
+  putHours(a);putHours(b);
+}
+function ingestPred(rows){
+  const byZO={};
+  for(const r of rows){(byZO[r.zone]??={})[r.forecast_origin_utc]??=[];byZO[r.zone][r.forecast_origin_utc].push(r)}
+  for(const z in byZO){
+    if(!store.pred.has(z))store.pred.set(z,new Map());
+    const pm=store.pred.get(z);
+    for(const o in byZO[z]){
+      const ts=Date.parse(o);
+      if(pm.has(ts))continue;
+      const row=new Array(24).fill(null);
+      for(const rr of byZO[z][o])row[rr.forecast_horizon_hour-1]=r1(rr.predicted_load_mw,1);
+      pm.set(ts,row);
+    }
+    store.predOrigins.set(z,[...pm.keys()].sort((x,y)=>x-y));
+  }
+}
+function calFrom(rows){ /* 近期残差分位（boot 尾窗计算；全局共用） */
+  const byZH={};
+  for(const r of rows){const h=r.forecast_horizon_hour;if(h>24)continue;
+    const rel=(r.predicted_load_mw-r.actual_load_mw)/r.actual_load_mw;
+    ((byZH[r.zone]??={})[h]??=[]).push(rel)}
+  for(const z in byZH){
+    store.cal[z]=[];
+    for(let h=1;h<=24;h++){
+      const arr=(byZH[z][h]||[]).slice().sort((a,b)=>a-b);
+      const mean=arr.length?arr.reduce((s,v)=>s+v,0)/arr.length:0;
+      const abs=arr.map(v=>Math.abs(v-mean)).sort((a,b)=>a-b);
+      store.cal[z].push({z50:abs.length?r1(quantile(abs,.50),4):.08,z90:abs.length?r1(quantile(abs,.90),4):.16});
+    }
+  }
+}
+async function bootLayer1(){
+  const counts={};const EXPECT=28100;
+  const prog=k=>n=>{counts[k]=n;const t=Object.values(counts).reduce((s,v)=>s+v,0);
+    ldSet(Math.min(t/EXPECT,.98),`已查询 ${t.toLocaleString('en-US')} 行 · 近窗 + 14 年日峰 + 模型回测`)};
+  /* 1) 日峰视图（三区全量，胶片/热力图/极值/纪录；排序含 zone 保证分页稳定） */
+  const dv=await sbPage('energy_daily',{order:'zone.asc,est_day.asc',select:'zone,est_day,peak_mw,peak_ts_utc'},prog('dv'));
+  for(const r of dv){
+    if(!store.daily.has(r.zone))store.daily.set(r.zone,[]);
+    const ts=Date.parse(r.peak_ts_utc)-HOUR; /* 视图为区间右端 → 现有口径 = 小时起点 */
+    store.daily.get(r.zone).push({ts,peak:r.peak_mw,ph:etP(ts).h,di:locDay(ts)});
+  }
+  applyAnchors(); /* 视图就位即可定 D1，供近窗边界 */
+  /* 2) 近 120 天小时 ×3 区（并发；决策/四格/回测/相似日候选全覆盖） */
+  const lo=D1-119;
+  await Promise.all(Object.keys(ZONES).map(z=>fetchHoursRange(z,lo,D1+1,prog('h'+z))));
+  ldSet(.99,'模型回测与元数据…');
+  /* 3) 近 70 天 pred_static（模型注入 + 近期残差分位） */
+  const psRows=await sbPage('pred_static',{order:'zone.asc,forecast_origin_utc.asc',select:PRED_COLS,
+    forecast_origin_utc:`gte.${new Date(dayTs(D1-70)).toISOString()}`},prog('ps'));
+  ingestPred(psRows);calFrom(psRows);
+  /* 4) 模型元数据 */
   const H={apikey:SB.KEY};
-  ldSet(.99,'拉取模型元数据与回测…');
-  const [mv,tt,psRows]=await Promise.all([
+  const [mv,tt]=await Promise.all([
     fetch(`${SB.URL}/model_versions?select=model_id,status,created_at&status=eq.active`,{headers:H}).then(r=>r.ok?r.json():[]),
     fetch(`${SB.URL}/training_trials?select=trial_number,mean_zone_wape,mean_zone_mae_mw,validation_metrics`,{headers:H}).then(r=>r.ok?r.json():[]),
-    sbPage('pred_static',{order:'forecast_origin_utc.asc',select:'zone,forecast_origin_utc,forecast_horizon_hour,actual_load_mw,predicted_load_mw'},n=>{counts.ps=n;prog()}),
   ]);
   const winner=tt[0],vm=(winner&&winner.validation_metrics&&winner.validation_metrics.zones)||{};
-  const model={modelId:(mv[0]&&mv[0].model_id)||null,status:(mv[0]&&mv[0].status)||null,createdAt:(mv[0]&&mv[0].created_at)||null,
+  store.model={modelId:(mv[0]&&mv[0].model_id)||null,status:(mv[0]&&mv[0].status)||null,createdAt:(mv[0]&&mv[0].created_at)||null,
     trials:tt.map(t=>({n:t.trial_number,wape:r1(t.mean_zone_wape*100,2),mae:Math.round(t.mean_zone_mae_mw)})),
     zones:Object.fromEntries(Object.entries(vm).map(([z,v])=>[z,{wape:r1(v.overall.wape*100,2),
       lastDayWape:r1(v.last_day_same_hour_baseline.wape*100,2),lastWeekWape:r1(v.last_week_same_hour_baseline.wape*100,2)}]))};
-  const pred={};
-  for(const z of ZS)pred[z]={origins:[],preds:[],cal:[],mape:null,n:0};
-  const byZO={};
-  for(const r of psRows){(byZO[r.zone]??={})[r.forecast_origin_utc]??=[];byZO[r.zone][r.forecast_origin_utc].push(r)}
-  for(const z of ZS){
-    const orgs=Object.keys(byZO[z]||{}).sort();
-    const relByH=Array.from({length:24},()=>[]);let se=0,n=0;
-    for(const o of orgs){
-      pred[z].origins.push(Date.parse(o));
-      const rows=byZO[z][o].sort((a,b)=>a.forecast_horizon_hour-b.forecast_horizon_hour);
-      const row=[];
-      for(const rr of rows){
-        row.push(r1(rr.predicted_load_mw,1));
-        const rel=(rr.predicted_load_mw-rr.actual_load_mw)/rr.actual_load_mw;
-        relByH[rr.forecast_horizon_hour-1].push(rel);se+=Math.abs(rel);n++;
+}
+/* 按需拉取：ensureWindow（per-zone 串行队列 + toast），跳转/切区/松手统一走这里 */
+function sbToast(on,text){const t=document.getElementById('sbToast');if(!t)return;
+  if(on){document.getElementById('sbToastText').textContent=text;t.classList.add('on')}else t.classList.remove('on')}
+const zoneQueue={};
+function ensureWindow(zone,originTs){
+  const task=async()=>{
+    const m=store.hours.get(zone)||new Map();
+    const d0=locDay(originTs),lo=d0-80,hi=d0+2;
+    let missing=0;for(let di=lo;di<=hi;di++)if(!m.has(di))missing++;
+    if(missing){
+      sbToast(true,`查询生产库 · ${ZONES[zone].label.split(' ·')[0]} ${fmtMD(dayTs(d0))} 前后 ${missing} 天小时值`);
+      await fetchHoursRange(zone,lo,hi);
+      sbToast(false);
+    }
+    if(originTs>=Date.UTC(2016,11,1)){ /* 模型纪元：确保该起点（含偏差带用的昨日起点）附近有 pred_static */
+      const og=store.predOrigins.get(zone)||[];
+      const has=og.some(o=>o>originTs-48*HOUR&&o<=originTs);
+      if(!has){
+        const and=`(forecast_origin_utc.gte.${new Date(originTs-48*HOUR).toISOString()},forecast_origin_utc.lte.${new Date(originTs).toISOString()})`;
+        sbToast(true,`查询生产库 · 模型在 ${fmtMD(originTs)} 起点的日前预测`);
+        const rows=await sbPage('pred_static',{zone:`eq.${zone}`,and,order:'forecast_origin_utc.asc',select:PRED_COLS});
+        ingestPred(rows);sbToast(false);
       }
-      while(row.length<24)row.push(null);
-      pred[z].preds.push(row);
     }
-    for(let h=0;h<24;h++){
-      const arr=relByH[h].sort((a,b)=>a-b);
-      const mean=arr.reduce((s,v)=>s+v,0)/arr.length;
-      const abs=arr.map(v=>Math.abs(v-mean)).sort((a,b)=>a-b);
-      pred[z].cal.push({z50:r1(quantile(abs,.50),4),z90:r1(quantile(abs,.90),4)});
+  };
+  zoneQueue[zone]=(zoneQueue[zone]||Promise.resolve()).then(task,task).catch(e=>{
+    console.warn('[ensureWindow]',zone,e);sbToast(false)});
+  return zoneQueue[zone];
+}
+function windowReady(zone,originTs,backHours){ /* 拖拽冻结判定：视窗+候选日是否齐 */
+  const m=store.hours.get(zone);if(!m)return false;
+  const d0=locDay(originTs),lo=d0-Math.ceil(backHours/24)-1,hi=d0+2;
+  for(let di=lo;di<=hi;di++)if(!m.has(di))return false;
+  return true;
+}
+function storeFromSnapshot(zd){ /* 快照兜底：一次性灌入 store（同构数据） */
+  for(const z in zd.zones){
+    const zz=zd.zones[z],m=new Map();
+    for(let i=0;i<zz.n;i++){
+      const ts=zz.t0+i*HOUR,di=locDay(ts),h=etP(ts).h;
+      let p=m.get(di);
+      if(!p){p={L:new Float64Array(24).fill(NaN),T:new Float64Array(24).fill(NaN),H:new Float64Array(24).fill(NaN),
+        W:new Float64Array(24).fill(NaN),P:new Float64Array(24).fill(NaN)};m.set(di,p)}
+      p.L[h]=zz.loads[i];p.T[h]=zz.temps[i];p.H[h]=zz.hum[i];p.W[h]=zz.wind[i];p.P[h]=zz.prec[i];
     }
-    pred[z].mape=r1(se/n*100,2);pred[z].n=n;
+    store.hours.set(z,m);
   }
-  return {v:1,generated:new Date().toISOString(),live:true,zones,model,pred};
+  for(const z of Object.keys(ZONES)){ /* daily 从小时派生（全量在内存） */
+    const m=store.hours.get(z),arr=[];
+    let pk=-1,ph=0,day=-1;
+    const push=()=>{if(day>=0&&pk>0)arr.push({ts:dayTs(day)+ph*HOUR,peak:pk,ph,di:day})};
+    for(const di of [...m.keys()].sort((a,b)=>a-b)){
+      if(di!==day){push();day=di;pk=-1;ph=0}
+      const p=m.get(di);
+      for(let h=0;h<24;h++){const v=p.L[h];if(v>pk){pk=v;ph=h}}
+    }
+    push();
+    store.daily.set(z,arr);
+  }
+  for(const z in zd.pred||{}){
+    const P=zd.pred[z],pm=new Map();
+    P.origins.forEach((o,i)=>pm.set(o,P.preds[i]));
+    store.pred.set(z,pm);
+    store.predOrigins.set(z,P.origins.slice());
+    store.cal[z]=P.cal;
+  }
+  store.model=zd.model||null;
 }
 function loadSnapshot(){
   return new Promise((res,rej)=>{
     const s=document.createElement('script');
     s.src='data/zhulong-data.js';
-    s.onload=()=>window.ZL_DATA?res(window.ZL_DATA):rej(new Error('快照为空'));
+    s.onload=()=>{window.__snap=window.ZL_DATA;window.ZL_DATA=null;/*占用让位给 dbgHook*/window.__snap?res(window.__snap):rej(new Error('快照为空'))};
     s.onerror=()=>rej(new Error('快照缺失'));
     document.head.appendChild(s);
   });
 }
 (async function boot(){
   const t0=performance.now();
+  window.__renderLog=[{z:'boot'}];
   setTimeout(()=>$('ldSkip').style.visibility='visible',4000);
   $('ldSkip').onclick=()=>{LD_ABORT=true};
-  let zd=null,src='sim';
-  try{zd=await fetchLiveData();src='live'}
+  try{await bootLayer1();SRC='live'}
   catch(e){console.warn('在线拉取未完成：',e.message);
-    try{zd=await loadSnapshot();src='snapshot'}catch(e2){zd=null;src='sim'}}
+    try{const zd=await loadSnapshot();storeFromSnapshot(zd);SRC='snapshot'}
+    catch(e2){SRC='sim'}}
   document.getElementById('loader').classList.add('off');
   setTimeout(()=>{const l=document.getElementById('loader');l&&l.remove()},500);
-  applyData(zd);
-  startEngine(src);
-  console.info(`[烛龙] 数据源=${src} · 启动 ${(performance.now()-t0)/1000|0}s`);
+  applyAnchors();
+  try{startEngine(SRC)}catch(e){console.error('[startEngine]',e)}
+  dbgHook();
+  if(SRC==='live'){ensureWindow('AEP',EVENTS[0].c);ensureWindow('AEP',EVENTS[1].c)} /* 演示事件窗预热（补钉 5c） */
+  console.info(`[烛龙] 数据源=${SRC} · 启动 ${(performance.now()-t0)/1000|0}s`);
 })();
 function renderLegendTable(){
   $('legendTable').innerHTML=[
