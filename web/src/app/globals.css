@@ -336,3 +336,30 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--actual);outline-off
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation:none !important;transition:none !important}
 }
+
+/* ===== feat-023 ChatBI 数据问答（只用既有变量，无新色） ===== */
+#chatLayer{position:fixed;inset:0;z-index:65;display:none;align-items:center;justify-content:center}
+#chatLayer.on{display:flex}
+#chatLayer .veil{position:absolute;inset:0;background:rgba(4,8,16,.45);backdrop-filter:blur(2px)}
+#chatCard{position:relative;width:min(720px,92vw);max-height:70vh;background:var(--bg1);border:1px solid var(--line2);
+  border-radius:12px;box-shadow:0 16px 48px rgba(15,23,42,.22);display:flex;flex-direction:column;overflow:hidden}
+.chat-h{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);flex-shrink:0}
+.chat-h h3{font-size:13px;color:var(--ink)}
+#chatLog{flex:1;min-height:120px;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.chat-msg{max-width:86%;padding:8px 12px;border-radius:10px;font-size:12.5px;line-height:1.65;white-space:pre-wrap;word-break:break-word}
+.chat-msg.user{align-self:flex-end;background:var(--bg3);color:var(--ink);border-bottom-right-radius:3px}
+.chat-msg.bot{align-self:flex-start;background:var(--bg2);color:var(--ink);border:1px solid var(--line);border-bottom-left-radius:3px}
+.chat-msg.bot.err{color:var(--ink2);border-style:dashed}
+.chat-typing{align-self:flex-start;color:var(--ink3);font-size:11.5px;display:flex;gap:6px;align-items:center}
+.chat-typing .spin{width:10px;height:10px}
+#chatChips{display:flex;gap:6px;padding:0 14px 8px;flex-wrap:wrap;flex-shrink:0}
+#chatChips button{font-size:11px;color:var(--ink2);background:var(--bg2);border:1px solid var(--line);border-radius:999px;
+  padding:4px 10px;cursor:pointer}
+#chatChips button:hover{color:var(--actual-hi);border-color:var(--actual)}
+.chat-input{display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--line);flex-shrink:0}
+#chatInput{flex:1;background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;
+  color:var(--ink);font-size:12.5px;font-family:var(--sans)}
+#chatInput:focus{outline:none;border-color:var(--actual)}
+#chatSend{background:var(--actual);color:#fff;border:none;border-radius:8px;padding:8px 16px;
+  font-size:12.5px;font-weight:700;cursor:pointer}
+#chatSend:disabled{opacity:.45;cursor:default}

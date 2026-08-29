@@ -38,6 +38,9 @@ export default function Home() {
               <svg className="ic-moon" viewBox="0 0 16 16"><path d="M13.2 9.8 A5.8 5.8 0 1 1 6.2 2.8 A4.6 4.6 0 0 0 13.2 9.8 Z" /></svg>
               <svg className="ic-sun" viewBox="0 0 16 16"><circle cx="8" cy="8" r="3" /><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M12.6 3.4l-1.4 1.4M4.8 11.2l-1.4 1.4" /></svg>
             </button>
+            <button className="iconBtn" id="chatBtn" title="数据问答 · Agent 实时查库" aria-label="数据问答">
+              <svg viewBox="0 0 16 16"><path d="M2 3.2 h12 v7.6 h-7 L3.6 13.6 v-2.8 H2 Z" /><circle cx="5.6" cy="7" r=".5" fill="currentColor" /><circle cx="8" cy="7" r=".5" fill="currentColor" /><circle cx="10.4" cy="7" r=".5" fill="currentColor" /></svg>
+            </button>
             <button id="demoBtn" title="按 D 键也可进入"><svg viewBox="0 0 12 12"><path d="M2 1.2 L10.6 6 L2 10.8 Z" /></svg>演示模式</button>
           </div>
         </header>
@@ -172,6 +175,29 @@ export default function Home() {
       <div id="basisPopover" role="dialog" aria-label="建议依据"></div>
       {/* 弹层：状态格指标解释（四格标签 ⓘ 共用一个） */}
       <div id="sqTip" role="dialog" aria-label="指标解释"></div>
+      {/* 弹层：数据问答（feat-023 ChatBI，互斥家族第五件） */}
+      <div id="chatLayer" role="dialog" aria-label="数据问答">
+        <div className="veil"></div>
+        <div id="chatCard">
+          <div className="chat-h">
+            <h3>数据问答</h3>
+            <span className="hint">Agent 实时查询生产库 · pred_dynamic 双轨分析</span>
+            <button className="iconBtn" id="chatClose" title="关闭" aria-label="关闭" style={{ marginLeft: 'auto', width: 26, height: 26 }}>
+              <svg viewBox="0 0 16 16"><path d="M4 4 L12 12 M12 4 L4 12" /></svg>
+            </button>
+          </div>
+          <div id="chatLog" aria-live="polite"></div>
+          <div id="chatChips">
+            <button data-q="对比持续学习(pred_dynamic)与静态模型(pred_static)在 AEP 区 2016 年 3 月的日前预测精度（MAPE/WAPE），给出结论和数字">持续学习比静态模型好多少？</button>
+            <button data-q="查询 pred_dynamic 表 AEP 区 forecast_origin_utc 为 2016-03-15 的日前预测：逐小时 predicted_load_mw 与 actual_load_mw、并给出当日 MAPE">查 AEP 2016-03-15 前 24h 预测</button>
+            <button data-q="分析 pred_dynamic 表：三个区（AEP/DAYTON/DOM）各自的 MAPE 排名如何？误差按 forecast_horizon_hour 分桶后哪个时距段最差？">哪个区、哪个时段误差最大？</button>
+          </div>
+          <div className="chat-input">
+            <input id="chatInput" type="text" maxLength={500} placeholder="问 pred_dynamic 的任何问题…" autoComplete="off" />
+            <button id="chatSend">发送</button>
+          </div>
+        </div>
+      </div>
 
       {/* 按需查询 toast */}
       <div id="sbToast" role="status"><span className="spin"></span><span id="sbToastText">查询生产库…</span></div>
