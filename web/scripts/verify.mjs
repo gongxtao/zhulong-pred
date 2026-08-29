@@ -339,6 +339,16 @@ try {
       && (document.getElementById('chatLog').textContent.includes('未连接')
         || !!document.querySelector('#chatLog .chat-typing')
         || !!document.querySelector('#chatLog .chat-think')); /* 无 env=降级；有 env=typing/思考/动作行任一活动态 */
+    /* feat-024 新会话：流式中=按钮禁用（防旧流污染新记录）；已结束=点击后记录清空+系统提示 */
+    const chatBusyNow = document.getElementById('chatSend').disabled;
+    if (chatBusyNow) {
+      out.newSes = document.getElementById('chatNew').disabled === true;
+    } else {
+      document.getElementById('chatNew').click();
+      await new Promise(r => setTimeout(r, 100));
+      out.newSes = document.querySelectorAll('#chatLog .chat-msg').length === 0
+        && !!document.querySelector('#chatLog .chat-sys');
+    }
     document.getElementById("chatClose").click();
     await new Promise(r => setTimeout(r, 100));
     out.closed = !document.getElementById('chatLayer').classList.contains('on');
@@ -350,6 +360,7 @@ try {
   check('ChatBI：预设 chips 5 个', chat7.chips === 5, String(chat7.chips));
   check('ChatBI：与口径弹层互斥', chat7.mutex === true);
   check('ChatBI：发送→响应（流式回复或降级）', chat7.afterSend === true);
+  check('ChatBI：新会话按钮清空记录并提示', chat7.newSes === true);
   check('ChatBI：关闭按钮生效', chat7.closed === true);
   check('ChatBI：/api/chat 契约（无 env 503 / 已配置 200）', chat7.route === 503 || chat7.route === 200, String(chat7.route));
 

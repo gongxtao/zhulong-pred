@@ -1072,10 +1072,11 @@ function bindInteractions() {
     return out.join('<br>');
   };
   let chatSessionId = '';
+  let chatBusy = false; /* 流式进行中：禁发送/新建，防换会话时旧流污染新记录 */
   const closeChatLayer = () => $('chatLayer').classList.remove('on');
   const openChat = () => {
     (['calPopover', 'optPopover', 'basisPopover', 'sqTip'] as const).forEach(id => $(id).style.display = 'none');
-    if (!chatSessionId) chatSessionId = crypto.randomUUID(); /* 面板生命周期一个会话，上下文 QwenPaw 按 session 自管 */
+    if (!chatSessionId) chatSessionId = crypto.randomUUID(); /* 上下文 QwenPaw 按 session 自管 */
     $('chatLayer').classList.add('on');
     $('chatInput').focus();
   };
@@ -1084,6 +1085,20 @@ function bindInteractions() {
   onMount(() => $('chatBtn')?.removeEventListener('click', chatBtnFn));
   $('chatClose').addEventListener('click', closeChatLayer);
   onMount(() => $('chatClose')?.removeEventListener('click', closeChatLayer));
+  /* feat-024 新建会话：弃旧 session_id（QwenPaw 侧上下文随 id 作废）+ 清空记录 */
+  const chatNewFn = () => {
+    if (chatBusy) return;
+    const log = $('chatLog');
+    if (!log.childElementCount && chatSessionId) return; /* 空记录无需重置 */
+    chatSessionId = crypto.randomUUID();
+    log.innerHTML = '';
+    const sys = document.createElement('div');
+    sys.className = 'chat-sys'; sys.textContent = '已开启新会话 · 上下文已清空';
+    log.appendChild(sys);
+    $('chatInput').focus();
+  };
+  $('chatNew').addEventListener('click', chatNewFn);
+  onMount(() => $('chatNew')?.removeEventListener('click', chatNewFn));
 
   const chatSend = async (raw: string) => {
     const text = raw.trim(); if (!text) return;
@@ -1100,6 +1115,8 @@ function bindInteractions() {
     log.appendChild(bubble);
     log.scrollTop = log.scrollHeight;
     ($('chatSend') as HTMLButtonElement).disabled = true;
+    ($('chatNew') as HTMLButtonElement).disabled = true;
+    chatBusy = true;
     ($('chatInput') as HTMLTextAreaElement).value = '';
     let cur = '', thinkTxt = '', actTxt = '';
     const renderThink = () => {
@@ -1139,6 +1156,8 @@ function bindInteractions() {
     }
     typing.remove();
     ($('chatSend') as HTMLButtonElement).disabled = false;
+    ($('chatNew') as HTMLButtonElement).disabled = false;
+    chatBusy = false;
     $('chatInput').focus();
   };
   const chipsFn = (e: Event) => { const q = (e.target as HTMLElement).closest('button')?.dataset.q; if (q) chatSend(q); };

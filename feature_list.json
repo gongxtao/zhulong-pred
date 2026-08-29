@@ -12,7 +12,9 @@
       "id": "feat-002",
       "name": "页面数据层接入（真数据）",
       "description": "zhulong.html：数据源探测（本地快照→内置仿真）；loadAt/tempAt/天气/buildDaily/RECORD 切换真值查表；T_MIN/T_MAX/NOW_DEFAULT 从数据推导；数据源徽章动态化；口径文案更新",
-      "dependencies": ["feat-001"],
+      "dependencies": [
+        "feat-001"
+      ],
       "status": "done",
       "evidence": "浏览器断言：徽章「真数据 · PJM+ERA5」、hero 2,250 MW、四格 12,926/−2.03%/18,261@16:00、零控制台错误；无快照时回退仿真（simLoadAt/simTempAt 保留）"
     },
@@ -20,7 +22,9 @@
       "id": "feat-003",
       "name": "真模型预测接入",
       "description": "forecastAt：≤24h 内最近 pred_static 日起点按偏移重索引注入生产模型 p50 + 真残差分位带；超出模型视界回退相似日基线",
-      "dependencies": ["feat-002"],
+      "dependencies": [
+        "feat-002"
+      ],
       "status": "done",
       "evidence": "AEP 0-24h MAPE 3.64%（模型段）vs 24-48h 基线段 9.97%——注入生效；审计口径随之改为 24h（模型契约视界），持久性同视界对比 5.84→3.64 ↓38%"
     },
@@ -28,7 +32,9 @@
       "id": "feat-004",
       "name": "审计卡真模型故事",
       "description": "审计卡显示生产模型元数据（model_id/试验数/本区 WAPE vs 昨日基线）；归因卡天气四格真值；口径去「演示占位」措辞",
-      "dependencies": ["feat-002"],
+      "dependencies": [
+        "feat-002"
+      ],
       "status": "done",
       "evidence": "modelLine：model-20260828T18272 · 3 组试验 · WAPE 3.82% vs 6.51% ↓41%（AEP）；renderAttrib 天气走 ZD 查表；口径双分支（真/仿真）"
     },
@@ -36,7 +42,10 @@
       "id": "feat-005",
       "name": "全量回归与新基线",
       "description": "浏览器断言全清单重跑；真数据新基线写入 handoff §5；双主题截图；progress/feature_list 收口；提交",
-      "dependencies": ["feat-003", "feat-004"],
+      "dependencies": [
+        "feat-003",
+        "feat-004"
+      ],
       "status": "done",
       "evidence": "回归零失败（三区/拖拽/极涡重演[真数据：持久性17.02→相似日23.14 落后，话术成立]/热力图/六幕/主题/弹层互斥）；handoff §3/§5/§6 已更新；截图 .shots/v19_realdata_{light,dark}.jpeg"
     },
@@ -44,7 +53,9 @@
       "id": "feat-006",
       "name": "在线数据模式（实时查询 Supabase）",
       "description": "异步 boot：loader 遷罩+进度条+跳过按钮 → fetchLiveData 在线拉五表（与快照同算法）→ 回退动态快照 → 回退仿真；徽章三级",
-      "dependencies": ["feat-005"],
+      "dependencies": [
+        "feat-005"
+      ],
       "status": "done",
       "evidence": "http://127.0.0.1:4173 实测：24.4s、249 个 Supabase 请求、live=true、3.64/88.8/52.2 与快照一致；modelLine/极涡话术/三区/六幕/拖拽/主题全过；快照兜底路径验证可用"
     },
@@ -52,7 +63,9 @@
       "id": "feat-007",
       "name": "拆分式懒加载（原型上实现，用户裁决）",
       "description": "统一 store + bootLayer1（近窗+视图+模型）+ ensureWindow 按需拉取 + 拖拽冻结 + 预热 + 重试。规格见 progress.md",
-      "dependencies": ["feat-006"],
+      "dependencies": [
+        "feat-006"
+      ],
       "status": "done",
       "evidence": "boot 12s/40 请求；跳极涡 0.6s（预热生效）；拖未加载区冻结+松手加载 ≈1s；三区 5.43/5.40/3.57 全过零错误；新基线 AEP 3.57/85.6/49.0 入 handoff §5；截图 v20_lazy_*"
     },
@@ -60,7 +73,9 @@
       "id": "feat-008",
       "name": "web/ 平移：懒加载 store + 全部特性",
       "description": "把原型 v3 已验证实现移植到 web/：①src/lib 移植 store/bootLayer1/ensureWindow/sbFetch 重试（算法照抄原型，TS 化）；②components 平移决策条/四格/主图+胶片/证据/抽屉/演示/主题；ECharts 6 选项逐项对照验证、THEMES 双 CVD 调色板、弹层互斥",
-      "dependencies": ["feat-007"],
+      "dependencies": [
+        "feat-007"
+      ],
       "status": "done",
       "evidence": "web @3100 evaluate 断言：boot 13s live；四格 12,926/−2.03%/18,261@16:00/3.57%、cov 85.6/49.0、预备 2,450MW、三区 5.43/5.40/3.57、极涡 17.02→23.14 落后——handoff §5 逐位对上；拖未加载区冻结+松手 1.5s；热力图/极端日(2008/10/20 一致)/六幕/主题/弹层互斥全过；snapshot/sim 兜底实测（3.57 / 2.34 各与记载一致）；lint+tsc+build 零错；截图 web_v3_{light,dark}"
     },
@@ -68,7 +83,9 @@
       "id": "feat-009",
       "name": "M6 全量回归与提交",
       "description": "web 工程 evaluate 断言对齐 handoff §5 基线（懒加载 CAL 语义变化后重测）；回归清单全过；双主题截图；~20:00 未过则提交原型兜底",
-      "dependencies": ["feat-008"],
+      "dependencies": [
+        "feat-008"
+      ],
       "status": "not-started",
       "evidence": ""
     },
@@ -76,7 +93,9 @@
       "id": "feat-010",
       "name": "web boot 改造：秒开 SWR + 上帝视角退出 + 默认深色",
       "description": "用户裁决：①刷新不得阻塞等待——快照先行秒开（~1s 全量渲染）+ 后台静默同步生产库（SWR），离线保持快照；②时光机重演可退出——决策条按钮/重演chip✕/胶片磁吸三入口；③默认深色主题",
-      "dependencies": ["feat-008"],
+      "dependencies": [
+        "feat-008"
+      ],
       "status": "done",
       "evidence": "web/scripts/verify.mjs 21/21（有头 Chrome 独立实例）：秒开 1.08s 首屏四格/MAPE 就位；后台同步后 cov 85.6/49.0 收敛 §5 基线、预备 2,450、三区 5.43/5.40、极涡 17.02→23.14；上帝视角三入口退出+点线 series 48→0+决策条联动；磁吸回实时/远处保持重演；离线保持快照徽章；默认 dark；lint+tsc+build 零错；截图 web_v4_swr_*"
     },
@@ -84,7 +103,9 @@
       "id": "feat-011",
       "name": "历史视窗实时校准（秒开+SWR per view）+ 历史峰值线移除",
       "description": "用户裁决：查看历史数据必须是实时查询。store 加 liveDays/livePredOrigins 溯源；ensureWindow 对未校准视窗发起真实 Supabase 查询（快照先渲染、查询回来合并重渲、同窗零重查）；主图历史峰值线与图例项移除（距纪录保留在悬停/弹层）",
-      "dependencies": ["feat-010"],
+      "dependencies": [
+        "feat-010"
+      ],
       "status": "done",
       "evidence": "verify.mjs 26/26：跳极涡 3 个真实 energy_hourly 查询（2013-10 窗）+liveHours 121→204+话术保持+二次零重查；秒开 1.07s/cov 85.6/49.0/三区/磁吸/离线快照全保持；lint+tsc+build 零错"
     },
@@ -92,7 +113,9 @@
       "id": "feat-014",
       "name": "pred_dynamic 读层接入（运营模型优先）",
       "description": "生产模型向 pred_dynamic 持续推送（实测 2016-02 段 WAPE 4.39→4.23% 三区全面更优）。读层升级：ingestPred 加 override 语义；bootLayer1 与 ensureWindow 的 pred 查询改双表（static 先入、dynamic 同起点覆盖、dynamic 失败/空静默回退）；calFrom 标定保持 static-only。模型纪元 2016-12-01 前回放数据不影响展示——回放推过纪元后数字自动变优，无需再改代码。（编号说明：feat-012/013 已被并行部署会话占用，见 progress.md）",
-      "dependencies": ["feat-011"],
+      "dependencies": [
+        "feat-011"
+      ],
       "status": "done",
       "evidence": "verify 31/31（新增第 31 项「boot 双轨预测查询」sta 5/dyn 1）；探针实测 boot 后 pred_dynamic 请求 1 次、在线徽章正常、断网回退快照不受影响；init.sh/tsc/eslint 零错；现有 30 项基线（MAPE 3.57/cov 85.6/49.0/三区）零漂移——dynamic 回放尚未覆盖模型纪元（2016-12-01），符合设计预期"
     },
@@ -100,7 +123,9 @@
       "id": "feat-015",
       "name": "pred_dynamic 断言与口径收口",
       "description": "verify.mjs 第 31 项断言（boot 后网络面板须含 pred_static ∪ pred_dynamic 请求）；engine.ts 口径文案双轨化（srcBadge title + 预测口径「双轨注入、运营推送值优先、回测值兜底」）；session-handoff.md 升格为权威交接文档（用户裁决：docs/zhulong-handoff.md 冻结为历史记录）",
-      "dependencies": ["feat-014"],
+      "dependencies": [
+        "feat-014"
+      ],
       "status": "done",
       "evidence": "verify 31/31 全绿；口径两处更新后「杀手锏话术/极涡话术」断言保持；lint+tsc 零错"
     },
@@ -108,7 +133,9 @@
       "id": "feat-016",
       "name": "store 预测双轨化（predStatic/predDyn/展示轨）",
       "description": "三轨结构：predStatic/predDyn 保留原始模型值（对照线数据源），store.pred 为展示轨（同起点 dyn 优先、static 填充，消费方零改动）。ingestPred 改按轨写入+起点级展示重算（取代 feat-014 的 override 参数）；快照只嵌静态轨且与展示轨隔离副本防串轨。纯结构重构，页面零可见变化",
-      "dependencies": ["feat-014"],
+      "dependencies": [
+        "feat-014"
+      ],
       "status": "done",
       "evidence": "verify 31/31 逐位零漂移（MAPE 3.57/cov 85.6/49.0/三区不变——dyn 当日无数据入轨，重构无副作用）；tsc+eslint 零错；dbgHook 新增 predStatic/predDyn 计数供后续断言"
     },
@@ -116,7 +143,9 @@
       "id": "feat-017",
       "name": "主图三线（真实/静态预测/持续学习预测）",
       "description": "用户裁决：删「昨日同时刻」参照线与图例（审计卡持久性对比数字保留——杀手锏话术载体）；新增「静态预测」灰虚线（store.predStatic）；「预测 P50」更名「持续学习 P50」（展示轨 dyn 优先）；P10-P90 带仍挂主线",
-      "dependencies": ["feat-016"],
+      "dependencies": [
+        "feat-016"
+      ],
       "status": "done",
       "evidence": "verify 34/34（新增 3 项：静态对照线就位/持续学习P50就位/昨日线+图例移除）；数据级复核 NOW 锚点两线重叠段 17/17 全等 maxGap=0（视觉模型所述偏离为幻觉）；杀手锏话术/极涡/磁吸/离线全保持；截图 .shots/web_v6_triline_{dark,light}.png；tsc+eslint 零错"
     },
@@ -124,7 +153,9 @@
       "id": "feat-018",
       "name": "纪元门放开 + 双轨分叉断言 + 收口",
       "description": "ensureWindow 的 pred 查询放开 2016-12-01 纪元限制（2016-01 起重演窗均可拉双轨真预测，此前为相似日基线——行为变化经用户确认）；verify 增断言：2016-02 重演窗两预测线张开（学习效果可见）+NOW 锚点两线重合（兜底生效）；progress/session-handoff 收口",
-      "dependencies": ["feat-017"],
+      "dependencies": [
+        "feat-017"
+      ],
       "status": "done",
       "evidence": "verify 36/36（新增 2 项：2016-06 重演窗 predDyn.AEP=2 入店=门放开铁证（快照不含 dyn 只能来自实时查询）；静态线 11 点中 10 点偏离学习线=分叉可见）；分叉截图 .shots/web_v6_diverge_2016-06_dark.png（06/15-16 间距 1-2k MW）；静态线线宽 1.4→1.7/不透明度 .85→.95（深色主题可读性，未动 CVD 调色板）；tsc+eslint 零错"
     },
@@ -132,7 +163,9 @@
       "id": "feat-019",
       "name": "静态线/P50 线尾标签可见性修复（右缘裁剪）+ 重合语义文案",
       "description": "用户实测质疑：NOW 视图看不到「静态」标签——诊断确认预测段线尾 endLabel 被图右缘裁剪（「P50」标签同样丢失）。修复：labelLayout 偏移（静态左下入图、P50 左上入图，上下错开不叠字）+ 图例 title 注明「与学习线重合处=持续学习尚未覆盖该段」",
-      "dependencies": ["feat-018"],
+      "dependencies": [
+        "feat-018"
+      ],
       "status": "done",
       "evidence": "截图对比 diag_static_label.png（修复前：预测段无任何线尾文字）→ diag_static_label_v2.png（修复后：「静态」在线尾下方、「P50」在线尾上方，视觉模型复核清晰不重叠）；verify 36/36 保持；tsc+eslint 零错"
     },
@@ -140,7 +173,9 @@
       "id": "feat-020",
       "name": "预测纪元分割（胶片标记 + 2016 前无预测展示 + 级联面）",
       "description": "用户裁决：①胶片 2016-01-01 处纪元分割标记；②pre-2016 视图隐藏 P50/带/静态线（保留实际/上帝视角/温度曲线）；③级联：四格日峰P50/预备改档案语义（实际峰值/峰时或—）、决策条改「历史重演 · 无预测建议」；④杀手锏话术改标签保留（模型纪元前=相似日基线，接入持续学习的论据）；⑤25-48h 基线段一并隐藏",
-      "dependencies": ["feat-019"],
+      "dependencies": [
+        "feat-019"
+      ],
       "status": "done",
       "evidence": "verify 41/41（新增 5 项：纪元前预测层全隐/胶片分割标记/四格档案语义/决策条纪元文案/杀手锏改标）；极涡档案模式视觉复核：NOW 右预测带+双虚线全部消失、实际线与真实后续保留（web_v7_epoch_archive_dark.png）；NOW 三线视图不变（web_v7_now_dark.png）；杀手锏数字 17.02→23.14+「落后」保持（标签 本模型→相似日基线，verify 截断 46→60 适配）；tsc+eslint 零错"
     },
@@ -148,7 +183,9 @@
       "id": "feat-021",
       "name": "悬停静态对照值 + 纪元标记增强",
       "description": "用户实测两项：①悬停数据点须展示静态预测值（重合段也透明展示同源数值）；②胶片预测纪元标记不够醒目。修复：tooltip 加「▤ 静态预测 MW」行；filmEpoch 虚线→1.5px 实线+加粗标签+方向箭头（预测纪元 2016 ▸）+描边防混底",
-      "dependencies": ["feat-020"],
+      "dependencies": [
+        "feat-020"
+      ],
       "status": "done",
       "evidence": "悬停 DOM 实证：tooltip 含「▤ 静态预测 18,213 MW」（与 P50 同值=回填段同源，截图 web_v7_tooltip_static.png）；verify 42/42（第 42 项=悬停断言）；tsc+eslint 零错"
     },
@@ -156,7 +193,9 @@
       "id": "feat-022",
       "name": "重演视图 tooltip 修复（整点对齐）+ 静态对照线缝纫式铺满",
       "description": "用户实测两 bug：①时光机 2016 年初悬停只剩时间头无数据——根因胶片拖拽 origin 落在小数时戳（如 10:29:xx.xxx），轴指针与数据点精确匹配失败；②静态线大量缺点（最近起点偏移吃掉半窗，24h 外全空）。修复：setOrigin floor 到整点；staticLineAt 改缝纫式（每小时取当时生效的日前静态预测）；ensureWindow pred 拉取窗扩到 org+48h（含未来起点）",
-      "dependencies": ["feat-021"],
+      "dependencies": [
+        "feat-021"
+      ],
       "status": "done",
       "evidence": "复现探针：修复前 origin=10:29 小数时戳/tooltip 空/静态 13 点 → 修复后 origin 整点/tooltip 有数据行（实际 17,646 MW）/静态 48 点；verify 43/43（分叉断言升级 stPts≥40，实测 48/47；新增重演 tooltip 数据行断言）；tsc+eslint 零错"
     },
@@ -164,9 +203,21 @@
       "id": "feat-023",
       "name": "ChatBI 数据问答（QwenPaw Agent 对话分析 pred_dynamic）",
       "description": "顶栏 💬 → 聊天弹层（互斥家族第五件+预设 chips+降级态）→ /api/chat 代理（SSE 透传，env：QWENPAW_URL/AGENT_ID/TOKEN 不入仓）→ QwenPaw Agent（Skill：表字典/PostgREST 食谱/时区与回答纪律，Python 查 Supabase anon 只读）。设计 docs/superpowers/specs/2026-08-29-chatbi-design.md；计划 docs/superpowers/plans/2026-08-29-chatbi.md",
-      "dependencies": ["feat-022"],
+      "dependencies": [
+        "feat-022"
+      ],
       "status": "done",
       "evidence": "verify 50/50（新增 7 项：悬浮按钮/弹层可开/chips5/互斥/降级气泡/关闭/路由503）；真机联调三 chips 对账全过：双轨 744 行 dyn 2.75/static 3.00（WAPE 2.74/2.99）、指定日 24 行日 MAPE 2.67（origin 03:00Z EDT 实测语义正确）、全表 22,681 行/区 DOM 4.37>DAYTON 3.51>AEP 2.88 最差桶 h17-20；web E2E 38-53s 流式 markdown 表格渲染（截图 web_v10_chatbi_live_dark.png + v9 悬浮球双主题）；协议实测含 token 增量帧/消息帧/plugin_call，chat.ts 超集解析；顺带基线重录：pred_dynamic 回放完成（68,043 行至 2018-08-03）后 dyn 优先轨生效，AEP 3.57→3.39/cov 88.8/54.2/DAYTON 5.26/DOM 5.49，区域断言固定等 12s（dyn 分批合并实测 6.5s）；init.sh/tsc/eslint 零错"
+    },
+    {
+      "id": "feat-024",
+      "name": "聊天新建会话（换 session + 清记录）",
+      "description": "聊天抽屉头部「＋ 新会话」按钮：chatSessionId 换新 UUID（QwenPaw 侧上下文随旧 id 作废）+ 清空 chatLog + 系统提示「已开启新会话 · 上下文已清空」+ 焦点回输入框；流式进行中按钮禁用（chatBusy 与发送按钮同锁，防旧流污染新会话记录）；空记录点击为无操作",
+      "dependencies": [
+        "feat-023"
+      ],
+      "status": "done",
+      "evidence": "mock SSE 确定性 E2E（page.route 拦 /api/chat，双 gate）8 项全绿：流式中 chatNew 禁用 ✓、完成后点击清空(.chat-msg=0)+.chat-sys 提示 ✓、焦点回输入框 ✓、新会话二次发送正常且收到独立回答 ✓；verify 增「ChatBI：新会话按钮清空记录并提示」断言（流式中=禁用分支/已结束=重置分支）——因 §2 在线基线数据漂移（见 progress 8/29 深夜条）套件在断言前中断，本特性以专项 E2E 为验证依据"
     }
   ]
 }

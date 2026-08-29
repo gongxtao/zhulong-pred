@@ -374,3 +374,67 @@ ensureWindow pred 拉取窗 ±48h（含未来起点，冻结回测表无实时�
   改固定等 12s。verify 43→50 项全绿。
 - 坑追加：#18 Next 16 同项目锁单 dev 实例（多端口也不行），死上游 502 测试须换法；
   #19 demo 快捷键 d 会在聊天输入时误触——keyFn 加 INPUT 焦点守卫。
+
+## 2026-08-29 深夜 · feat-023 晚间迭代收班（ChatBI 体验打磨 + 云端化 + 认证）
+
+feat-023 主体（见上条）之后的用户实测驱动迭代，全部收口：
+
+- **UI 迭代**：①表格破卡片修复（chat-tbw 横向滚动容器+bot 气泡全宽，宽表不再溢出）；
+  ②思考流上屏（chat.ts 增 onThink——reasoning 累计，气泡内「思考中 · 尾部260字」实时滚动，
+  答案到达替换，不再干等）；③工具动作提示（捕获 plugin_call 的 data 增量/快照帧，actLabel
+  译中文——「⚙ 第 N 步 · 载入分析技能/执行代码·查询生产库…」青色高亮行，与思考行同框）；
+  ④品牌化（UI 全面「烛龙助手」，DOM 零 QwenPaw 泄漏；SOUL 自称纪律）；⑤副标题去技术化
+  （随口一问 · 真实数据作答）。
+- **预置问题联动 NOW（用户裁决）**：①②改 2018-06 近窗/2018-06-30 指定日，与页面 NOW 锚点
+  3.39% 互证；重对账：720 行 dyn 2.94/static 3.23、24 行日 MAPE 3.37，逐位一致。
+- **配置固化**：QWENPAW_* 写入 web/.env.local（gitignored）——npm run dev 自带助手；
+  verify 断言两态容忍（降级气泡/思考态；路由 503|200）。
+- **云端化（用户提供服务器）**：QwenPaw 2.1.0 部署至 43.166.132.250:8088，zhulong 工作区
+  （skill+SOUL）随迁验证（对账 2.94/3.23 逐位一致）；.env.local 切云，本机 QwenPaw 不再是依赖。
+- **认证收口**：云端开 QWENPAW_AUTH_ENABLED，无 token 401/带 token 200 实测；
+  QWENPAW_TOKEN 入 Vercel Production + 本地 .env.local（三条齐）。
+- **Vercel 线上聊天开启**：Production 加 QWENPAW_URL/AGENT_ID/TOKEN 并重部署（Ready，
+  zhulong-6zfa3d97r）。⚠️ 本机网络对 *.vercel.app IP 级阻断（DoH/强解均 000），线上终验
+  需换网络——等价链路段全绿（部署 Ready+env 在列+云端可达+dev 同代码对云 200 流式）。
+- 坑追加：#20 Next 16 多端口同项目锁单 dev 实例；#21 云端 token 若在服务重启前签发会失效
+  （签名密钥轮换），重启后要重新 login；#22 verify 切区断言终版=轮询等待已知终值（分批合并
+  中间值如 9.73% 会骗过稳定窗）。
+
+## 2026-08-29 深夜 II · feat-024 聊天新建会话 + 在线基线数据漂移裁决
+
+### feat-024（done）
+
+- **动机**：用户实测——聊天无法开新会话。根因 `engine.ts` 的 `chatSessionId` 面板生命周期
+  只生成一次永不重置，上下文无限累积。
+- **实现**（三处）：①page.tsx 聊天头部加「＋ 新会话」pill 按钮（`#chatNew`，margin-left:auto
+  顶替关闭按钮，关钮缩为纯 icon）；②globals.css `#chatNew`（chips 同语言：bg2/line 圆角胶囊，
+  hover 青）+ `.chat-sys`（居中虚线胶囊系统提示）；③engine.ts `chatNewFn`：换新 UUID +
+  清 chatLog + 「已开启新会话 · 上下文已清空」+ 焦点回输入框；`chatBusy` 状态与发送按钮同锁
+  （流式中禁用，防旧流写进新会话记录）；空记录点击无操作。
+- **验证**：mock SSE 确定性 E2E（playwright page.route 拦 /api/chat，双 gate 挂起/放行）8 项
+  全绿：busy 禁用 / 完成后清空+提示 / 焦点 / 新会话二次发送收独立回答。verify §7 增
+  「ChatBI：新会话按钮清空记录并提示」断言（busy=禁用分支、idle=重置分支，兼容有/无 env）。
+
+### 在线基线数据漂移（用户裁决：先落功能，记 handoff 不改基线）
+
+- **现象**：verify §2 `waitForFunction`（live 后 MAPE 3.39/cov90 88.8）45s 超时，套件中断。
+  当晚第一轮曾全绿（50/51），其后无相关代码变化即翻转。
+- **非回归铁证**：git stash 掉全部本会话改动后干净 HEAD 跑 verify **同样超时**。
+- **证据链**：①库侧 pred_dynamic=68,040 行（=945 起点×3区×24h 整，终态 max origin 2018-08-02，
+  比 17:10 基线版的 68,043/2018-08-03 少 1 天）→ 管线当晚重推过 dyn 回放；②模型
+  `model-20260829T084735Z`=16:47 重训；③库侧直算 AEP 近 28 起点 dyn 3.14/static 2.96
+  （static 反超 dyn，且 pred 表内嵌 actual 与页面 energy_hourly actual 口径已不同）；
+  ④页面 live 稳定值 MAPE 3.57/cov90 83.2/cov50 45.7（快照值同为 3.57），多次复测稳定；
+  ⑤console 零错误、startEngine('live') 正常、predDyn=68/区已入库——页面忠实反映库现状。
+- **处置**：不改 verify 预期值。若需回绿两条路：(a) 管线侧重推 17:10 版 dyn 数据→数字回来
+  基线即绿；(b) 数据定稿后跑一遍 live 读全指标重录（同 17:10 重录流程，注意区域断言
+  「固定等 12s 再读」纪律）。
+- 附注：本机 `all_proxy=127.0.0.1:17891` 会让 curl 对死端口回 502、慢网时浏览器侧
+  Supabase 请求 ~2s/个——排查时用 `curl --noproxy '*'` 区分。
+
+## 2026-08-29 深夜 III 补 · feat-025 撤回（用户复核裁决）
+
+- 用户复核后裁决：名字互换不对，撤回。`git revert 9765492`（=996a715）整体还原——
+  橙虚线复名「持续学习 P50」线尾「P50」（展示轨数据）、灰细虚线复名「静态预测」线尾
+  「静态」（predStatic 数据）；tooltip/图例表同步还原。feature_list 的 feat-025 条目随
+  revert 移除（注册表只留生效特性；本条 progress 即撤回审计记录）。
