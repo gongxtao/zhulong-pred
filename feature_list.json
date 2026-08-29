@@ -143,6 +143,14 @@
       "dependencies": ["feat-019"],
       "status": "done",
       "evidence": "verify 41/41（新增 5 项：纪元前预测层全隐/胶片分割标记/四格档案语义/决策条纪元文案/杀手锏改标）；极涡档案模式视觉复核：NOW 右预测带+双虚线全部消失、实际线与真实后续保留（web_v7_epoch_archive_dark.png）；NOW 三线视图不变（web_v7_now_dark.png）；杀手锏数字 17.02→23.14+「落后」保持（标签 本模型→相似日基线，verify 截断 46→60 适配）；tsc+eslint 零错"
+    },
+    {
+      "id": "feat-021",
+      "name": "悬停静态对照值 + 纪元标记增强",
+      "description": "用户实测两项：①悬停数据点须展示静态预测值（重合段也透明展示同源数值）；②胶片预测纪元标记不够醒目。修复：tooltip 加「▤ 静态预测 MW」行；filmEpoch 虚线→1.5px 实线+加粗标签+方向箭头（预测纪元 2016 ▸）+描边防混底",
+      "dependencies": ["feat-020"],
+      "status": "done",
+      "evidence": "悬停 DOM 实证：tooltip 含「▤ 静态预测 18,213 MW」（与 P50 同值=回填段同源，截图 web_v7_tooltip_static.png）；verify 42/42（第 42 项=悬停断言）；tsc+eslint 零错"
     }
   ]
 }

@@ -227,8 +227,8 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--actual);outline-off
 .filmEvt{position:absolute;top:1px;transform:translateX(-50%);font-size:9px;color:var(--ink3);
   pointer-events:auto;cursor:pointer;white-space:nowrap;padding:1px 4px;border-radius:3px}
 .filmEvt:hover{color:var(--actual-hi);background:var(--bg3)}
-.filmEpoch{position:absolute;top:0;bottom:14px;width:0;border-left:1px dashed var(--ink3);opacity:.5;pointer-events:none}
-.filmEpoch span{position:absolute;top:15px;left:3px;font-size:8.5px;color:var(--ink3);white-space:nowrap;letter-spacing:.04em;opacity:.9}
+.filmEpoch{position:absolute;top:0;bottom:14px;width:0;border-left:1.5px solid var(--ink2);opacity:.8;pointer-events:none}
+.filmEpoch span{position:absolute;top:14px;left:4px;font-size:9.5px;font-weight:700;color:var(--ink);white-space:nowrap;letter-spacing:.03em;text-shadow:0 0 5px var(--bg1),0 0 3px var(--bg1)}
 #filmHandle{position:absolute;top:0;bottom:0;width:0;pointer-events:none;z-index:3}
 #filmHandle .bar{position:absolute;top:0;bottom:0;left:-.5px;width:1.5px;background:var(--actual);opacity:.9}
 #filmHandle .grip{position:absolute;top:-1px;left:50%;transform:translateX(-50%);pointer-events:auto;cursor:ew-resize;

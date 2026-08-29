@@ -100,6 +100,15 @@ try {
   check('三线：静态对照线就位（predStatic 轨）', tri.statPts > 0, `静态点 ${tri.statPts}`);
   check('三线：持续学习 P50 就位', tri.p50Pts > 0, `P50点 ${tri.p50Pts}`);
   check('三线：昨日同时刻线与图例已移除（用户裁决）', tri.ydayGone && tri.legendOk, JSON.stringify(tri));
+  /* feat-021：悬停预测点 → tooltip 含静态预测对照值（重合段也透明展示同源数值） */
+  const mbox = await page.locator('#mainChart').boundingBox();
+  await page.mouse.move(mbox.x + mbox.width * 0.68, mbox.y + mbox.height * 0.45);
+  await sleep(700);
+  const tipStatic = await page.evaluate(() => {
+    const t = [...document.querySelectorAll('#mainChart div')].map(e => e.textContent).find(t => t && t.includes('静态预测'));
+    return t ? t.replace(/\s+/g, ' ').slice(0, 130) : null;
+  });
+  check('悬停 tooltip 含静态预测对照值', !!tipStatic && /静态预测\s*[\d,]+\s*MW/.test(tipStatic), tipStatic || '(无)');
   check('四格基线 12,926/−2.03%/18,261@16:00/3.57',
     phase2.quad[0] === '12,926MW' && phase2.quad[1].endsWith('2.03%') && phase2.quad[2].startsWith('18,261MW@16:00') && phase2.quad[3] === '3.57%',
     phase2.quad.join(' | '));

@@ -169,6 +169,8 @@ function renderMain() {
           h += `<div style="color:${C.ink2};font-size:11px">P10–P90　${fmt(p.p10)} – ${fmt(p.p90)}</div>`;
           h += `<div style="color:${C.ink2};font-size:11px">P25–P75　${fmt(p.p25)} – ${fmt(p.p75)}</div>`;
         }
+        const s = stat.find(q => q[0] === ts); /* 静态预测对照值（feat-021：悬停须可见，含与学习线重合段） */
+        if (s) h += `<div><span style="color:${C.yday}">▤</span> 静态预测　<b style="font-family:JetBrains Mono">${fmt(s[1])}</b> MW</div>`;
         const t = temps.find(q => q[0] === ts);
         if (t) h += `<div style="color:${C.ink3};font-size:11px">气温　${t[1].toFixed(1)} °C</div>`;
         return h;
@@ -332,7 +334,7 @@ function renderFilmEvents() {
   ep.className = 'filmEpoch';
   ep.style.left = clamp((PRED_EPOCH - T_MIN) / (T_MAX - T_MIN) * 100, 0.5, 99.5) + '%';
   ep.title = '预测纪元 · 2016-01 起：此前为负荷档案（无预测层），此后静态→持续学习双模型对照';
-  ep.innerHTML = '<span>▎预测纪元 2016</span>';
+  ep.innerHTML = '<span>预测纪元 2016 ▸</span>';
   box.appendChild(ep);
 }
 function positionHandle(animate: boolean) {
