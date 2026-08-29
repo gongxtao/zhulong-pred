@@ -349,3 +349,28 @@ actual≠predicted 是预测误差，画在实线上）；②胶片纪元标记�
 整点；staticLineAt 改缝纫式（每小时取「当时生效」的日前静态预测，日起点×h1-24 无缝平铺故每小时有归属）；
 ensureWindow pred 拉取窗 ±48h（含未来起点，冻结回测表无实时语义冲突）。verify 43/43。
 坑追加：#17 胶片拖拽 x→ts 映射与指针时戳必须整点对齐，否则 tooltip/轴匹配连锁碎裂。
+
+## 2026-08-29 19:00 · feat-023 ChatBI 数据问答（QwenPaw Agent 对话分析 pred_dynamic）
+
+从需求讨论到真机联调全链路落地（brainstorm→spec→plan→7任务执行，方案 A：Skill 数据接入+Next.js 代理+页内聊天）。
+
+- **链路**：悬浮球💬 → 右侧扩展式抽屉（用户裁决 UI 改版：原顶栏按钮+居中弹层 → 悬浮球+浏览器扩展式右抽屉
+  +textarea 大输入框+纸飞机按钮；后聚焦裁决：Skill 只分析 pred_static/pred_dynamic 两表(SOUL+skill 双层硬边界，范围外拒答引导)，预置问题扩至 5 个)→ `/api/chat`（SSE 透传/限流20分/500字/env 三条不入仓）→ QwenPaw `:8088`
+  Agent `zhulong`（Python 查 Supabase anon 只读）→ 流式 markdown 表格渲染回答。
+- **QwenPaw 配置真相**（用户纠正：非 system prompt 逻辑）：工作区文件模型——`skills/zhulong_analysis/SKILL.md`
+  （frontmatter+表字典+PostgREST 食谱+指标口径+时区纪律+三问作答法）+ SOUL.md 末尾数据纪律锚点 +
+  skill.json 注册；材料在仓库 `qwenpaw/`，已装入 `~/.qwenpaw/workspaces/zhulong/`（备份 .bak-174929）。
+- **协议实测与文档有出入**：SSE 含 token 增量帧（{type:text,delta:true,msg_id}）、消息帧（object:message，
+  type 分 reasoning/message——答案只取 message）、plugin_call 代码执行帧；终值=终止事件 output[] 中
+  type:"message" 全文。chat.ts 按超集实现（增量+快照+文档格式三兼容）。
+- **时区坑实测**：origin 不是文档说的 05:00Z——EST 期 04:00Z、EDT 期 03:00Z（纽约本地前一日 23:00 发布）；
+  正确圈选法=UTC 日期窗 [D 00:00Z, D+1 00:00Z)，每天恰一个起点。首版食谱 05:00Z 锚导致差一天，Agent 自己
+  查出真起点反而更对——已修 Skill v2 并复测对账。
+- **对账基准**（Supabase 直查 vs Agent 回答，逐位一致）：双轨 2016-03 AEP 744 行 dyn 2.75/static 3.00；
+  指定日 2016-03-15 24 行 MAPE 2.67；全表 22,681 行/区 DOM 4.37>DAYTON 3.51>AEP 2.88、最差桶 h17-20（晚峰）。
+- **顺带基线重录**：pred_dynamic 回放 16:35 完成（68,043 行至 2018-08-03）→ boot 窗 dyn 优先轨生效，
+  AEP MAPE 3.57→3.39 / cov 85.6/49.0→88.8/54.2 / DAYTON 5.26 / DOM 5.49（handoff 预警的数据升级兑现）。
+  verify 区域断言坑：切区后 dyn 分批合并（2s 部分→6.5s 全量），任何"稳定即读"窗口锁死 static 旧值——
+  改固定等 12s。verify 43→50 项全绿。
+- 坑追加：#18 Next 16 同项目锁单 dev 实例（多端口也不行），死上游 502 测试须换法；
+  #19 demo 快捷键 d 会在聊天输入时误触——keyFn 加 INPUT 焦点守卫。

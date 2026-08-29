@@ -5,6 +5,7 @@
    与原型行为逐项一致（断言口径不变）。
    ===================================================================== */
 import * as echarts from 'echarts';
+import { streamChat } from './chat';
 import {
   EVENTS, H_FC, PRED_EPOCH, RANGES, SQ_TIPS, THEMES, ZONES, ZONE_KEYS, type Theme, type Zone,
 } from './const';
@@ -402,6 +403,7 @@ function renderDecision() {
   $('dbQMark').onclick = e => {
     e.stopPropagation();
     $('calPopover').style.display = 'none'; $('optPopover').style.display = 'none'; $('sqTip').style.display = 'none';
+    $('chatLayer').classList.remove('on');
     const p = $('basisPopover');
     if (p.style.display === 'none') togglePop(p, $('dbQMark'), 'left'); else p.style.display = 'none';
   };
@@ -883,6 +885,7 @@ function bindInteractions() {
     const ic = (e.target as HTMLElement).closest('.sq-i') as HTMLElement | null; if (!ic) return;
     e.stopPropagation();
     (['calPopover', 'optPopover', 'basisPopover'] as const).forEach(id => $(id).style.display = 'none');
+    $('chatLayer').classList.remove('on');
     const tip = $('sqTip');
     if (tip.style.display === 'block' && tip.dataset.sq === ic.dataset.sq) { tip.style.display = 'none'; return }
     tip.innerHTML = SQ_TIPS[+ic.dataset.sq!]; tip.dataset.sq = ic.dataset.sq!;
@@ -918,6 +921,7 @@ function bindInteractions() {
   const calBtnFn = (e: Event) => {
     e.stopPropagation();
     $('optPopover').style.display = 'none'; $('basisPopover').style.display = 'none'; $('sqTip').style.display = 'none';
+    $('chatLayer').classList.remove('on');
     const p = $('calPopover');
     if (p.style.display === 'none') togglePop(p, $('calBtn')); else p.style.display = 'none';
   };
@@ -927,6 +931,7 @@ function bindInteractions() {
   const optBtnFn = (e: Event) => {
     e.stopPropagation();
     $('calPopover').style.display = 'none'; $('basisPopover').style.display = 'none'; $('sqTip').style.display = 'none';
+    $('chatLayer').classList.remove('on');
     const p = $('optPopover');
     if (p.style.display === 'none') togglePop(p, $('optBtn')); else p.style.display = 'none';
   };
@@ -1031,7 +1036,7 @@ function bindInteractions() {
   onMount(() => $('demoExit')?.removeEventListener('click', demoExitFn));
   const keyFn = (e: KeyboardEvent) => {
     if (e.key === 'Escape' && demoOn) return demoToggle(false);
-    if (e.key.toLowerCase() === 'd' && !e.metaKey && !e.ctrlKey) demoToggle();
+    if (e.key.toLowerCase() === 'd' && !e.metaKey && !e.ctrlKey && (e.target as HTMLElement)?.tagName !== 'INPUT') demoToggle();
     if (!demoOn) return;
     if (e.key === 'ArrowRight') demoShow(demoIdx + 1);
     if (e.key === 'ArrowLeft') demoShow(demoIdx - 1);
@@ -1042,6 +1047,114 @@ function bindInteractions() {
   const themeBtnFn = () => setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
   $('themeBtn').addEventListener('click', themeBtnFn);
   onMount(() => $('themeBtn')?.removeEventListener('click', themeBtnFn));
+
+  /* ===== feat-023 ChatBI 数据问答（互斥家族第五件） ===== */
+  /* 迷你 markdown 渲染（Agent 回答含表格/加粗/标题）：先转义防注入，再白名单变换 */
+  const chatMd = (s: string): string => {
+    const esc = s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const out: string[] = [];
+    let table: string[][] = [];
+    const flush = () => {
+      if (!table.length) return;
+      const body = table.slice(1).filter(r => !r.every(c => /^[-:\s]*$/.test(c)));
+      out.push('<div class="chat-tbw"><table class="chat-tb"><thead><tr>' + table[0].map(c => `<th>${c}</th>`).join('')
+        + '</tr></thead><tbody>' + body.map(r => '<tr>' + r.map(c => `<td>${c}</td>`).join('') + '</tr>').join('') + '</tbody></table></div>');
+      table = [];
+    };
+    for (const ln of esc.split('\n')) {
+      if (/^\s*\|.*\|\s*$/.test(ln)) { table.push(ln.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim())); continue }
+      flush();
+      let h = ln.replace(/^#{2,4}\s*(.+)$/, '<b>$1</b>').replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/`([^`]+)`/g, '<code>$1</code>');
+      if (/^\s*[-*]\s+/.test(h)) h = '• ' + h.replace(/^\s*[-*]\s+/, '');
+      out.push(h);
+    }
+    flush();
+    return out.join('<br>');
+  };
+  let chatSessionId = '';
+  const closeChatLayer = () => $('chatLayer').classList.remove('on');
+  const openChat = () => {
+    (['calPopover', 'optPopover', 'basisPopover', 'sqTip'] as const).forEach(id => $(id).style.display = 'none');
+    if (!chatSessionId) chatSessionId = crypto.randomUUID(); /* 面板生命周期一个会话，上下文 QwenPaw 按 session 自管 */
+    $('chatLayer').classList.add('on');
+    $('chatInput').focus();
+  };
+  const chatBtnFn = () => ($('chatLayer').classList.contains('on') ? closeChatLayer() : openChat());
+  $('chatBtn').addEventListener('click', chatBtnFn);
+  onMount(() => $('chatBtn')?.removeEventListener('click', chatBtnFn));
+  $('chatClose').addEventListener('click', closeChatLayer);
+  onMount(() => $('chatClose')?.removeEventListener('click', closeChatLayer));
+
+  const chatSend = async (raw: string) => {
+    const text = raw.trim(); if (!text) return;
+    const log = $('chatLog');
+    /* 上下文注入：Agent 回答对齐当前区域/视图（只读 state） */
+    const ctx = `[页面上下文] 区域=${state.zone}; 视图=${state.mode === 'live' ? '实时' : '重演@' + new Date(state.origin).toISOString().slice(0, 10)}\n`;
+    const u = document.createElement('div');
+    u.className = 'chat-msg user'; u.textContent = text; log.appendChild(u);
+    const typing = document.createElement('div');
+    typing.className = 'chat-typing'; typing.innerHTML = '<span class="spin"></span>正在查询数据、执行分析…';
+    log.appendChild(typing);
+    const bubble = document.createElement('div');
+    bubble.className = 'chat-msg bot'; bubble.style.display = 'none';
+    log.appendChild(bubble);
+    log.scrollTop = log.scrollHeight;
+    ($('chatSend') as HTMLButtonElement).disabled = true;
+    ($('chatInput') as HTMLTextAreaElement).value = '';
+    let cur = '', thinkTxt = '', actTxt = '';
+    const renderThink = () => {
+      /* 过程态气泡 = 动作行(工具调用) + 思考行(尾部滚动)；答案开始后由 onText 整体替换 */
+      typing.remove(); bubble.style.display = '';
+      bubble.innerHTML = '<div class="chat-think"><span class="spin"></span><div class="chat-think-body"></div></div>';
+      const body = bubble.querySelector('.chat-think-body') as HTMLElement;
+      if (actTxt) {
+        const a = document.createElement('div');
+        a.className = 'chat-act'; a.textContent = '⚙ ' + actTxt;
+        body.appendChild(a);
+      }
+      if (thinkTxt) {
+        const t = document.createElement('div');
+        t.className = 'chat-think-txt'; t.textContent = '思考中 · ' + thinkTxt.slice(-260);
+        body.appendChild(t);
+      }
+      log.scrollTop = log.scrollHeight;
+    };
+    const r = await streamChat(ctx + text, chatSessionId, {
+      onAct: label => { actTxt = label; renderThink(); },
+      onThink: th => { thinkTxt = th; renderThink(); },
+      onText: full => {
+        cur = full;
+        typing.remove(); bubble.style.display = ''; bubble.innerHTML = chatMd(full);
+        log.scrollTop = log.scrollHeight;
+      },
+      onStatus: s => {
+        if (s === 'error' && !bubble.textContent) {
+          typing.remove(); bubble.style.display = ''; bubble.classList.add('err');
+          bubble.textContent = '烛龙助手未连接（分析服务未启动）。本地演示请先启动助手服务；线上部署后自动可用。';
+        }
+      },
+    });
+    if (!r.ok && cur && !bubble.classList.contains('err')) {
+      bubble.classList.add('err'); bubble.innerHTML = chatMd(cur + '\n[中断：' + (r.error ?? '未知') + ']');
+    }
+    typing.remove();
+    ($('chatSend') as HTMLButtonElement).disabled = false;
+    $('chatInput').focus();
+  };
+  const chipsFn = (e: Event) => { const q = (e.target as HTMLElement).closest('button')?.dataset.q; if (q) chatSend(q); };
+  $('chatChips').addEventListener('click', chipsFn);
+  onMount(() => $('chatChips')?.removeEventListener('click', chipsFn));
+  const chatSendFn = () => chatSend(($('chatInput') as HTMLTextAreaElement).value);
+  $('chatSend').addEventListener('click', chatSendFn);
+  onMount(() => $('chatSend')?.removeEventListener('click', chatSendFn));
+  const chatKeyFn = (e: KeyboardEvent) => {
+    if (!$('chatLayer').classList.contains('on')) return;
+    if (e.key === 'Escape') closeChatLayer();
+    /* Enter 发送 / Shift+Enter 换行（textarea） */
+    if (e.key === 'Enter' && !e.shiftKey && document.activeElement === $('chatInput')) { e.preventDefault(); chatSendFn(); }
+  };
+  document.addEventListener('keydown', chatKeyFn);
+  onMount(() => document.removeEventListener('keydown', chatKeyFn));
 
   const resizeFn = () => {
     [mainC, tempC, devC, filmC, mapeC, heatC, ...Object.values(smC)].forEach(c => c?.resize());

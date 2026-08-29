@@ -9,9 +9,36 @@
 2. 本文件（当前状态 + 待办）
 3. `bash init.sh`
 4. `feature_list.json`（活跃特性，一次一个）
-5. `cd web && PORT=3100 npm run dev` 然后 `node scripts/verify.mjs`（36 项断言）
+5. `cd web && PORT=3100 npm run dev` 然后 `node scripts/verify.mjs`（50 项断言）
 
-## 当前状态（2026-08-29 16:05）
+## 当前状态（2026-08-29 19:00）
+
+- **ChatBI 数据问答已上线（feat-023，verify 50/50）**：
+  - 入口 = 右下角悬浮球 💬 → 右侧扩展式抽屉（互斥家族第五件）；5 预设 chips + 自由输入（预置问题已联动 NOW 锚点：双轨=2018-06 窗、指定日=2018-06-30，与页面数字互证）
+    （textarea，Enter 发送 / Shift+Enter 换行，纸飞机按钮）；Agent 回答 markdown 表格渲染
+  - 链路：`/api/chat`（web/src/app/api/chat/route.ts，SSE 透传+限流 20/分+500 字上限）
+    → QwenPaw `:8088` Agent `zhulong` → Python 查 Supabase(anon 只读) 算指标再答
+  - **env 三条（不进仓库）**：`QWENPAW_URL` / `QWENPAW_AGENT_ID` / `QWENPAW_TOKEN`。
+    已固化进 `web/.env.local`（gitignored）。**2026-08-29 晚起指向云端 QwenPaw 2.1.0：
+    `http://43.166.132.250:8088`**（本机实例不再是依赖，关掉本地也能演示）；删掉该段回降级态。
+    云端已验证：版本探针 200、数据问答对账逐位一致（2.94/3.23，720 行）、web E2E 38s 流式。
+    ⚠️ **云端未开认证（公网裸奔）**——上 Vercel 线上前必须：QwenPaw 开 `QWENPAW_AUTH_ENABLED`
+    + 注册拿 token + web env 配 `QWENPAW_TOKEN`（顺序见 qwenpaw/README 安全红线）。
+    Vercel 线上目前未配 env=聊天降级态；要开线上聊天在 Vercel 配 URL/AGENT_ID(/TOKEN) 即可。
+    助手品牌=「烛龙助手」，UI/回答不出现 QwenPaw 字样（SOUL 自称+中文表达纪律）。
+  - QwenPaw 配置 = 工作区文件模型（非 system prompt）：`~/.qwenpaw/workspaces/zhulong/`
+    下 `skills/zhulong_analysis/SKILL.md`（分析手册，仓库 qwenpaw/ 同步）+ SOUL.md 末尾
+    「烛龙数据纪律」锚点 + skill.json 注册。备份后缀 `.bak-174929`。
+  - 实测对账（2026-08-29）：双轨 744 行 dyn 2.75/static 3.00；指定日 24 行 MAPE 2.67；
+    全表 22,681 行/区 DOM 4.37>DAYTON 3.51>AEP 2.88、最差桶 h17-20。E2E 38-53s 流式。
+  - 已知协议细节（chat.ts 已超集兼容）：SSE 含 token 增量帧/消息帧(reasoning|message)/
+    plugin_call 代码执行帧；终值=终止事件 output[] 中 type:"message" 全文。
+  - 云迁移：QwenPaw 上云 + 开认证 + Vercel env 配 URL/AGENT_ID/TOKEN 三条即通（qwenpaw/README.md）。
+- **pred_dynamic 回放已完成**：68,043 行，origin 覆盖 2016-01-01→2018-08-03 全量。
+  **boot 窗基线漂移已兑现并重录（17:10）**：MAPE 3.57→3.39、cov 85.6/49.0→88.8/54.2、
+  四格 18,261→18,237@16:00、DAYTON 5.43→5.26、DOM 5.40→5.49——数据升级非回归（dyn 优先轨生效，
+  持续学习故事在 NOW 锚点也成立了）。verify 区域断言改为**固定等 12s 再读**（dyn 分批合并实测 ~6.5s，
+  任何"稳定即读"窗口都会锁死 static 旧值）。
 
 - **三线对比 + 预测纪元分割已上线（feat-016~020，verify 41/41）**：
   - 主图三线 = 实际负荷 + 持续学习 P50（展示轨 dyn 优先/static 填充）+ 静态预测灰虚线；线尾标签
@@ -28,14 +55,18 @@
 
 ## 待办 / 运维提示
 
-- ⚠️ **基线漂移预期**：pred_dynamic 回放推过 **2018-05-26**（boot 窗）后，NOW 锚点两线开始分叉、
-  首屏 MAPE 3.57 / cov 85.6/49.0 / DAYTON 5.43 / DOM 5.40 将**变优失配**——数据升级非回归，
-  跑 verify 取新值重记录 + 更新 verify.mjs 硬编码基线即可。分叉断言（diffPts>0）届时在 NOW 锚点也成立。
+- **基线漂移已兑现并重录**（见上，2026-08-29 17:10）——后续若再重放/改数据，跑 verify 取新值
+  重记录 + 更新 verify.mjs 硬编码基线即可（同款流程）。
 - pred_dynamic 回放若再停滞（曾停在 2016-07-31 约 15 分钟），先查管道——它是故事的燃料。
-- calFrom 分位标定保持 static-only；等 dyn 覆盖 boot 窗后再评估切换。
-- README（data/）pred_dynamic 与权限段已更新到现状（2026-08-29）。
+- calFrom 分位标定保持 static-only；dyn 已覆盖 boot 窗，**可评估切换**（切换前跑 verify 看分位带变化）。
+- ChatBI 路演前：确认 QwenPaw 在跑（`curl localhost:8088/api/version`）；dev 经 .env.local 自动连助手；
+    演示用 chips 不手打（问法锁定+已对账）；可先发一条 warm-up 预热。
+- 本机 vercel.app DNS 污染，线上兜底 = 本地 dev（feat-012 记录）。
+- **push 待用户裁决（触发 Vercel 部署；线上聊天为降级态直到 QwenPaw 上云+配 env）**。
 
 ## 指针
 
-- 特性状态：`feature_list.json`（feat-014~018 = pred_dynamic 双轨读层 + 三线对比，全 done）
-- 会话日志：`progress.md`；验证：`web/scripts/verify.mjs`（36 项）；截图：`.shots/web_v6_*`
+- 特性状态：`feature_list.json`（feat-014~023 全 done；023 = ChatBI）
+- 会话日志：`progress.md`；验证：`web/scripts/verify.mjs`（50 项）；截图：`.shots/web_v10_chatbi_*`
+- ChatBI 设计/计划：`docs/superpowers/specs/2026-08-29-chatbi-design.md`、`docs/superpowers/plans/2026-08-29-chatbi.md`
+- QwenPaw 配置材料：`qwenpaw/`（README + skills/zhulong_analysis）

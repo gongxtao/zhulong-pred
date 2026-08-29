@@ -172,6 +172,34 @@ export default function Home() {
       <div id="basisPopover" role="dialog" aria-label="建议依据"></div>
       {/* 弹层：状态格指标解释（四格标签 ⓘ 共用一个） */}
       <div id="sqTip" role="dialog" aria-label="指标解释"></div>
+      {/* 悬浮数据问答按钮（feat-023 ChatBI） */}
+      <button id="chatBtn" title="数据问答 · Agent 实时查库" aria-label="数据问答">
+        <svg viewBox="0 0 16 16"><path d="M2 3.2 h12 v7.6 h-7 L3.6 13.6 v-2.8 H2 Z" /><circle cx="5.6" cy="7" r=".5" fill="currentColor" /><circle cx="8" cy="7" r=".5" fill="currentColor" /><circle cx="10.4" cy="7" r=".5" fill="currentColor" /></svg>
+      </button>
+      {/* 右侧抽屉：数据问答（浏览器扩展式侧栏，互斥家族第五件） */}
+      <div id="chatLayer" role="dialog" aria-label="数据问答">
+        <div className="chat-h">
+          <h3>数据问答</h3>
+          <span className="hint">随口一问 · 真实数据作答</span>
+          <button className="iconBtn" id="chatClose" title="关闭" aria-label="关闭" style={{ marginLeft: 'auto', width: 26, height: 26 }}>
+            <svg viewBox="0 0 16 16"><path d="M4 4 L12 12 M12 4 L4 12" /></svg>
+          </button>
+        </div>
+        <div id="chatLog" aria-live="polite"></div>
+        <div id="chatChips">
+          <button data-q="对比持续学习(pred_dynamic)与静态模型(pred_static)在 AEP 区 2018 年 6 月的日前预测精度（MAPE/WAPE），给出结论和数字">持续学习比静态模型好多少？</button>
+          <button data-q="查询 pred_dynamic 表 AEP 区 forecast_origin_utc 为 2018-06-30 的日前预测：逐小时 predicted_load_mw 与 actual_load_mw、并给出当日 MAPE">查 AEP 2018-06-30 前 24h 预测</button>
+          <button data-q="分析 pred_dynamic 表：三个区（AEP/DAYTON/DOM）各自的 MAPE 排名如何？误差按 forecast_horizon_hour 分桶后哪个时距段最差？">哪个区、哪个时段误差最大？</button>
+          <button data-q="用 pred_dynamic 表 AEP 区按季度聚合 MAPE 看趋势：持续学习的误差是否随时间改善？与 pred_static 同窗对比（静态应持平、动态应下降），给出逐季表格和结论">误差在改善吗？看学习趋势</button>
+          <button data-q="分析 pred_dynamic 表 AEP 区：按 forecast_origin_utc 起点日聚合当日 MAPE，列出最差的 5 天（日期+MAPE），并指出各自误差集中在哪个时距段">哪些天预测得最差？</button>
+        </div>
+        <div className="chat-input">
+          <textarea id="chatInput" rows={2} maxLength={500} placeholder="用中文问任何问题：持续学习效果、双轨对比、某天的预测…" autoComplete="off"></textarea>
+          <button id="chatSend" title="发送" aria-label="发送">
+            <svg viewBox="0 0 16 16"><path d="M2 8.2 L14 2.4 L9.4 14 L7.4 9.4 Z M7.4 9.4 L14 2.4" /></svg>
+          </button>
+        </div>
+      </div>
 
       {/* 按需查询 toast */}
       <div id="sbToast" role="status"><span className="spin"></span><span id="sbToastText">查询生产库…</span></div>
