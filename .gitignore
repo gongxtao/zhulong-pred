@@ -1,0 +1,25 @@
+# ===== 工具与会话状态（不入库） =====
+.omc/
+.workbuddy/
+.venv/
+__pycache__/
+*.pyc
+
+# ===== 密钥与环境（永不入库；service_role 只走环境变量） =====
+.env*
+!.env.example
+
+# ===== 依赖与构建产物 =====
+node_modules/
+.next/
+out/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# ===== 系统与编辑器 =====
+.DS_Store
+*.pem
+*.log
+.vscode/
+.idea/

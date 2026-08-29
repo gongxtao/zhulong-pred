@@ -1,7 +1,0 @@
-{
-  "tool_name": "mcp__plugin_chrome-devtools-mcp_chrome-devtools__navigate_page",
-  "tool_input_preview": "{\"ignoreCache\":true,\"type\":\"url\",\"url\":\"file:///Users/mac/Develop/project/guikesong/zhulong.html\"}",
-  "error": "The selected page has been closed. Call list_pages to see open pages.",
-  "timestamp": "2026-08-28T16:53:52.713Z",
-  "retry_count": 1
-}

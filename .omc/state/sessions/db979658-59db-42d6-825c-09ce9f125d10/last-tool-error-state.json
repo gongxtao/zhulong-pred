@@ -1,7 +1,0 @@
-{
-  "tool_name": "mcp__plugin_chrome-devtools-mcp_chrome-devtools__evaluate_script",
-  "tool_input_preview": "{\"function\":\"async () => {\\n  const t0=performance.now();\\n  /* 页面结构应已立即可见 */\\n  const shell=!!document.getElementById('statusQuad');\\n  while(performance.now()-t0<30000){\\n    if(document.getElementB...",
-  "error": "MCP error -32000: Connection closed",
-  "timestamp": "2026-08-29T03:24:47.504Z",
-  "retry_count": 1
-}

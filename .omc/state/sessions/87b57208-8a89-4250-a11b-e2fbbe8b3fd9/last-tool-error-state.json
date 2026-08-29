@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"cat session-handoff.md; echo ===; git status --short | grep -v '.omc' | head; echo ===; git log --oneline -8\",\"description\":\"Check session-handoff.md, git state, recent commits\"}",
-  "error": "Exit code 1\n# session-handoff.md\n\n跨会话恢复入口：**`docs/zhulong-handoff.md`** 是唯一权威交接文档（框架红线/坑清单/验证基线/待办）。\n\n本文件只维护 harness 状态指针：\n\n- 当前特性状态：`feature_list.json`\n- 会话日志：`progress.md`\n- 启动验证：`bash init.sh`\n- 项目纪律与范围：`CLAUDE.md`\n\n新会话开场顺序：CLAUDE.md → docs/zhulong-handoff.md → bash init.sh → feature_list.json 挑一个 in-progress 特性。\n(eval):1: == not found",
-  "timestamp": "2026-08-29T04:35:24.133Z",
-  "retry_count": 1
-}
