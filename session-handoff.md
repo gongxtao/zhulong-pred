@@ -11,7 +11,7 @@
 4. `feature_list.json`（活跃特性，一次一个）
 5. `cd web && PORT=3100 npm run dev` 然后 `node scripts/verify.mjs`（50 项断言）
 
-## 当前状态（2026-08-29 19:00）
+## 当前状态（2026-08-29 深夜收班）
 
 - **ChatBI 数据问答已上线（feat-023，verify 50/50）**：
   - 入口 = 右下角悬浮球 💬 → 右侧扩展式抽屉（互斥家族第五件）；5 预设 chips + 自由输入（预置问题已联动 NOW 锚点：双轨=2018-06 窗、指定日=2018-06-30，与页面数字互证）
@@ -32,8 +32,11 @@
   - QwenPaw 配置 = 工作区文件模型（非 system prompt）：`~/.qwenpaw/workspaces/zhulong/`
     下 `skills/zhulong_analysis/SKILL.md`（分析手册，仓库 qwenpaw/ 同步）+ SOUL.md 末尾
     「烛龙数据纪律」锚点 + skill.json 注册。备份后缀 `.bak-174929`。
+  - **体验三件套（晚间迭代）**：思考流上屏（「思考中·」实时滚动）+ 工具动作提示
+    （「⚙ 第 N 步 · 载入分析技能/执行代码·查库」青色行）+ 表格横向滚动容器（宽表不破卡片）。
   - 实测对账（2026-08-29）：双轨 744 行 dyn 2.75/static 3.00；指定日 24 行 MAPE 2.67；
     全表 22,681 行/区 DOM 4.37>DAYTON 3.51>AEP 2.88、最差桶 h17-20。E2E 38-53s 流式。
+    chips 已联动 NOW（2018-06 窗 720 行 dyn 2.94/static 3.23 与页面 3.39% 互证）。
   - 已知协议细节（chat.ts 已超集兼容）：SSE 含 token 增量帧/消息帧(reasoning|message)/
     plugin_call 代码执行帧；终值=终止事件 output[] 中 type:"message" 全文。
   - 云迁移：QwenPaw 上云 + 开认证 + Vercel env 配 URL/AGENT_ID/TOKEN 三条即通（qwenpaw/README.md）。
@@ -62,8 +65,12 @@
   重记录 + 更新 verify.mjs 硬编码基线即可（同款流程）。
 - pred_dynamic 回放若再停滞（曾停在 2016-07-31 约 15 分钟），先查管道——它是故事的燃料。
 - calFrom 分位标定保持 static-only；dyn 已覆盖 boot 窗，**可评估切换**（切换前跑 verify 看分位带变化）。
-- ChatBI 路演前：确认 QwenPaw 在跑（`curl localhost:8088/api/version`）；dev 经 .env.local 自动连助手；
-    演示用 chips 不手打（问法锁定+已对账）；可先发一条 warm-up 预热。
+- **ChatBI 线上终验（唯一未闭环）**：本机对 *.vercel.app IP 级阻断——用手机热点开
+    zhulong-seven.vercel.app 点悬浮球问一句即完成（等价链路段已全绿）。
+- ChatBI 路演前：云端 QwenPaw 在跑即可（`curl http://43.166.132.250:8088/api/version`，
+    已开认证）；dev 经 .env.local 自动连云；演示用 chips 不手打（问法锁定+已对账）。
+- **git push 待用户裁决**：本地 gongxtao 领先远程 2 提交（5e3fbc9/1b1a19f ops 记录）；
+    另注意 Vercel 现网是 CLI 直部（含全部 feat-023 代码），GitHub 仓库若不 push 会落后于线上。
 - 本机 vercel.app DNS 污染，线上兜底 = 本地 dev（feat-012 记录）。
 - **push 待用户裁决（触发 Vercel 部署；线上聊天为降级态直到 QwenPaw 上云+配 env）**。
 

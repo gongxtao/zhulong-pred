@@ -374,3 +374,28 @@ ensureWindow pred 拉取窗 ±48h（含未来起点，冻结回测表无实时�
   改固定等 12s。verify 43→50 项全绿。
 - 坑追加：#18 Next 16 同项目锁单 dev 实例（多端口也不行），死上游 502 测试须换法；
   #19 demo 快捷键 d 会在聊天输入时误触——keyFn 加 INPUT 焦点守卫。
+
+## 2026-08-29 深夜 · feat-023 晚间迭代收班（ChatBI 体验打磨 + 云端化 + 认证）
+
+feat-023 主体（见上条）之后的用户实测驱动迭代，全部收口：
+
+- **UI 迭代**：①表格破卡片修复（chat-tbw 横向滚动容器+bot 气泡全宽，宽表不再溢出）；
+  ②思考流上屏（chat.ts 增 onThink——reasoning 累计，气泡内「思考中 · 尾部260字」实时滚动，
+  答案到达替换，不再干等）；③工具动作提示（捕获 plugin_call 的 data 增量/快照帧，actLabel
+  译中文——「⚙ 第 N 步 · 载入分析技能/执行代码·查询生产库…」青色高亮行，与思考行同框）；
+  ④品牌化（UI 全面「烛龙助手」，DOM 零 QwenPaw 泄漏；SOUL 自称纪律）；⑤副标题去技术化
+  （随口一问 · 真实数据作答）。
+- **预置问题联动 NOW（用户裁决）**：①②改 2018-06 近窗/2018-06-30 指定日，与页面 NOW 锚点
+  3.39% 互证；重对账：720 行 dyn 2.94/static 3.23、24 行日 MAPE 3.37，逐位一致。
+- **配置固化**：QWENPAW_* 写入 web/.env.local（gitignored）——npm run dev 自带助手；
+  verify 断言两态容忍（降级气泡/思考态；路由 503|200）。
+- **云端化（用户提供服务器）**：QwenPaw 2.1.0 部署至 43.166.132.250:8088，zhulong 工作区
+  （skill+SOUL）随迁验证（对账 2.94/3.23 逐位一致）；.env.local 切云，本机 QwenPaw 不再是依赖。
+- **认证收口**：云端开 QWENPAW_AUTH_ENABLED，无 token 401/带 token 200 实测；
+  QWENPAW_TOKEN 入 Vercel Production + 本地 .env.local（三条齐）。
+- **Vercel 线上聊天开启**：Production 加 QWENPAW_URL/AGENT_ID/TOKEN 并重部署（Ready，
+  zhulong-6zfa3d97r）。⚠️ 本机网络对 *.vercel.app IP 级阻断（DoH/强解均 000），线上终验
+  需换网络——等价链路段全绿（部署 Ready+env 在列+云端可达+dev 同代码对云 200 流式）。
+- 坑追加：#20 Next 16 多端口同项目锁单 dev 实例；#21 云端 token 若在服务重启前签发会失效
+  （签名密钥轮换），重启后要重新 login；#22 verify 切区断言终版=轮询等待已知终值（分批合并
+  中间值如 9.73% 会骗过稳定窗）。
