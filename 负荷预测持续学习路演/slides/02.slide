@@ -1,0 +1,111 @@
+<Slide style={{ width: 1280, height: 720, background: '#FFFFFF', display: 'flex', flexDirection: 'column', padding: '22px 64px 16px 64px' }}>
+    <Box>
+        <Text style={{ fontSize: 32, fontWeight: 'bold', color: '#0A1D37' }}>预测不准时，王工只能用经验预测补救</Text>
+        <Text style={{ fontSize: 16, color: '#64748B', marginTop: 6 }}>省级电网公司生技部专责王工的一天 · 旅游旺季与返乡潮的用电高峰</Text>
+    </Box>
+
+    <Box style={{ flexDirection: 'row', gap: 24, flex: 1, marginTop: 16 }}>
+        <Box style={{ width: 330, background: '#0A1D37', borderRadius: 12, padding: 24, display: 'flex', flexDirection: 'column' }}>
+            <Text style={{ fontSize: 12.5, color: '#22D3EE', letterSpacing: 3 }}>客户 · 王工</Text>
+            <Text style={{ fontSize: 19, fontWeight: 'bold', color: '#F8FAFC', marginTop: 10 }}>省级电网公司 · 生技部专责</Text>
+            <Text style={{ fontSize: 14, color: '#94A3B8', lineHeight: 1.8, marginTop: 10 }}>旅游旺季、返乡潮等因素可能带来用电高峰。他需要据此研判峰值风险，并安排重过载应对措施。</Text>
+            <Box style={{ height: 1, background: '#123B63', marginTop: 16 }} />
+            <Text style={{ fontSize: 12.5, color: '#22D3EE', marginTop: 14, letterSpacing: 2 }}>一天三刻</Text>
+            <Box style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+                <Text style={{ width: 44, fontSize: 13, fontWeight: 'bold', color: '#22D3EE' }}>08:00</Text>
+                <Text style={{ flex: 1, fontSize: 13, color: '#CBD5E1', lineHeight: 1.6 }}>例行查看预测，发现高峰时段明显偏低</Text>
+            </Box>
+            <Box style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+                <Text style={{ width: 44, fontSize: 13, fontWeight: 'bold', color: '#22D3EE' }}>09:30</Text>
+                <Text style={{ flex: 1, fontSize: 13, color: '#CBD5E1', lineHeight: 1.6 }}>调出往年同期曲线，乘以经验修正因子</Text>
+            </Box>
+            <Box style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+                <Text style={{ width: 44, fontSize: 13, fontWeight: 'bold', color: '#22D3EE' }}>14:00</Text>
+                <Text style={{ flex: 1, fontSize: 13, color: '#CBD5E1', lineHeight: 1.6 }}>提交临时预测，紧急安排重过载应对</Text>
+            </Box>
+            <Text style={{ fontSize: 16, color: '#F8FAFC', lineHeight: 1.8, marginTop: 'auto' }}>「预测不准的那天，我只能拿往年同期，乘一个经验修正系数。」</Text>
+            <Text style={{ fontSize: 12, color: '#64748B', marginTop: 10 }}>—— 一次性交付模式的日常</Text>
+        </Box>
+
+        <Box style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <Box style={{ display: 'flex', flexDirection: 'column' }}>
+                <Box style={{ flexDirection: 'row', alignItems: 'center', gap: 16, paddingBottom: 12, borderBottom: '1px solid #E2E8F0' }}>
+                    <Text style={{ width: 56, fontSize: 25, fontWeight: 'bold', color: '#0A1D37', fontFamily: 'Space Grotesk, Inter, sans-serif' }}>01</Text>
+                    <Box style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 19, fontWeight: 'bold', color: '#0F2039' }}>预测偏差</Text>
+                        <Text style={{ fontSize: 13.5, color: '#64748B', marginTop: 2 }}>模型预测低于实际负荷，峰值时间点与幅度同时偏移</Text>
+                    </Box>
+                    <Box style={{ padding: '4px 10px', background: '#F1F5F9', borderRadius: 6 }}>
+                        <Text style={{ fontSize: 12, color: '#64748B' }}>旺季被低估</Text>
+                    </Box>
+                </Box>
+                <Box style={{ flexDirection: 'row', alignItems: 'center', gap: 16, paddingBottom: 12, paddingTop: 12, borderBottom: '1px solid #E2E8F0' }}>
+                    <Text style={{ width: 56, fontSize: 25, fontWeight: 'bold', color: '#0A1D37', fontFamily: 'Space Grotesk, Inter, sans-serif' }}>02</Text>
+                    <Box style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 19, fontWeight: 'bold', color: '#0F2039' }}>经验补救</Text>
+                        <Text style={{ fontSize: 13.5, color: '#64748B', marginTop: 2 }}>参考往年同期负荷，乘以基于经验估计的修正因子</Text>
+                    </Box>
+                    <Box style={{ padding: '4px 10px', background: '#F1F5F9', borderRadius: 6 }}>
+                        <Text style={{ fontSize: 12, color: '#64748B' }}>依赖个人</Text>
+                    </Box>
+                </Box>
+                <Box style={{ flexDirection: 'row', alignItems: 'center', gap: 16, paddingBottom: 12, paddingTop: 12, borderBottom: '1px solid #E2E8F0' }}>
+                    <Text style={{ width: 56, fontSize: 25, fontWeight: 'bold', color: '#0A1D37', fontFamily: 'Space Grotesk, Inter, sans-serif' }}>03</Text>
+                    <Box style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 19, fontWeight: 'bold', color: '#0F2039' }}>临时预测</Text>
+                        <Text style={{ fontSize: 13.5, color: '#64748B', marginTop: 2 }}>结果仅够支撑当日的峰值风险研判，无法沉淀复用</Text>
+                    </Box>
+                    <Box style={{ padding: '4px 10px', background: '#F1F5F9', borderRadius: 6 }}>
+                        <Text style={{ fontSize: 12, color: '#64748B' }}>一次性</Text>
+                    </Box>
+                </Box>
+                <Box style={{ flexDirection: 'row', alignItems: 'center', gap: 16, paddingTop: 12 }}>
+                    <Text style={{ width: 56, fontSize: 25, fontWeight: 'bold', color: '#0A1D37', fontFamily: 'Space Grotesk, Inter, sans-serif' }}>04</Text>
+                    <Box style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 19, fontWeight: 'bold', color: '#0F2039' }}>被动应对</Text>
+                        <Text style={{ fontSize: 13.5, color: '#64748B', marginTop: 2 }}>重过载应对窗口被压缩，措施滞后于风险</Text>
+                    </Box>
+                    <Box style={{ padding: '4px 10px', background: '#F1F5F9', borderRadius: 6 }}>
+                        <Text style={{ fontSize: 12, color: '#64748B' }}>窗口受限</Text>
+                    </Box>
+                </Box>
+            </Box>
+
+            <Box style={{ marginTop: 16, background: '#0A1D37', borderRadius: 12, padding: '18px 24px', display: 'flex', flexDirection: 'column' }}>
+                <Box style={{ flexDirection: 'row', alignItems: 'center', gap: 24 }}>
+                    <Box style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 17.5, fontWeight: 'bold', color: '#F8FAFC' }}>想从模型层面及时介入？</Text>
+                        <Text style={{ fontSize: 13.5, color: '#94A3B8', marginTop: 6, lineHeight: 1.7 }}>合同结束后没有算法团队与权限，重新优化要走立项、采购或运维流程</Text>
+                    </Box>
+                    <Box style={{ alignItems: 'flex-end' }}>
+                        <Text style={{ fontSize: 40, fontWeight: 'bold', color: '#22D3EE', fontFamily: 'Space Grotesk, Inter, sans-serif' }}>1–2 个月</Text>
+                        <Text style={{ fontSize: 12, color: '#94A3B8', marginTop: 2 }}>重新优化的典型耗时</Text>
+                    </Box>
+                </Box>
+                <Box style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
+                    <Box style={{ padding: '4px 12px', border: '1px solid #123B63', borderRadius: 6 }}>
+                        <Text style={{ fontSize: 12.5, color: '#94A3B8' }}>无算法团队</Text>
+                    </Box>
+                    <Box style={{ padding: '4px 12px', border: '1px solid #123B63', borderRadius: 6 }}>
+                        <Text style={{ fontSize: 12.5, color: '#94A3B8' }}>无迭代权限</Text>
+                    </Box>
+                    <Box style={{ padding: '4px 12px', border: '1px solid #123B63', borderRadius: 6 }}>
+                        <Text style={{ fontSize: 12.5, color: '#94A3B8' }}>只能走立项 / 采购 / 运维流程</Text>
+                    </Box>
+                </Box>
+            </Box>
+        </Box>
+    </Box>
+
+    <Box style={{ marginTop: 14, background: 'rgba(34,211,238,0.07)', borderLeft: '4px solid #22D3EE', borderRadius: '0 8px 8px 0', padding: '10px 18px' }}>
+        <Text style={{ fontSize: 15, color: '#0F2039' }}>根源：<span style={{ fontWeight: 'bold' }}>一次性交付模式</span> —— 模型上线之日，就是它开始过时之时。</Text>
+    </Box>
+
+    <Box style={{ flexDirection: 'row', marginTop: 12, alignItems: 'center' }}>
+        <Text style={{ fontSize: 12, color: '#94A3B8' }}>负荷预测持续学习引擎 · 客户痛点</Text>
+        <Box style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Box style={{ width: 10, height: 10, background: '#22D3EE' }} />
+            <Text style={{ fontSize: 13, color: '#64748B' }}>CLE · 02 / 07</Text>
+        </Box>
+    </Box>
+</Slide>

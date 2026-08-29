@@ -1,0 +1,141 @@
+<Slide style={{ width: 1280, height: 720, background: '#FFFFFF', display: 'flex', flexDirection: 'column', padding: '22px 64px 16px 64px' }}>
+    <Box style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
+        <Box style={{ flex: 1 }}>
+            <Text style={{ fontSize: 32, fontWeight: 'bold', color: '#0A1D37' }}>聊天与 Cron，让持续学习成为可运营能力</Text>
+            <Text style={{ fontSize: 16, color: '#64748B', marginTop: 6 }}>演示产品入口：可用、可查、可审计的产品闭环</Text>
+        </Box>
+        <Box style={{ padding: '4px 12px', border: '1px solid #22D3EE', borderRadius: 999 }}>
+            <Text style={{ fontSize: 12, color: '#0891B2' }}>三帧演示 · 与现场演示一一对应</Text>
+        </Box>
+    </Box>
+
+    <Box style={{ flexDirection: 'row', gap: 26, flex: 1, marginTop: 16, alignItems: 'stretch' }}>
+        <Box style={{ width: 770, display: 'flex', flexDirection: 'column' }}>
+            <Box style={{ flexDirection: 'row', alignItems: 'stretch' }}>
+                <Box style={{ width: 218, background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: 10, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                    <Box style={{ background: '#0A1D37', padding: '8px 12px', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#22D3EE' }}>①</Text>
+                        <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#F8FAFC' }}>聊天入口</Text>
+                    </Box>
+                    <Box style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
+                        <Box style={{ alignSelf: 'flex-end', background: '#0A1D37', borderRadius: 8, padding: '8px 10px', maxWidth: 156 }}>
+                            <Text style={{ fontSize: 12, color: '#F8FAFC', lineHeight: 1.6 }}>分析最新一周的负荷数据</Text>
+                        </Box>
+                        <Box style={{ alignSelf: 'flex-start', background: '#F1F5F9', borderRadius: 8, padding: '8px 10px', maxWidth: 164 }}>
+                            <Text style={{ fontSize: 12, color: '#0F2039', lineHeight: 1.6 }}>检测到夏季负荷水平上移，建议触发训练验证。</Text>
+                        </Box>
+                        <Box style={{ marginTop: 'auto' }}>
+                            <Text style={{ fontSize: 11, color: '#94A3B8' }}>自然语言驱动 · 无门槛</Text>
+                            <Text style={{ fontSize: 11, color: '#94A3B8', marginTop: 4 }}>业务人员直接使用，无需算法背景</Text>
+                        </Box>
+                    </Box>
+                </Box>
+                <Text style={{ fontSize: 16, color: '#94A3B8', alignSelf: 'center', margin: '0 2px' }}>→</Text>
+                <Box style={{ width: 244, background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: 10, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                    <Box style={{ background: '#0A1D37', padding: '8px 12px', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#22D3EE' }}>②</Text>
+                        <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#F8FAFC' }}>EDM 结论沉淀</Text>
+                    </Box>
+                    <Box style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
+                        <Box>
+                            <Text style={{ fontSize: 12.5, fontWeight: 'bold', color: '#0F2039' }}>2018-07 · 水平漂移</Text>
+                            <Text style={{ fontSize: 11.5, color: '#64748B', marginTop: 2 }}>置信度高 · 建议重训</Text>
+                        </Box>
+                        <Box style={{ height: 1, background: '#E2E8F0' }} />
+                        <Box>
+                            <Text style={{ fontSize: 12.5, fontWeight: 'bold', color: '#0F2039' }}>结论落盘</Text>
+                            <Text style={{ fontSize: 11.5, color: '#64748B', marginTop: 2 }}>日志 + 上下文，训练前读取</Text>
+                        </Box>
+                        <Text style={{ fontSize: 11, color: '#94A3B8', marginTop: 'auto' }}>每次分析都可追溯 · 不依赖个人经验</Text>
+                    </Box>
+                </Box>
+                <Text style={{ fontSize: 16, color: '#94A3B8', alignSelf: 'center', margin: '0 2px' }}>→</Text>
+                <Box style={{ width: 258, background: '#FFFFFF', border: '1.5px solid #E2E8F0', borderRadius: 10, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                    <Box style={{ background: '#0A1D37', padding: '8px 12px', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#22D3EE' }}>③</Text>
+                        <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#F8FAFC' }}>Cron 定时任务</Text>
+                    </Box>
+                    <Box style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
+                        <Text style={{ fontSize: 12.5, color: '#0F2039' }}>00:00 · 训练 Skill</Text>
+                        <Text style={{ fontSize: 12.5, color: '#0F2039' }}>00:40 · 时序验证</Text>
+                        <Box style={{ background: 'rgba(34,211,238,0.12)', border: '1px solid #22D3EE', borderRadius: 6, padding: 8, marginTop: 'auto' }}>
+                            <Text style={{ fontSize: 12.5, fontWeight: 'bold', color: '#0A1D37' }}>01:00 · 部署 v_35 → active</Text>
+                            <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#0891B2', marginTop: 2 }}>新版本成为 active ✓</Text>
+                        </Box>
+                    </Box>
+                </Box>
+            </Box>
+            <Box style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 16 }}>
+                <Box style={{ padding: '4px 12px', background: '#F1F5F9', borderRadius: 6 }}>
+                    <Text style={{ fontSize: 12, color: '#0F2039' }}>① 自然语言提问</Text>
+                </Box>
+                <Text style={{ fontSize: 14, color: '#94A3B8' }}>→</Text>
+                <Box style={{ padding: '4px 12px', background: '#F1F5F9', borderRadius: 6 }}>
+                    <Text style={{ fontSize: 12, color: '#0F2039' }}>② 结论沉淀为日志</Text>
+                </Box>
+                <Text style={{ fontSize: 14, color: '#94A3B8' }}>→</Text>
+                <Box style={{ padding: '4px 12px', background: '#F1F5F9', borderRadius: 6 }}>
+                    <Text style={{ fontSize: 12, color: '#0F2039' }}>③ 定时训练 + 验证</Text>
+                </Box>
+                <Text style={{ fontSize: 14, color: '#94A3B8' }}>→</Text>
+                <Box style={{ padding: '4px 12px', background: 'rgba(34,211,238,0.12)', border: '1px solid #22D3EE', borderRadius: 6 }}>
+                    <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#0891B2' }}>新模型成为 active</Text>
+                </Box>
+            </Box>
+            <Text style={{ fontSize: 12, color: '#94A3B8', textAlign: 'center', marginTop: 8 }}>同一套闭环 · 训练前 Agent 自动读取既有 EDM 日志 · 全程无人工干预</Text>
+        </Box>
+
+        <Box style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <Box style={{ background: '#0A1D37', borderRadius: 12, padding: 20, flex: 1 }}>
+                <Text style={{ fontSize: 17, fontWeight: 'bold', color: '#F8FAFC' }}>产业客户看到</Text>
+                <Box style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14 }}>
+                    <Box style={{ width: 6, height: 6, background: '#22D3EE', borderRadius: 3 }} />
+                    <Box>
+                        <Text style={{ fontSize: 13.5, fontWeight: 'bold', color: '#F8FAFC' }}>可用 —— 自然语言驱动学习</Text>
+                        <Text style={{ fontSize: 11.5, color: '#94A3B8', marginTop: 2 }}>业务人员零门槛发起分析</Text>
+                    </Box>
+                </Box>
+                <Box style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12 }}>
+                    <Box style={{ width: 6, height: 6, background: '#22D3EE', borderRadius: 3 }} />
+                    <Box>
+                        <Text style={{ fontSize: 13.5, fontWeight: 'bold', color: '#F8FAFC' }}>可查 —— 结论沉淀为日志</Text>
+                        <Text style={{ fontSize: 11.5, color: '#94A3B8', marginTop: 2 }}>漂移结论与训练依据随时回看</Text>
+                    </Box>
+                </Box>
+                <Box style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12 }}>
+                    <Box style={{ width: 6, height: 6, background: '#22D3EE', borderRadius: 3 }} />
+                    <Box>
+                        <Text style={{ fontSize: 13.5, fontWeight: 'bold', color: '#F8FAFC' }}>可审计 —— 行为可追溯</Text>
+                        <Text style={{ fontSize: 11.5, color: '#94A3B8', marginTop: 2 }}>所有动作约束在 Harness 边界内</Text>
+                    </Box>
+                </Box>
+            </Box>
+            <Box style={{ borderLeft: '4px solid #22D3EE', background: 'rgba(34,211,238,0.07)', borderRadius: '0 10px 10px 0', padding: 16 }}>
+                <Text style={{ fontSize: 17, fontWeight: 'bold', color: '#0A1D37' }}>投资人看到</Text>
+                <Text style={{ fontSize: 13, color: '#0F2039', lineHeight: 1.8, marginTop: 6 }}>可复制的产品闭环——同一套 Harness 结构，可迁移到其他时序预测场景。</Text>
+                <Box style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+                    <Box style={{ padding: '3px 10px', border: '1px solid #22D3EE', borderRadius: 6 }}>
+                        <Text style={{ fontSize: 11.5, color: '#0891B2' }}>光伏出力</Text>
+                    </Box>
+                    <Box style={{ padding: '3px 10px', border: '1px solid #22D3EE', borderRadius: 6 }}>
+                        <Text style={{ fontSize: 11.5, color: '#0891B2' }}>气象</Text>
+                    </Box>
+                    <Box style={{ padding: '3px 10px', border: '1px solid #22D3EE', borderRadius: 6 }}>
+                        <Text style={{ fontSize: 11.5, color: '#0891B2' }}>水文</Text>
+                    </Box>
+                </Box>
+            </Box>
+            <Box style={{ background: '#F8FAFC', borderRadius: 8, padding: 12 }}>
+                <Text style={{ fontSize: 12, color: '#64748B', lineHeight: 1.7 }}>现场以 20–30 秒预录演示呈现，避免训练耗时与网络波动影响路演。</Text>
+            </Box>
+        </Box>
+    </Box>
+
+    <Box style={{ flexDirection: 'row', marginTop: 14, alignItems: 'center' }}>
+        <Text style={{ fontSize: 12, color: '#94A3B8' }}>负荷预测持续学习引擎 · 产品演示</Text>
+        <Box style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Box style={{ width: 10, height: 10, background: '#22D3EE' }} />
+            <Text style={{ fontSize: 13, color: '#64748B' }}>CLE · 05 / 07</Text>
+        </Box>
+    </Box>
+</Slide>

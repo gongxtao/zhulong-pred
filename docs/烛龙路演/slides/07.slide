@@ -1,0 +1,82 @@
+<Slide style={{ width: '1280px', height: '720px', background: '#0B1730', padding: '48px 60px 40px 60px', fontFamily: "'PingFang SC','Noto Sans SC',sans-serif", display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+
+  <Box style={{ position: 'absolute', top: -80, left: -60, width: 380, height: 380, background: 'radial-gradient(circle, rgba(8,145,178,0.10) 0%, rgba(8,145,178,0) 70%)' }} />
+  <Box style={{ position: 'absolute', bottom: -100, right: -40, width: 420, height: 420, background: 'radial-gradient(circle, rgba(194,98,10,0.10) 0%, rgba(194,98,10,0) 70%)' }} />
+
+  {/* 未来 100 天 · 双路径 */}
+  <svg width={1160} height={290} viewBox="0 0 1160 290" fontFamily="'PingFang SC',sans-serif" style={{ flexShrink: 0 }}>
+    {/* 技术路径标签 */}
+    <rect x="8" y="26" width="112" height="84" rx="10" fill="rgba(8,145,178,0.12)" stroke="rgba(8,145,178,0.5)" strokeWidth="1" />
+    <text x="64" y="60" fontSize="16" fontWeight="bold" fill="#0891B2" textAnchor="middle">技术</text>
+    <text x="64" y="84" fontSize="16" fontWeight="bold" fill="#0891B2" textAnchor="middle">路径</text>
+
+    <rect x="140" y="26" width="250" height="84" rx="10" fill="rgba(233,240,251,0.05)" stroke="rgba(233,240,251,0.20)" strokeWidth="1" />
+    <text x="265" y="60" fontSize="16.5" fontWeight="bold" fill="#E9F0FB" textAnchor="middle">EDM / 训练工具补强</text>
+    <text x="265" y="86" fontSize="12.5" fill="rgba(233,240,251,0.55)" textAnchor="middle">丰富可调用的方法</text>
+
+    <rect x="440" y="26" width="250" height="84" rx="10" fill="rgba(233,240,251,0.05)" stroke="rgba(233,240,251,0.20)" strokeWidth="1" />
+    <text x="565" y="60" fontSize="16.5" fontWeight="bold" fill="#E9F0FB" textAnchor="middle">自然语言调用更多工具</text>
+    <text x="565" y="86" fontSize="12.5" fill="rgba(233,240,251,0.55)" textAnchor="middle">用户张口，即可分析</text>
+
+    <rect x="740" y="26" width="250" height="84" rx="10" fill="rgba(233,240,251,0.05)" stroke="rgba(233,240,251,0.20)" strokeWidth="1" />
+    <text x="865" y="60" fontSize="16.5" fontWeight="bold" fill="#E9F0FB" textAnchor="middle">统一时序验证</text>
+    <text x="865" y="86" fontSize="12.5" fill="rgba(233,240,251,0.55)" textAnchor="middle">同一口径比较候选方案</text>
+
+    <g stroke="#0891B2" strokeWidth="2">
+      <line x1="390" y1="68" x2="432" y2="68" />
+      <line x1="690" y1="68" x2="732" y2="68" />
+    </g>
+    <g fill="#0891B2">
+      <path d="M 440 68 L 430 63 L 430 73 Z" />
+      <path d="M 740 68 L 730 63 L 730 73 Z" />
+    </g>
+
+    {/* 商业路径标签 */}
+    <rect x="8" y="182" width="112" height="84" rx="10" fill="rgba(194,98,10,0.10)" stroke="rgba(194,98,10,0.5)" strokeWidth="1" />
+    <text x="64" y="216" fontSize="16" fontWeight="bold" fill="#C2620A" textAnchor="middle">商业</text>
+    <text x="64" y="240" fontSize="16" fontWeight="bold" fill="#C2620A" textAnchor="middle">路径</text>
+
+    <rect x="140" y="182" width="180" height="84" rx="10" fill="rgba(233,240,251,0.05)" stroke="rgba(233,240,251,0.20)" strokeWidth="1" />
+    <text x="230" y="216" fontSize="15.5" fontWeight="bold" fill="#E9F0FB" textAnchor="middle">科研项目合作</text>
+    <text x="230" y="242" fontSize="12" fill="rgba(233,240,251,0.55)" textAnchor="middle">电科院 · 数研院</text>
+
+    <rect x="360" y="182" width="180" height="84" rx="10" fill="rgba(233,240,251,0.05)" stroke="rgba(233,240,251,0.20)" strokeWidth="1" />
+    <text x="450" y="216" fontSize="15.5" fontWeight="bold" fill="#E9F0FB" textAnchor="middle">影子模式验证</text>
+    <text x="450" y="242" fontSize="12" fill="rgba(233,240,251,0.55)" textAnchor="middle">接入真实数据</text>
+
+    <rect x="580" y="182" width="180" height="84" rx="10" fill="rgba(233,240,251,0.05)" stroke="rgba(233,240,251,0.20)" strokeWidth="1" />
+    <text x="670" y="216" fontSize="15.5" fontWeight="bold" fill="#E9F0FB" textAnchor="middle">局部试点</text>
+    <text x="670" y="242" fontSize="12" fill="rgba(233,240,251,0.55)" textAnchor="middle">量化收益</text>
+
+    <rect x="800" y="182" width="180" height="84" rx="10" fill="rgba(194,98,10,0.10)" stroke="rgba(194,98,10,0.55)" strokeWidth="1" />
+    <text x="890" y="216" fontSize="15.5" fontWeight="bold" fill="#E9F0FB" textAnchor="middle">灰度发布</text>
+    <text x="890" y="242" fontSize="12" fill="rgba(233,240,251,0.55)" textAnchor="middle">验证后再放大</text>
+
+    <g stroke="rgba(233,240,251,0.45)" strokeWidth="2">
+      <line x1="320" y1="224" x2="352" y2="224" />
+      <line x1="540" y1="224" x2="572" y2="224" />
+      <line x1="760" y1="224" x2="792" y2="224" />
+    </g>
+    <g fill="rgba(233,240,251,0.45)">
+      <path d="M 360 224 L 350 219 L 350 229 Z" />
+      <path d="M 580 224 L 570 219 L 570 229 Z" />
+      <path d="M 800 224 L 790 219 L 790 229 Z" />
+    </g>
+
+    {/* 汇聚 */}
+    <path d="M 990 68 C 1030 68, 1050 100, 1058 128" stroke="rgba(8,145,178,0.6)" strokeWidth="2" fill="none" />
+    <path d="M 980 224 C 1020 224, 1050 195, 1058 166" stroke="rgba(194,98,10,0.6)" strokeWidth="2" fill="none" />
+    <circle cx="1062" cy="147" r="26" fill="rgba(8,145,178,0.15)" />
+    <path d="M 1062 127 L 1082 147 L 1062 167 L 1042 147 Z" fill="#0891B2" />
+    <path d="M 1062 173 L 1062 240" stroke="rgba(8,145,178,0.45)" strokeWidth="1.5" strokeDasharray="5 4" />
+    <path d="M 1062 248 L 1057 238 L 1067 238 Z" fill="rgba(8,145,178,0.45)" />
+  </svg>
+
+  {/* 收束金句 */}
+  <Box style={{ alignItems: 'center', marginTop: 40 }}>
+    <Text style={{ fontSize: 44, fontWeight: 'bold', color: '#E9F0FB', textAlign: 'center', lineHeight: 1.45 }}>让负荷预测从一次性项目，<br/>变成 <span style={{ color: '#0891B2' }}>持续自我适应</span> 的基础能力</Text>
+    <Box style={{ width: 64, height: 4, background: '#C2620A', marginTop: 22, borderRadius: 2 }} />
+    <Text style={{ fontSize: 18, color: 'rgba(233,240,251,0.70)', marginTop: 18 }}>烛龙 ZHULONG —— 让 Agent 指导小模型持续学习</Text>
+    <Text style={{ fontSize: 15, color: 'rgba(233,240,251,0.50)', marginTop: 24 }}>期待以科技项目形式，与电科院、数字电网研究院共建真实数据验证</Text>
+  </Box>
+</Slide>

@@ -1,0 +1,96 @@
+<Slide style={{ width: 1280, height: 720, background: '#0A1D37', display: 'flex', flexDirection: 'column', padding: '42px 64px 16px 64px' }}>
+    <Text style={{ fontSize: 14, color: '#22D3EE', letterSpacing: 3 }}>路线图 · 未来 100 天</Text>
+    <Text style={{ fontSize: 33, fontWeight: 'bold', color: '#F8FAFC', marginTop: 8 }}>先补强工具，再以科研项目验证价值</Text>
+
+    <Box style={{ flexDirection: 'row', gap: 28, flex: 1, marginTop: 22, alignItems: 'flex-start' }}>
+        <Box style={{ width: 400, display: 'flex', flexDirection: 'column' }}>
+            <Box style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <Box style={{ borderLeft: '4px solid #22D3EE', paddingLeft: 10 }}>
+                    <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#F8FAFC' }}>技术 · 补强工具</Text>
+                </Box>
+                <Box style={{ padding: '2px 10px', border: '1px solid #123B63', borderRadius: 999 }}>
+                    <Text style={{ fontSize: 11.5, color: '#94A3B8' }}>产出：可比较的候选方案集</Text>
+                </Box>
+            </Box>
+            <Box style={{ flexDirection: 'column', gap: 12, marginTop: 14 }}>
+                <Box style={{ background: '#123B63', borderRadius: 8, padding: '12px 16px', flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                    <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#22D3EE', fontFamily: 'Space Grotesk, Inter, sans-serif' }}>1</Text>
+                    <Box style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 14, color: '#F8FAFC' }}>补足当前有限的 EDM 方法</Text>
+                        <Text style={{ fontSize: 11.5, color: '#94A3B8', marginTop: 3 }}>漂移检测更敏感，减少漏判</Text>
+                    </Box>
+                    <Text style={{ fontSize: 11.5, color: '#22D3EE' }}>0–30 天</Text>
+                </Box>
+                <Box style={{ background: '#123B63', borderRadius: 8, padding: '12px 16px', flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                    <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#22D3EE', fontFamily: 'Space Grotesk, Inter, sans-serif' }}>2</Text>
+                    <Box style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 14, color: '#F8FAFC' }}>自然语言调用更多数据分析与训练工具</Text>
+                        <Text style={{ fontSize: 11.5, color: '#94A3B8', marginTop: 3 }}>工具覆盖训练全流程</Text>
+                    </Box>
+                    <Text style={{ fontSize: 11.5, color: '#22D3EE' }}>30–60 天</Text>
+                </Box>
+                <Box style={{ background: '#123B63', borderRadius: 8, padding: '12px 16px', flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                    <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#22D3EE', fontFamily: 'Space Grotesk, Inter, sans-serif' }}>3</Text>
+                    <Box style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 14, color: '#F8FAFC' }}>统一时序验证口径下比较候选方案</Text>
+                        <Text style={{ fontSize: 11.5, color: '#94A3B8', marginTop: 3 }}>模型能力可横向对比</Text>
+                    </Box>
+                    <Text style={{ fontSize: 11.5, color: '#22D3EE' }}>60–100 天</Text>
+                </Box>
+            </Box>
+            <Text style={{ fontSize: 12.5, color: '#94A3B8', marginTop: 12, lineHeight: 1.7 }}>模型能力从单一模型，扩展为可比较的候选方案集。</Text>
+        </Box>
+
+        <Box style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <Box style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <Box style={{ borderLeft: '4px solid #94A3B8', paddingLeft: 10 }}>
+                    <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#F8FAFC' }}>商业 · 科研验证</Text>
+                </Box>
+                <Box style={{ padding: '2px 10px', border: '1px solid #123B63', borderRadius: 999 }}>
+                    <Text style={{ fontSize: 11.5, color: '#94A3B8' }}>量化收益后再灰度</Text>
+                </Box>
+            </Box>
+            <Box style={{ flexDirection: 'row', alignItems: 'center', marginTop: 14, justifyContent: 'space-between' }}>
+                <Box style={{ width: 168, height: 96, background: '#123B63', borderRadius: 8, padding: 12, justifyContent: 'center', alignItems: 'center' }}>
+                    <Text style={{ fontSize: 14.5, fontWeight: 'bold', color: '#F8FAFC', textAlign: 'center' }}>① 科研合作</Text>
+                    <Text style={{ fontSize: 11.5, color: '#94A3B8', marginTop: 6, textAlign: 'center' }}>电科院 · 数字电网研究院</Text>
+                </Box>
+                <Text style={{ fontSize: 20, color: '#94A3B8' }}>→</Text>
+                <Box style={{ width: 168, height: 96, background: '#123B63', borderRadius: 8, padding: 12, justifyContent: 'center', alignItems: 'center' }}>
+                    <Text style={{ fontSize: 14.5, fontWeight: 'bold', color: '#F8FAFC', textAlign: 'center' }}>② 影子模式验证</Text>
+                    <Text style={{ fontSize: 11.5, color: '#94A3B8', marginTop: 6, textAlign: 'center' }}>接入真实数据</Text>
+                </Box>
+                <Text style={{ fontSize: 20, color: '#94A3B8' }}>→</Text>
+                <Box style={{ width: 168, height: 96, background: '#123B63', borderRadius: 8, padding: 12, justifyContent: 'center', alignItems: 'center' }}>
+                    <Text style={{ fontSize: 14.5, fontWeight: 'bold', color: '#F8FAFC', textAlign: 'center' }}>③ 局部试点</Text>
+                    <Text style={{ fontSize: 11.5, color: '#94A3B8', marginTop: 6, textAlign: 'center' }}>量化收益</Text>
+                </Box>
+                <Text style={{ fontSize: 20, color: '#94A3B8' }}>→</Text>
+                <Box style={{ width: 168, height: 96, background: 'rgba(34,211,238,0.14)', border: '1.5px solid #22D3EE', borderRadius: 8, padding: 12, justifyContent: 'center', alignItems: 'center' }}>
+                    <Text style={{ fontSize: 14.5, fontWeight: 'bold', color: '#22D3EE', textAlign: 'center' }}>④ 灰度发布</Text>
+                    <Text style={{ fontSize: 11.5, color: '#94A3B8', marginTop: 6, textAlign: 'center' }}>量化后再放量</Text>
+                </Box>
+            </Box>
+            <Text style={{ fontSize: 12.5, color: '#94A3B8', marginTop: 12, lineHeight: 1.7 }}>方法仍较新，不直接进入生产环境——以科技项目形式先行，量化收益后再灰度发布。</Text>
+            <Box style={{ marginTop: 12, border: '1px solid #123B63', borderRadius: 8, padding: '10px 14px' }}>
+                <Text style={{ fontSize: 12.5, color: '#CBD5E1', lineHeight: 1.7 }}>100 天目标：工具补强完成 · 签署科研合作 · 影子模式接入真实数据</Text>
+            </Box>
+        </Box>
+    </Box>
+
+    <Box style={{ flexDirection: 'row', alignItems: 'center', gap: 18, marginTop: 'auto', marginBottom: 22 }}>
+        <Box style={{ width: 6, height: 56, background: '#22D3EE' }} />
+        <Box>
+            <Text style={{ fontSize: 25, fontWeight: 'bold', color: '#F8FAFC', lineHeight: 1.5 }}>让负荷预测，从一次性项目，</Text>
+            <Text style={{ fontSize: 25, fontWeight: 'bold', color: '#F8FAFC', lineHeight: 1.5 }}>变成持续自我适应的基础能力。</Text>
+        </Box>
+    </Box>
+
+    <Box style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center' }}>
+        <Text style={{ fontSize: 12, color: '#64748B' }}>负荷预测持续学习引擎 · 路线图</Text>
+        <Box style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Box style={{ width: 10, height: 10, background: '#22D3EE' }} />
+            <Text style={{ fontSize: 13, color: '#94A3B8' }}>CLE · 07 / 07</Text>
+        </Box>
+    </Box>
+</Slide>

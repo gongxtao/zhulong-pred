@@ -1,0 +1,84 @@
+<Slide style={{ width: '1280px', height: '720px', background: '#0B1730', padding: '20px 60px 16px 60px', fontFamily: "'PingFang SC','Noto Sans SC',sans-serif", display: 'flex', flexDirection: 'column' }}>
+
+  {/* A · 标题块 */}
+  <Box style={{ height: 92, marginBottom: 12, flexShrink: 0 }}>
+    <Text style={{ fontSize: 34, fontWeight: 'bold', color: '#E9F0FB', lineHeight: 1.3 }}>预测不准时，王工只能用经验预测补救</Text>
+    <Box style={{ width: 44, height: 3, background: '#0891B2', marginTop: 6, marginBottom: 8, borderRadius: 2 }} />
+    <Text style={{ fontSize: 16, color: 'rgba(233,240,251,0.62)' }}>省电网公司生技部专责王工的一天——旅游旺季与返乡潮的峰值研判</Text>
+  </Box>
+
+  {/* B · 内容区 */}
+  <Box style={{ height: 540, marginBottom: 10, flexShrink: 0, flexDirection: 'row', gap: 24 }}>
+
+    {/* 左栏 · 人物与痛点叙事 */}
+    <Box style={{ width: 360, flexDirection: 'column', background: 'rgba(233,240,251,0.05)', border: '1px solid rgba(233,240,251,0.14)', borderRadius: 12, padding: 20 }}>
+      <Box style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+        <Box style={{ width: 44, height: 44, borderRadius: 22, background: 'rgba(8,145,178,0.15)', border: '1px solid rgba(8,145,178,0.55)', alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#0891B2' }}>王</Text>
+        </Box>
+        <Box>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#E9F0FB' }}>王工</Text>
+          <Text style={{ fontSize: 13, color: 'rgba(233,240,251,0.55)' }}>省级电网公司 · 生技部专责</Text>
+        </Box>
+      </Box>
+      <Box style={{ height: 1, background: 'rgba(233,240,251,0.12)', margin: '16px 0' }} />
+      <Text style={{ fontSize: 16, color: 'rgba(233,240,251,0.82)', lineHeight: 1.6 }}>旅游旺季、返乡潮可能带来用电高峰，他需要据此研判峰值风险、安排重过载应对。</Text>
+      <Text style={{ fontSize: 16, color: 'rgba(233,240,251,0.82)', lineHeight: 1.6, marginTop: 12 }}>当预测出现偏差，他参考往年同期负荷，乘以一个基于经验估计的修正因子，得到临时预测。</Text>
+      <Text style={{ fontSize: 16, color: 'rgba(233,240,251,0.82)', lineHeight: 1.6, marginTop: 12 }}>若要从模型层面介入——合同结束后没有算法团队、没有迭代权限，只能重新走流程。</Text>
+      <Box style={{ marginTop: 'auto', background: 'rgba(194,98,10,0.12)', borderLeft: '3px solid #C2620A', borderRadius: 8, padding: 14 }}>
+        <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#E9F0FB', lineHeight: 1.5 }>不是人不努力，是模型失效后没有持续学习的通道。</Text>
+      </Box>
+    </Box>
+
+    {/* 右栏 · 补救流程 */}
+    <Box style={{ flex: 1 }}>
+      <svg width={776} height={540} viewBox="0 0 776 540" fontFamily="'PingFang SC',sans-serif">
+        {/* 节点1 · 预测偏差（琥珀） */}
+        <rect x="40" y="16" width="320" height="78" rx="10" fill="rgba(194,98,10,0.10)" stroke="rgba(194,98,10,0.55)" strokeWidth="1" />
+        <text x="200" y="48" fontSize="19" fontWeight="bold" fill="#E9F0FB" textAnchor="middle">预测偏差</text>
+        <text x="200" y="74" fontSize="13" fill="rgba(233,240,251,0.55)" textAnchor="middle">模型输出明显偏离实际负荷</text>
+        {/* 箭头 */}
+        <line x1="200" y1="94" x2="200" y2="126" stroke="#0891B2" strokeWidth="2" />
+        <path d="M 200 134 L 205 124 L 195 124 Z" fill="#0891B2" />
+        {/* 节点2 · 经验因子 */}
+        <rect x="40" y="138" width="320" height="78" rx="10" fill="rgba(233,240,251,0.05)" stroke="rgba(233,240,251,0.20)" strokeWidth="1" />
+        <text x="200" y="170" fontSize="19" fontWeight="bold" fill="#E9F0FB" textAnchor="middle">往年同期 × 经验因子</text>
+        <text x="200" y="196" fontSize="13" fill="rgba(233,240,251,0.55)" textAnchor="middle">人工拍一个修正系数，无数据依据</text>
+        <line x1="200" y1="216" x2="200" y2="248" stroke="#0891B2" strokeWidth="2" />
+        <path d="M 200 256 L 205 246 L 195 246 Z" fill="#0891B2" />
+        {/* 节点3 · 临时预测 */}
+        <rect x="40" y="260" width="320" height="78" rx="10" fill="rgba(233,240,251,0.05)" stroke="rgba(233,240,251,0.20)" strokeWidth="1" />
+        <text x="200" y="292" fontSize="19" fontWeight="bold" fill="#E9F0FB" textAnchor="middle">临时预测</text>
+        <text x="200" y="318" fontSize="13" fill="rgba(233,240,251,0.55)" textAnchor="middle">应急研判可用，精度无人担保</text>
+        <line x1="200" y1="338" x2="200" y2="370" stroke="#0891B2" strokeWidth="2" />
+        <path d="M 200 378 L 205 368 L 195 368 Z" fill="#0891B2" />
+        {/* 节点4 · 兜底（青） */}
+        <rect x="40" y="382" width="320" height="86" rx="10" fill="rgba(8,145,178,0.10)" stroke="rgba(8,145,178,0.60)" strokeWidth="1.5" />
+        <text x="200" y="416" fontSize="19" fontWeight="bold" fill="#E9F0FB" textAnchor="middle">峰值风险研判 / 重过载应对</text>
+        <text x="200" y="442" fontSize="13" fill="rgba(233,240,251,0.55)" textAnchor="middle">一切只能靠人来兜底</text>
+
+        {/* 旁注 · 模型层面介入遥不可及 */}
+        <path d="M 360 177 C 400 177, 400 190, 424 190" stroke="rgba(194,98,10,0.5)" strokeWidth="1.5" strokeDasharray="4 4" fill="none" />
+        <rect x="428" y="138" width="324" height="200" rx="10" fill="rgba(194,98,10,0.06)" stroke="rgba(194,98,10,0.45)" strokeWidth="1" strokeDasharray="6 5" />
+        <text x="452" y="172" fontSize="15" fontWeight="bold" fill="#C2620A">而要从模型层面介入 · 遥不可及</text>
+        <text x="452" y="206" fontSize="14" fill="rgba(233,240,251,0.75)">重新优化要走立项、采购或运维流程</text>
+        <text x="452" y="236" fontSize="14" fill="rgba(233,240,251,0.75)">耗时一到两个月</text>
+        <text x="452" y="266" fontSize="14" fill="rgba(233,240,251,0.75)">没有算法团队，也没有自行迭代权限</text>
+        <text x="452" y="300" fontSize="13" fill="rgba(233,240,251,0.50)">——旺季的高峰，等不起两个月</text>
+
+        {/* 底部结语 */}
+        <line x1="40" y1="496" x2="752" y2="496" stroke="rgba(233,240,251,0.12)" strokeWidth="1" />
+        <text x="40" y="526" fontSize="14" fill="rgba(233,240,251,0.55)">临时预测能应急，但误差随季节漂移持续放大——而每次模型修复，都要把项目重做一遍。</text>
+      </svg>
+    </Box>
+  </Box>
+
+  {/* C · 页脚条 */}
+  <Box style={{ height: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+    <Box style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      <Box style={{ width: 6, height: 6, background: '#0891B2' }} />
+      <Text style={{ fontSize: 12, color: 'rgba(233,240,251,0.40)' }}>烛龙 ZHULONG</Text>
+    </Box>
+    <Text style={{ fontSize: 12, color: 'rgba(233,240,251,0.40)', fontFamily: "'Menlo','Courier New',monospace" }}>02 / 07</Text>
+  </Box>
+</Slide>
