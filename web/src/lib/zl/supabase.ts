@@ -10,10 +10,13 @@ import {
 } from './store';
 import { dayTs, etP, fmtMD, HOUR, locDay, quantile } from './util';
 
+/* 所有配置走环境变量（用户裁决 8/29）：URL/KEY 一律 NEXT_PUBLIC_*，代码不落任何真实值；
+   未配置时在线查询不可用 → 三级兜底自动降级为快照/仿真，页面仍可用 */
 export const SB = {
-  URL: process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://guhooxzoitrexucnxvew.supabase.co',
+  URL: process.env.NEXT_PUBLIC_SUPABASE_URL || '',
   KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
 };
+export const SB_CONFIGURED = !!(SB.URL && SB.KEY);
 export let LD_ABORT = false;
 export function ldAbort() { LD_ABORT = true; }
 export function ldReset() { LD_ABORT = false; }
@@ -24,6 +27,7 @@ export function ldSet(pct: number, detail?: string) {
   if (d && detail) d.textContent = detail;
 }
 export async function sbFetch<T>(table: string, q: string): Promise<T[]> { /* 带重试的单页请求（网关瞬时 5xx/断连重试 3 次） */
+  if (!SB_CONFIGURED) throw new Error('Supabase env 未配置（NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY）');
   let lastErr: unknown;
   for (let i = 0; i < 3; i++) {
     if (LD_ABORT) throw new Error('用户跳过在线拉取');
