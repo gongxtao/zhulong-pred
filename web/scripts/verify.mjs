@@ -21,8 +21,9 @@ try {
   page.on('request', r => { const u = r.url(); if (u.includes('supabase.co/rest/v1/')) sbRequests.push(u); });
   page.on('console', m => {
     const t = m.text();
-    /* supabase 路由拦截测试段的 net::ERR_FAILED 是预期噪声，不计为页面错误 */
-    if (m.type() === 'error' && !t.includes('net::ERR_FAILED')) consoleErrs.push(t.slice(0, 120));
+    /* supabase 路由拦截测试段的 net::ERR_FAILED 是预期噪声，不计为页面错误；
+     feat-023 聊天降级测试产生的 503 资源错误同理（/api/chat 无 QWENPAW_URL 的预期路径） */
+    if (m.type() === 'error' && !t.includes('net::ERR_FAILED') && !t.includes('status of 503')) consoleErrs.push(t.slice(0, 120));
   });
   page.on('pageerror', e => consoleErrs.push('PAGEERROR ' + String(e).slice(0, 120)));
 
@@ -48,11 +49,12 @@ try {
 
   /* ---------- 2. 后台同步 → live 基线 ---------- */
   /* 等数字真正稳定到基线（startEngine('live') 完成）再采样，避免徽章先于数字切换的瞬态 */
+  /* 基线 2026-08-29 17:10 重记录：pred_dynamic 回放推过 boot 窗（2018-05-26）→ dyn 优先轨生效，数字全面变优（handoff 预警的数据升级，非回归） */
   await page.waitForFunction(() =>
     window.ZL_DATA && window.ZL_DATA.src === 'live'
-    && document.getElementById('cov90v').textContent === '85.6%'
-    && document.getElementById('mapeVal').textContent === '3.57%'
-    && document.querySelectorAll('#statusQuad .sq-v')[3]?.textContent.trim() === '3.57%',
+    && document.getElementById('cov90v').textContent === '88.8%'
+    && document.getElementById('mapeVal').textContent === '3.39%'
+    && document.querySelectorAll('#statusQuad .sq-v')[3]?.textContent.trim() === '3.39%',
   null, { timeout: 45000 });
   const phase2 = await page.evaluate(() => ({
     badge: document.getElementById('srcText').textContent,
@@ -96,7 +98,7 @@ try {
       legendOk: legend.includes('静态预测') && legend.includes('持续学习') && !legend.includes('昨日同时刻'),
     };
   });
-  /* NOW 锚点：静态线有值（快照 2017-01 起起点覆盖）；两线数据同长（dyn 缺→static 填充兜底生效） */
+  /* NOW 锚点：静态线有值（快照 static 轨）；dyn 回放已覆盖 boot 窗后展示轨 dyn 优先，NOW 段两线可分叉（持续学习生效） */
   check('三线：静态对照线就位（predStatic 轨）', tri.statPts > 0, `静态点 ${tri.statPts}`);
   check('三线：持续学习 P50 就位', tri.p50Pts > 0, `P50点 ${tri.p50Pts}`);
   check('三线：昨日同时刻线与图例已移除（用户裁决）', tri.ydayGone && tri.legendOk, JSON.stringify(tri));
@@ -109,10 +111,10 @@ try {
     return t ? t.replace(/\s+/g, ' ').slice(0, 130) : null;
   });
   check('悬停 tooltip 含静态预测对照值', !!tipStatic && /静态预测\s*[\d,]+\s*MW/.test(tipStatic), tipStatic || '(无)');
-  check('四格基线 12,926/−2.03%/18,261@16:00/3.57',
-    phase2.quad[0] === '12,926MW' && phase2.quad[1].endsWith('2.03%') && phase2.quad[2].startsWith('18,261MW@16:00') && phase2.quad[3] === '3.57%',
+  check('四格基线 12,926/−2.03%/18,237@16:00/3.39',
+    phase2.quad[0] === '12,926MW' && phase2.quad[1].endsWith('2.03%') && phase2.quad[2].startsWith('18,237MW@16:00') && phase2.quad[3] === '3.39%',
     phase2.quad.join(' | '));
-  check('cov 基线 85.6/49.0', phase2.cov.join('/') === '85.6%/49.0%', phase2.cov.join('/'));
+  check('cov 基线 88.8/54.2', phase2.cov.join('/') === '88.8%/54.2%', phase2.cov.join('/'));
   check('决策条 预备 2,450 MW', phase2.banner2450);
 
   /* ---------- 2b. feat-011 历史视窗实时校准：跳历史段必须发真实查询，二次访问不重查 ---------- */
@@ -297,12 +299,15 @@ try {
       for (let i = 0; i < 60 && !document.getElementById('zoneCap').textContent.startsWith(z); i++) {
         await new Promise(r => setTimeout(r, 200));
       }
+      /* dyn 双轨合并异步且分批（切区实测：~2s 部分入店、~6.5s 全量并入 mape 才翻终值）——
+         固定等 12s 再读，任何"稳定即读"窗口都会锁死 static 旧值（feat-023 重放完成后实测） */
+      await new Promise(r => setTimeout(r, 12000));
       let last = '', stable = 0;
-      for (let i = 0; i < 40; i++) {
+      for (let i = 0; i < 20; i++) {
         const m = document.getElementById('mapeVal').textContent;
-        if (m === last && m !== '—') { stable++; if (stable >= 3) break } else stable = 0;
+        if (m === last && m !== '—') { stable++; if (stable >= 4) break } else stable = 0;
         last = m;
-        await new Promise(r => setTimeout(r, 250));
+        await new Promise(r => setTimeout(r, 300));
       }
       out[z] = document.getElementById('mapeVal').textContent;
     }
@@ -310,9 +315,42 @@ try {
     await new Promise(r => setTimeout(r, 800));
     return out;
   });
-  check('DAYTON MAPE 5.43', zones.DAYTON === '5.43%', zones.DAYTON);
-  check('DOM MAPE 5.40', zones.DOM === '5.40%', zones.DOM);
+  check('DAYTON MAPE 5.26', zones.DAYTON === '5.26%', zones.DAYTON);
+  check('DOM MAPE 5.49', zones.DOM === '5.49%', zones.DOM);
   check('控制台零错误', consoleErrs.length === 0, consoleErrs.slice(0, 3).join(' ;; '));
+
+  /* ---------- 7. feat-023 ChatBI：数据问答 ---------- */
+  const chat7 = await page.evaluate(async () => {
+    const out = {};
+    out.btn = !!document.getElementById('chatBtn');
+    document.getElementById('chatBtn').click();
+    await new Promise(r => setTimeout(r, 150));
+    out.open = document.getElementById('chatLayer').classList.contains('on');
+    out.chips = document.querySelectorAll('#chatChips button').length;
+    document.getElementById("calBtn").click(); /* 互斥：开口径弹层应关聊天 */
+    await new Promise(r => setTimeout(r, 150));
+    out.mutex = !document.getElementById('chatLayer').classList.contains('on');
+    document.getElementById('chatBtn').click(); /* 重开并发送 → 降级气泡（dev 无 QWENPAW_URL） */
+    await new Promise(r => setTimeout(r, 150));
+    const inp = document.getElementById('chatInput');
+    inp.value = '测试';
+    document.getElementById('chatSend').click();
+    await new Promise(r => setTimeout(r, 1500));
+    out.afterSend = document.querySelectorAll('#chatLog .chat-msg').length >= 2
+      && document.getElementById('chatLog').textContent.includes('未连接');
+    document.getElementById("chatClose").click();
+    await new Promise(r => setTimeout(r, 100));
+    out.closed = !document.getElementById('chatLayer').classList.contains('on');
+    out.route = await (await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: 'x', sessionId: 'v' }) })).status;
+    return out;
+  });
+  check('ChatBI：悬浮按钮存在', chat7.btn === true);
+  check('ChatBI：弹层可开', chat7.open === true);
+  check('ChatBI：预设 chips 3 个', chat7.chips === 3, String(chat7.chips));
+  check('ChatBI：与口径弹层互斥', chat7.mutex === true);
+  check('ChatBI：发送→降级气泡（未连接）', chat7.afterSend === true);
+  check('ChatBI：关闭按钮生效', chat7.closed === true);
+  check('ChatBI：/api/chat 无 env 返回 503', chat7.route === 503, String(chat7.route));
 
   const failed = results.filter(r => !r.ok);
   console.log(`\n==== ${results.length - failed.length}/${results.length} 通过 ====`);

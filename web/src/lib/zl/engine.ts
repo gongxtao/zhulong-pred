@@ -1062,9 +1062,6 @@ function bindInteractions() {
   onMount(() => $('chatBtn')?.removeEventListener('click', chatBtnFn));
   $('chatClose').addEventListener('click', closeChatLayer);
   onMount(() => $('chatClose')?.removeEventListener('click', closeChatLayer));
-  const chatVeil = $('chatLayer').querySelector('.veil') as HTMLElement;
-  chatVeil.addEventListener('click', closeChatLayer);
-  onMount(() => chatVeil.removeEventListener('click', closeChatLayer));
 
   const chatSend = async (raw: string) => {
     const text = raw.trim(); if (!text) return;
@@ -1081,7 +1078,7 @@ function bindInteractions() {
     log.appendChild(bubble);
     log.scrollTop = log.scrollHeight;
     ($('chatSend') as HTMLButtonElement).disabled = true;
-    ($('chatInput') as HTMLInputElement).value = '';
+    ($('chatInput') as HTMLTextAreaElement).value = '';
     const r = await streamChat(ctx + text, chatSessionId, {
       onText: full => {
         typing.remove(); bubble.style.display = ''; bubble.textContent = full;
@@ -1104,13 +1101,14 @@ function bindInteractions() {
   const chipsFn = (e: Event) => { const q = (e.target as HTMLElement).closest('button')?.dataset.q; if (q) chatSend(q); };
   $('chatChips').addEventListener('click', chipsFn);
   onMount(() => $('chatChips')?.removeEventListener('click', chipsFn));
-  const chatSendFn = () => chatSend(($('chatInput') as HTMLInputElement).value);
+  const chatSendFn = () => chatSend(($('chatInput') as HTMLTextAreaElement).value);
   $('chatSend').addEventListener('click', chatSendFn);
   onMount(() => $('chatSend')?.removeEventListener('click', chatSendFn));
   const chatKeyFn = (e: KeyboardEvent) => {
     if (!$('chatLayer').classList.contains('on')) return;
     if (e.key === 'Escape') closeChatLayer();
-    if (e.key === 'Enter' && document.activeElement === $('chatInput')) chatSendFn();
+    /* Enter 发送 / Shift+Enter 换行（textarea） */
+    if (e.key === 'Enter' && !e.shiftKey && document.activeElement === $('chatInput')) { e.preventDefault(); chatSendFn(); }
   };
   document.addEventListener('keydown', chatKeyFn);
   onMount(() => document.removeEventListener('keydown', chatKeyFn));
