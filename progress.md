@@ -527,3 +527,12 @@ pred_dynamic 表实为「初始静态模型批回测」（劣轨）、pred_stati
 - verify **52/52**（51 原断言全绿 + 新缝纫断言 23/23）；tsc 0 错
 - 浏览器重演 07-29 实测：h25–48 段 sewMatch 23/23；P50 vs 静态线 22/23 点分叉
   （双真模型对照）；截图 `.shots/web_v12_p50_sewn_replay.png`
+
+## 2026-08-30 上午 · 宣传易拉宝两版（80×200cm，brainstorming 四问对齐）
+
+- **需求**：用户「需求不管了，要宣传产品做易拉宝」。四项拍板：80×200 单张 / 产品决策台主线 / QR 指线上站 / 只落产品名（无赛事元素，赛后可复用）。
+- **交付（易拉宝/，README.md 为准）**：A 重绘概念版（真数据 SVG 72h 窗：48h 实际+24h P10-P90 带+双模型线分叉+NOW 龙眼签名）+ B 真实截图版（dashboard-dark.png 浏览器框+LIVE 徽章+三特性条）；其余五区两版一致（品牌/14 年 5054 天日峰曲线脊柱/决策告示/三大数字 3.39·88.8·↓41/QR 行动区/底部诚实条）。
+- **真数据纪律**：scripts/extract-data.mjs 从快照+在线库取数（持续学习轨按双表对调语义换读 pred_static 表，在线失败降级单线）；告示 2,171 MW = 2018-08-02 窗 P90 上界−97%×P50 同窗自洽复算；文案注明「示例窗真值复算·扫码看实时告示」防口径抠字。
+- **印刷件**：banner-{a,b}-print.pdf = 81×201cm（四周 5mm 出血，MediaBox 2296×5698pt 实证），矢量文字+Space Grotesk OFL 内嵌；QR segno v4 纠错 H 矢量（曾踩 viewBox 缺失裁模块 bug，修为 0 0 370 370 并元素级截图复验）。
+- **再生成**：chrome headless --print-to-pdf 一条龙（README 有命令）；预览 ?preview=0.25 / 单区 ?only=zN。
+- 附注：docs/易拉宝/ 有三个非本会话产物（rollup html/pdf/export-pdf.mjs，未跟踪未动，待用户裁决删留）。

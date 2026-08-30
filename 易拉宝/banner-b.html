@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>烛龙 ZHULONG · 易拉宝 B（真实截图版）</title>
+<style>
+/* ============ 印刷基座 ============ */
+@page { size: 81cm 201cm; margin: 0; }
+* { margin: 0; padding: 0; box-sizing: border-box;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+html, body { width: 81cm; height: 201cm; background: #0A1D37; }
+
+:root {
+  --bg: #0A1D37;      /* 深空蓝 */
+  --panel: #123B63;   /* 面板蓝 */
+  --panel-2: #0E2E4F; /* 面板蓝·深一档 */
+  --cyan: #22D3EE;    /* 电光青 */
+  --amber: #F59E0B;   /* 琥珀：全幅仅一处（决策数字） */
+  --text: #F8FAFC;
+  --dim: #94A3B8;
+  --hair: rgba(148, 163, 184, .28);
+  --cn: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  --en: "Space Grotesk", "PingFang SC", sans-serif;
+}
+
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("assets/fonts/SpaceGrotesk.ttf");
+  font-weight: 300 700;
+}
+
+.canvas { width: 81cm; height: 201cm; background: var(--bg); color: var(--text);
+  font-family: var(--cn); overflow: hidden; }
+.safe { width: 81cm; height: 201cm; padding: 4.5cm 4.5cm 7cm; display: flex; flex-direction: column; }
+
+/* ============ ① 品牌区（与 A 版一致） ============ */
+.z1 { height: 41cm; display: flex; flex-direction: column; }
+.eyebrow { display: flex; align-items: center; gap: .55cm; font-size: .78cm;
+  letter-spacing: .34em; color: var(--dim); font-weight: 500; }
+.eyebrow .sq { width: .62cm; height: .62cm; background: var(--cyan); }
+.eyebrow .en { font-family: var(--en); letter-spacing: .3em; font-weight: 500; }
+.logo-row { display: flex; align-items: flex-end; gap: 1.6cm; margin-top: 1.5cm; }
+.logo-cn { font-size: 10.2cm; font-weight: 600; line-height: 1.02; letter-spacing: .06em; }
+.logo-side { padding-bottom: 1.15cm; }
+.logo-en { font-family: var(--en); font-size: 1.75cm; font-weight: 700; letter-spacing: .52em;
+  color: var(--text); }
+.logo-rule { width: 8.4cm; height: .14cm; background: var(--cyan); margin: .55cm 0 .5cm; }
+.logo-tag-sm { font-size: .82cm; color: var(--dim); letter-spacing: .2em; }
+.tagline { margin-top: 1.7cm; font-size: 1.28cm; font-weight: 500; line-height: 1.85; }
+.tagline .em { color: var(--cyan); }
+.spine { margin-top: auto; }
+.spine svg { display: block; width: 72cm; height: 8.2cm; }
+.spine-cap { display: flex; justify-content: space-between; margin-top: .35cm;
+  font-size: .55cm; color: var(--dim); letter-spacing: .12em; }
+.spine-cap .en { font-family: var(--en); letter-spacing: .18em; }
+
+/* ============ ② 主视觉：告示条 + 真实产品截图（设备框）+ 特性条 ============ */
+.z2 { height: 72cm; margin-top: 2.6cm; display: flex; flex-direction: column; }
+.notice { background: var(--panel); border-left: .3cm solid var(--cyan);
+  padding: 1.15cm 1.5cm; display: flex; align-items: baseline; gap: 1.1cm; flex-wrap: nowrap; }
+.notice .n-label { font-size: .85cm; color: var(--dim); font-weight: 500; white-space: nowrap; }
+.notice .n-main { font-size: 1.5cm; font-weight: 600; white-space: nowrap; }
+.notice .n-main b { font-family: var(--en); font-weight: 700; color: var(--amber); font-size: 1.8cm; }
+.notice .n-formula { margin-left: auto; font-size: .62cm; color: var(--dim);
+  text-align: right; line-height: 1.6; white-space: nowrap; }
+
+.shot-block { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+.browser { border: .09cm solid var(--hair); border-radius: .7cm .7cm 0 0; overflow: hidden;
+  background: var(--panel-2); }
+.browser-bar { height: 2.5cm; display: flex; align-items: center; gap: 1cm;
+  padding: 0 1.2cm; border-bottom: .06cm solid var(--hair); background: #0C2542; }
+.dot { width: .78cm; height: .78cm; border-radius: 50%; background: var(--dim); opacity: .55; }
+.url-pill { flex: 1; max-width: 30cm; height: 1.55cm; border-radius: .8cm;
+  background: rgba(148, 163, 184, .14); display: flex; align-items: center;
+  justify-content: center; font-family: var(--en); font-size: .72cm; color: var(--dim);
+  letter-spacing: .06em; }
+.bar-badge { margin-left: auto; font-size: .6cm; color: var(--cyan); letter-spacing: .18em; }
+.browser img { display: block; width: 100%; }
+.shot-cap { display: flex; justify-content: space-between; margin-top: .5cm;
+  font-size: .55cm; color: var(--dim); letter-spacing: .1em; }
+.shot-cap .en { font-family: var(--en); letter-spacing: .16em; }
+
+.feats { display: flex; gap: 1.1cm; margin-top: 1.8cm; }
+.feat { flex: 1; background: var(--panel-2); border: .04cm solid var(--hair);
+  border-radius: .5cm; padding: 1.05cm 1.2cm; }
+.feat .f-k { font-size: .92cm; font-weight: 600; color: var(--cyan); }
+.feat .f-k .tick { font-family: var(--en); margin-right: .5cm; }
+.feat .f-d { margin-top: .42cm; font-size: .68cm; color: var(--text); line-height: 1.65; }
+
+/* ============ ③ 实证数字（与 A 版一致） ============ */
+.z3 { height: 34cm; margin-top: 2.6cm; display: flex; flex-direction: column; }
+.metrics { display: flex; align-items: stretch; }
+.metric { flex: 1; padding: 1.1cm .8cm 0; }
+.metric + .metric { border-left: .04cm solid var(--hair); padding-left: 2.2cm; }
+.metric:first-child { padding-left: 0; }
+.m-num { font-family: var(--en); font-weight: 700; font-size: 4.35cm; line-height: 1;
+  letter-spacing: -.015em; }
+.m-num.cyan { color: var(--cyan); }
+.m-num .unit { font-size: 2.35cm; }
+.m-num .arrow { font-family: var(--cn); font-size: 3.1cm; vertical-align: .28cm; }
+.m-label { margin-top: 1.05cm; font-size: .95cm; font-weight: 600; }
+.m-sub { margin-top: .45cm; font-size: .6cm; color: var(--dim); line-height: 1.6; }
+.m-note { margin-top: 1.3cm; font-size: .58cm; color: var(--dim); letter-spacing: .06em; }
+.chatbi { margin-top: auto; background: var(--panel-2); border: .04cm solid var(--hair);
+  border-radius: .5cm; padding: 1.25cm 1.6cm; display: flex; align-items: center; gap: 1.3cm; }
+.chatbi svg { width: 1.85cm; height: 1.85cm; flex: none; }
+.chatbi .c-title { font-size: .98cm; font-weight: 600; color: var(--cyan); white-space: nowrap; }
+.chatbi .c-body { font-size: .82cm; color: var(--text); line-height: 1.65; }
+.chatbi .c-body .q { color: var(--cyan); font-weight: 500; }
+
+/* ============ ④ 行动区（与 A 版一致） ============ */
+.z4 { height: 33cm; margin-top: 2.6cm; display: flex; align-items: center; gap: 2.6cm; }
+.qr-card { width: 14.5cm; height: 14.5cm; background: #F8FAFC; border-radius: .55cm;
+  padding: 1cm; flex: none; position: relative; }
+.qr-card svg { width: 100%; height: 100%; display: block; }
+.qr-corner { position: absolute; width: 1.5cm; height: 1.5cm; }
+.qr-corner.tl { top: -.75cm; left: -.75cm; border-top: .12cm solid var(--cyan); border-left: .12cm solid var(--cyan); }
+.qr-corner.br { bottom: -.75cm; right: -.75cm; border-bottom: .12cm solid var(--cyan); border-right: .12cm solid var(--cyan); }
+.act-text { flex: 1; }
+.act-title { font-size: 1.75cm; font-weight: 600; }
+.act-url { font-family: var(--en); font-size: 1.02cm; color: var(--cyan); font-weight: 500;
+  letter-spacing: .04em; margin-top: .55cm; }
+.act-lines { margin-top: 1.5cm; }
+.act-line { display: flex; gap: .8cm; align-items: baseline; font-size: .85cm;
+  color: var(--text); line-height: 2.15; }
+.act-line .tick { color: var(--cyan); font-family: var(--en); font-weight: 700; flex: none; }
+.act-line .dim { color: var(--dim); font-size: .68cm; }
+
+/* ============ ⑤ 底部（与 A 版一致） ============ */
+.z5 { height: 9.5cm; margin-top: 1.4cm; border-top: .04cm solid var(--hair);
+  padding-top: 1.15cm; display: flex; align-items: baseline; justify-content: space-between;
+  font-size: .58cm; color: var(--dim); letter-spacing: .1em; }
+.z5 .brand { font-size: .78cm; color: var(--text); font-weight: 600; white-space: nowrap; }
+.z5 .brand .en { font-family: var(--en); letter-spacing: .3em; font-weight: 700; }
+.z5 .facts { text-align: right; line-height: 1.9; white-space: nowrap; }
+</style>
+</head>
+<body>
+<main class="canvas">
+  <div class="safe">
+
+    <!-- ① 品牌 -->
+    <header class="z1">
+      <div class="eyebrow">
+        <span class="sq"></span>
+        <span>电力负荷预测决策台</span>
+        <span class="en">LOAD FORECAST DECISION CONSOLE</span>
+      </div>
+      <div class="logo-row">
+        <div class="logo-cn">烛龙</div>
+        <div class="logo-side">
+          <div class="logo-en">ZHULONG</div>
+          <div class="logo-rule"></div>
+          <div class="logo-tag-sm">看得见预测的边界</div>
+        </div>
+      </div>
+      <div class="tagline">睁眼为昼，闭眼为夜。<br>看得见负荷 <span class="em">14 年的呼吸</span>，也看得见<span class="em">每一次预测的边界</span>。</div>
+      <div class="spine">
+        <svg id="spineSvg" viewBox="0 0 720 82" preserveAspectRatio="none"></svg>
+        <div class="spine-cap">
+          <span>2004 → 2018 · AEP 负荷区日峰值 · 5,054 天真值</span>
+          <span class="en">14 YEARS OF LOAD, ONE LINE</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- ② 主视觉：真实截图 -->
+    <section class="z2">
+      <div class="notice">
+        <span class="n-label">决策告示<br>2018-08-02</span>
+        <span class="n-main">预备窗 13:00–16:00 EST · 预备 <b>2,171</b> MW 调峰资源</span>
+        <span class="n-formula">= P90 上界 − 97% × P50<br>示例为 2018-08-02 窗真值复算 · 扫码可看实时告示</span>
+      </div>
+      <div class="shot-block">
+        <div class="browser">
+          <div class="browser-bar">
+            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+            <span class="url-pill">https://zhulong-seven.vercel.app</span>
+            <span class="bar-badge">LIVE · 在线运行中</span>
+          </div>
+          <img src="assets/dashboard-dark.png" alt="烛龙决策台在线运行截图">
+        </div>
+        <div class="shot-cap">
+          <span>烛龙决策台 · 深色主题实拍（非设计稿）——告示条 / 四格仪表 / 时光机主图，与扫码打开的页面一致</span>
+          <span class="en">REAL PRODUCT, NOT A MOCKUP</span>
+        </div>
+        <div class="feats">
+          <div class="feat">
+            <div class="f-k"><span class="tick">01</span>时光机对质</div>
+            <div class="f-d">拖动胶片回看 14 年任一天，上帝视角下「当时预测 vs 真实后续」当场对质。</div>
+          </div>
+          <div class="feat">
+            <div class="f-k"><span class="tick">02</span>概率带决策</div>
+            <div class="f-d">P10–P90 不确定性带如台风路径，调度底线用 P90 上界，预备量公式可复算。</div>
+          </div>
+          <div class="feat">
+            <div class="f-k"><span class="tick">03</span>烛龙助手</div>
+            <div class="f-d">一句话问数据：AI 实时查询生产库、当场算指标作答，出处全程可见。</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ③ 实证 -->
+    <section class="z3">
+      <div class="metrics">
+        <div class="metric">
+          <div class="m-num cyan">3.39<span class="unit">%</span></div>
+          <div class="m-label">日前 24h 预测 MAPE</div>
+          <div class="m-sub">持续学习轨 · AEP 负荷区<br>静态基线 3.57%</div>
+        </div>
+        <div class="metric">
+          <div class="m-num">88.8<span class="unit">%</span></div>
+          <div class="m-label">P90 区间命中率</div>
+          <div class="m-sub">标称 90% · 滚动 28 起点回测<br>P50 命中 54.2%</div>
+        </div>
+        <div class="metric">
+          <div class="m-num"><span class="arrow">↓</span>41<span class="unit">%</span></div>
+          <div class="m-label">误差较持久性基线</div>
+          <div class="m-sub">训练管道独立验证<br>WAPE 6.51% → 3.82%</div>
+        </div>
+      </div>
+      <div class="m-note">MAPE / 命中率：滚动 28 起点日前回测；基线对比：模型注册表与训练管道独立验证，非页面自证。</div>
+      <div class="chatbi">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 5.5C4 4.7 4.7 4 5.5 4h13C19.3 4 20 4.7 20 5.5v9c0 .8-.7 1.5-1.5 1.5H13l-4 3.5V16H5.5C4.7 16 4 15.3 4 14.5v-9z" stroke="#22D3EE" stroke-width="1.6"/><path d="M8 8.5h8M8 11.5h5" stroke="#22D3EE" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <div>
+          <span class="c-title">烛龙助手 · 数据问答</span>&nbsp;&nbsp;
+          <span class="c-body">用一句话问它：<span class="q">「哪个时段误差最大？」</span>它实时查询生产库、当场算出指标、以表格作答——过程与出处全程可见。</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ④ 行动 -->
+    <section class="z4">
+      <div class="qr-card">
+        <?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" class="segno" viewBox="0 0 370 370"><g transform="scale(10)"><path fill="#f8fafc" d="M0 0h37v37h-37z"/><path class="qrline" stroke="#0a1d37" d="M2 2.5h7m3 0h1m3 0h5m4 0h2m1 0h7m-33 1h1m5 0h1m1 0h3m1 0h5m1 0h1m1 0h3m1 0h1m1 0h1m5 0h1m-33 1h1m1 0h3m1 0h1m2 0h3m1 0h1m3 0h1m3 0h1m4 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m3 0h3m2 0h1m1 0h1m1 0h2m1 0h1m3 0h1m1 0h3m1 0h1m-33 1h1m1 0h3m1 0h1m2 0h2m1 0h2m3 0h3m4 0h1m1 0h1m1 0h3m1 0h1m-33 1h1m5 0h1m1 0h1m2 0h2m4 0h1m1 0h1m2 0h1m1 0h1m1 0h1m5 0h1m-33 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-25 1h1m1 0h1m1 0h4m2 0h4m1 0h1m-20 1h4m1 0h2m2 0h1m2 0h2m3 0h2m1 0h1m1 0h2m3 0h1m-32 1h4m6 0h1m1 0h1m1 0h3m1 0h2m2 0h2m3 0h1m1 0h3m-32 1h1m2 0h1m1 0h4m1 0h2m1 0h4m1 0h1m1 0h4m1 0h4m2 0h1m-32 1h1m1 0h2m5 0h1m2 0h1m1 0h2m2 0h1m1 0h3m1 0h1m3 0h1m3 0h1m-31 1h1m2 0h5m1 0h2m1 0h2m3 0h1m4 0h1m1 0h1m1 0h2m1 0h1m-29 1h1m1 0h1m1 0h1m1 0h3m1 0h1m1 0h1m1 0h1m1 0h3m1 0h1m1 0h1m1 0h1m1 0h3m-32 1h2m3 0h4m1 0h3m1 0h1m2 0h2m1 0h1m2 0h1m1 0h3m3 0h1m-32 1h2m1 0h1m1 0h1m5 0h1m1 0h2m1 0h2m2 0h2m2 0h1m1 0h1m-24 1h1m1 0h2m1 0h2m3 0h1m1 0h1m5 0h1m1 0h1m1 0h2m1 0h1m2 0h2m-31 1h1m4 0h5m1 0h2m2 0h1m1 0h3m1 0h3m1 0h1m3 0h1m-30 1h2m1 0h2m2 0h1m1 0h1m1 0h2m3 0h1m2 0h1m1 0h2m3 0h2m1 0h1m-32 1h3m2 0h1m3 0h1m1 0h1m1 0h1m2 0h4m1 0h1m3 0h1m2 0h1m2 0h2m-28 1h2m2 0h2m4 0h3m1 0h4m3 0h1m1 0h2m1 0h2m-33 1h5m2 0h1m4 0h2m2 0h1m2 0h1m2 0h2m3 0h1m3 0h1m-30 1h2m2 0h3m2 0h1m3 0h1m1 0h4m1 0h2m4 0h2m1 0h1m-28 1h1m2 0h1m1 0h2m1 0h1m2 0h1m2 0h1m2 0h3m4 0h1m2 0h2m-33 1h3m2 0h4m2 0h4m3 0h1m2 0h2m1 0h6m1 0h2m-25 1h6m2 0h6m1 0h2m3 0h3m-31 1h7m1 0h2m1 0h3m1 0h1m3 0h2m3 0h1m1 0h1m1 0h4m-32 1h1m5 0h1m1 0h1m1 0h3m3 0h2m2 0h1m1 0h1m1 0h1m3 0h1m2 0h2m-33 1h1m1 0h3m1 0h1m1 0h6m2 0h5m1 0h1m1 0h5m-29 1h1m1 0h3m1 0h1m2 0h2m1 0h2m3 0h4m5 0h4m1 0h1m-32 1h1m1 0h3m1 0h1m2 0h1m1 0h1m1 0h3m1 0h5m2 0h3m1 0h2m-30 1h1m5 0h1m3 0h1m7 0h1m2 0h1m1 0h7m-30 1h7m3 0h1m3 0h1m1 0h2m2 0h1m2 0h2m2 0h1m4 0h1"/></g></svg>
+        <span class="qr-corner tl"></span><span class="qr-corner br"></span>
+      </div>
+      <div class="act-text">
+        <div class="act-title">扫码进入在线决策台</div>
+        <div class="act-url">zhulong-seven.vercel.app</div>
+        <div class="act-lines">
+          <div class="act-line"><span class="tick">01</span><span>拖动底部胶片，回看 14 年里的任何一天</span></div>
+          <div class="act-line"><span class="tick">02</span><span>打开上帝视角，对质「当时预测 vs 真实后续」&nbsp;<span class="dim">——预测经得起回放</span></span></div>
+          <div class="act-line"><span class="tick">03</span><span>问烛龙助手任何一个关于数据的问题&nbsp;<span class="dim">——每个回答都有出处</span></span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ⑤ 底部 -->
+    <footer class="z5">
+      <div class="brand">烛龙 <span class="en">ZHULONG</span></div>
+      <div class="facts">
+        14 年 · 3 个 PJM 负荷区 · 358,800 小时真值（PJM 负荷 + ERA5 气象）<br>
+        页面内每个数字可复算 · 无预设演示数字 · 数据时段 2004-10 → 2018-08
+      </div>
+    </footer>
+
+  </div>
+</main>
+
+<script src="assets/banner-data.js"></script>
+<script>
+const D = window.BANNER;
+const NS = 'http://www.w3.org/2000/svg';
+const el = (tag, attrs, parent) => {
+  const n = document.createElementNS(NS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(n);
+  return n;
+};
+
+/* ---------- 14 年脊柱纹理（与 A 版一致） ---------- */
+(function spine() {
+  const svg = document.getElementById('spineSvg');
+  const W = 720, H = 82, lo = 11500, hi = 26200;
+  const pts = D.daily14y.map((v, i) => {
+    const x = i / (D.daily14y.length - 1) * W;
+    const y = 6 + (1 - (v - lo) / (hi - lo)) * (H - 16);
+    return x.toFixed(1) + ',' + y.toFixed(1);
+  }).join(' ');
+  el('polyline', { points: pts, fill: 'none', stroke: '#22D3EE',
+    'stroke-width': .55, opacity: .3, 'stroke-linejoin': 'round' }, svg);
+  const days = D.daily14y;
+  for (let yr = 2005; yr <= 2018; yr++) {
+    const jan1 = 92 + (yr - 2005) * 365 + Math.floor((yr - 2005) / 4);
+    if (jan1 >= days.length) break;
+    const x = jan1 / (days.length - 1) * W;
+    el('line', { x1: x, y1: 6, x2: x, y2: H - 10, stroke: '#94A3B8',
+      'stroke-width': .3, opacity: .35, 'stroke-dasharray': '1 2.2' }, svg);
+    const t = el('text', { x: x + 2.2, y: H - 1.5, 'font-size': 3.6, fill: '#94A3B8',
+      opacity: .8, 'font-family': 'Space Grotesk' }, svg);
+    t.textContent = yr;
+  }
+  const vort = 92 + (2014 - 2005) * 365 + 2;
+  const vx = vort / (days.length - 1) * W;
+  el('line', { x1: vx, y1: 3, x2: vx, y2: H - 10, stroke: '#F59E0B', 'stroke-width': .5 }, svg);
+  const vt = el('text', { x: vx - 2, y: 8, 'font-size': 3.8, fill: '#F59E0B',
+    'text-anchor': 'end', 'font-family': 'PingFang SC' }, svg);
+  vt.textContent = '2014 极地涡旋';
+})();
+
+/* ---------- 预览模式（?preview 缩放；?only=zN 单区裁剪） ---------- */
+const QP = new URLSearchParams(location.search);
+if (QP.has('preview')) document.body.style.zoom = QP.get('preview') || .25;
+if (QP.get('only')) document.querySelectorAll('.safe > *').forEach(
+  (n) => { if (!n.classList.contains(QP.get('only'))) n.style.display = 'none'; });
+</script>
+</body>
+</html>
