@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>烛龙 ZHULONG · 易拉宝 800×2000 · 神话照进数据</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: #E9EBEF; font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif; }
+
+  .toolbar { position: fixed; top: 0; left: 0; right: 0; z-index: 99; background: #0A1D37; color: #F8FAFC; padding: 10px 20px; display: flex; align-items: center; gap: 14px; font-size: 13px; flex-wrap: wrap; }
+  .toolbar b { font-size: 14px; }
+  .toolbar .btn { background: #123B63; color: #F8FAFC; border: 1px solid #22D3EE55; border-radius: 6px; padding: 5px 12px; cursor: pointer; font-size: 13px; }
+  .toolbar .btn:hover { border-color: #22D3EE; }
+  .toolbar .note { color: #94A3B8; font-size: 12px; }
+
+  .stage { padding: 64px 20px 60px; display: flex; justify-content: center; }
+  .stage-inner { width: calc(800mm * var(--s)); height: calc(2000mm * var(--s)); position: relative; }
+  .banner { width: 800mm; height: 2000mm; color: #F8FAFC; position: absolute; top: 0; left: 0; transform: scale(var(--s)); transform-origin: top left; overflow: hidden;
+    background: linear-gradient(180deg, #020810 0%, #04101F 30%, #071A30 55%, #050E1B 78%, #02070F 100%); }
+
+  .aura { position: absolute; left: 100mm; top: 110mm; width: 600mm; height: 380mm;
+    background: radial-gradient(ellipse 50% 50% at 50% 50%, #22D3EE1F 0%, #22D3EE0D 45%, transparent 72%); }
+  .stars { position: absolute; left: 0; top: 0; right: 0; height: 420mm; background-image:
+    radial-gradient(1.6mm 1.6mm at 9% 14%, #B9D8EE88 50%, transparent 51%),
+    radial-gradient(1.1mm 1.1mm at 22% 7%, #B9D8EE55 50%, transparent 51%),
+    radial-gradient(1.8mm 1.8mm at 34% 19%, #7FC5E366 50%, transparent 51%),
+    radial-gradient(1.1mm 1.1mm at 48% 5%, #B9D8EE66 50%, transparent 51%),
+    radial-gradient(1.5mm 1.5mm at 63% 11%, #B9D8EE77 50%, transparent 51%),
+    radial-gradient(1.1mm 1.1mm at 77% 16%, #7FC5E344 50%, transparent 51%),
+    radial-gradient(1.6mm 1.6mm at 90% 8%, #B9D8EE88 50%, transparent 51%),
+    radial-gradient(1.1mm 1.1mm at 15% 31%, #B9D8EE33 50%, transparent 51%),
+    radial-gradient(1.3mm 1.3mm at 85% 34%, #B9D8EE44 50%, transparent 51%); }
+  .vignette { position: absolute; inset: 0;
+    background: radial-gradient(ellipse 78% 62% at 50% 44%, transparent 52%, #01050880 100%); }
+
+  .scene { position: absolute; inset: 0; }
+  .scene svg { width: 800mm; height: 2000mm; display: block; }
+
+  /* 行动区（HTML 覆盖层，承载二维码 canvas） */
+  .action { position: absolute; top: 1600mm; left: 0; right: 0; text-align: center; }
+  .qr-box { width: 126mm; height: 126mm; background: #F8FAFC; padding: 7mm; margin: 0 auto; }
+  .qr-box canvas, .qr-box img, .qr-box table { width: 100% !important; height: 100% !important; }
+  .action .go { font-size: 24mm; font-weight: 700; letter-spacing: 4mm; margin-left: 4mm; color: #F8FAFC; margin-top: 18mm; }
+  .action .go span { color: #22D3EE; }
+  .action .url { font-size: 19mm; color: #22D3EE; letter-spacing: 1mm; margin-top: 9mm; font-weight: 600;
+    font-family: "Space Grotesk", "DIN Alternate", "Bahnschrift", "Arial Narrow", sans-serif; }
+
+  .credit { position: absolute; right: 34mm; top: 520mm; writing-mode: vertical-rl; font-size: 9.5mm; letter-spacing: 6mm; color: #2C4868;
+    font-family: "Space Grotesk", "DIN Alternate", "Bahnschrift", "Arial Narrow", sans-serif; }
+
+  .guides { position: absolute; inset: 0; pointer-events: none; display: none; z-index: 5; }
+  body.show-guides .guides { display: block; }
+  .guides .gline { position: absolute; background: #F59E0B; opacity: .85; }
+  .guides .glabel { position: absolute; font-size: 3.4mm; color: #F59E0B; letter-spacing: .5mm; }
+
+  @media print {
+    html, body { background: #fff; }
+    .toolbar { display: none !important; }
+    .stage { padding: 0; }
+    .stage-inner { width: 800mm; height: 2000mm; }
+    .banner { transform: none; position: relative; }
+    @page { size: 800mm 2000mm; margin: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <b>烛龙 ZHULONG · 易拉宝「神话照进数据」</b>
+  <span class="note">800 × 2000 mm · 四幕：凝视 → 光锥 → 真实地平线 → 镜像</span>
+  <span style="flex:1"></span>
+  <button class="btn" onclick="setScale(0.25)">25%</button>
+  <button class="btn" onclick="setScale(0.4)">40%</button>
+  <button class="btn" onclick="setScale(0.6)">60%</button>
+  <button class="btn" onclick="document.body.classList.toggle('show-guides')">安全区标尺</button>
+  <button class="btn" onclick="window.print()">打印 / 导出 PDF</button>
+</div>
+
+<div class="stage">
+  <div class="stage-inner" id="stageInner">
+    <div class="banner">
+      <div class="stars"></div>
+      <div class="aura"></div>
+
+      <div class="scene">
+        <svg viewBox="0 0 800 2000" xmlns="http://www.w3.org/2000/svg" font-family="PingFang SC, Microsoft YaHei, sans-serif">
+          <defs>
+            <filter id="glowS" x="-80%" y="-80%" width="260%" height="260%">
+              <feGaussianBlur stdDeviation="2.5" result="b"/>
+              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <filter id="glowM" x="-80%" y="-80%" width="260%" height="260%">
+              <feGaussianBlur stdDeviation="5" result="b"/>
+              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <filter id="glowL" x="-120%" y="-120%" width="340%" height="340%">
+              <feGaussianBlur stdDeviation="9" result="b"/>
+              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+            <filter id="blurC" x="-60%" y="-60%" width="220%" height="220%">
+              <feGaussianBlur stdDeviation="4"/>
+            </filter>
+
+            <linearGradient id="brandG" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#FFFFFF"/>
+              <stop offset="45%" stop-color="#D3E7F6"/>
+              <stop offset="100%" stop-color="#6E93B8"/>
+            </linearGradient>
+            <linearGradient id="kWordG" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#C4F6FF"/>
+              <stop offset="55%" stop-color="#22D3EE"/>
+              <stop offset="100%" stop-color="#0D9BBF"/>
+            </linearGradient>
+            <linearGradient id="coneG" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#22D3EE" stop-opacity="0.34"/>
+              <stop offset="50%" stop-color="#22D3EE" stop-opacity="0.12"/>
+              <stop offset="100%" stop-color="#22D3EE" stop-opacity="0.03"/>
+            </linearGradient>
+            <linearGradient id="beamG" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#7DEBFA" stop-opacity="0.55"/>
+              <stop offset="60%" stop-color="#22D3EE" stop-opacity="0.22"/>
+              <stop offset="100%" stop-color="#22D3EE" stop-opacity="0.06"/>
+            </linearGradient>
+            <linearGradient id="lidG" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#22D3EE" stop-opacity="0.15"/>
+              <stop offset="20%" stop-color="#7DEBFA" stop-opacity="0.85"/>
+              <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0.95"/>
+              <stop offset="80%" stop-color="#7DEBFA" stop-opacity="0.85"/>
+              <stop offset="100%" stop-color="#22D3EE" stop-opacity="0.15"/>
+            </linearGradient>
+            <radialGradient id="irisG" cx="50%" cy="42%" r="62%">
+              <stop offset="0%" stop-color="#1173A8"/>
+              <stop offset="55%" stop-color="#0A3A63"/>
+              <stop offset="100%" stop-color="#061C33"/>
+            </radialGradient>
+            <radialGradient id="pupilG" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#E4FDFF"/>
+              <stop offset="45%" stop-color="#7DEBFA"/>
+              <stop offset="100%" stop-color="#22D3EE"/>
+            </radialGradient>
+            <linearGradient id="fogG" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#22D3EE" stop-opacity="0"/>
+              <stop offset="50%" stop-color="#22D3EE" stop-opacity="0.05"/>
+              <stop offset="100%" stop-color="#22D3EE" stop-opacity="0"/>
+            </linearGradient>
+            <linearGradient id="reflG" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#FFFFFF" stop-opacity="1"/>
+              <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+            </linearGradient>
+            <mask id="reflM">
+              <rect x="0" y="1330" width="800" height="210" fill="url(#reflG)"/>
+            </mask>
+            <linearGradient id="horizonG" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#22D3EE" stop-opacity="0.25"/>
+              <stop offset="50%" stop-color="#7DEBFA" stop-opacity="1"/>
+              <stop offset="100%" stop-color="#22D3EE" stop-opacity="0.25"/>
+            </linearGradient>
+          </defs>
+
+          <!-- ===== 氛围雾层 ===== -->
+          <rect x="0" y="620" width="800" height="52" fill="url(#fogG)"/>
+          <rect x="0" y="880" width="800" height="52" fill="url(#fogG)"/>
+          <rect x="0" y="1140" width="800" height="52" fill="url(#fogG)"/>
+
+          <!-- ===== 光锥：从瞳孔坠向真实地平线 ===== -->
+          <path d="M 400 382 L 100 1330 L 700 1330 Z" fill="url(#coneG)" filter="url(#blurC)"/>
+          <line x1="400" y1="386" x2="100" y2="1330" stroke="#22D3EE" stroke-width="1.1" opacity="0.4"/>
+          <line x1="400" y1="386" x2="700" y2="1330" stroke="#22D3EE" stroke-width="1.1" opacity="0.4"/>
+          <!-- 中轴光束 -->
+          <path d="M 392 382 L 408 382 L 414 1330 L 386 1330 Z" fill="url(#beamG)" filter="url(#glowS)" opacity="0.8"/>
+          <!-- 不确定性雾层（锥内横线，随锥变宽） -->
+          <line x1="272" y1="760" x2="528" y2="760" stroke="#22D3EE" stroke-width="0.8" opacity="0.28"/>
+          <line x1="216" y1="950" x2="584" y2="950" stroke="#22D3EE" stroke-width="0.8" opacity="0.22"/>
+          <line x1="152" y1="1150" x2="648" y2="1150" stroke="#22D3EE" stroke-width="0.8" opacity="0.16"/>
+
+          <!-- 区间背后的雾层，让关键字从光锥里浮起来 -->
+          <ellipse cx="400" cy="1010" rx="320" ry="82" fill="#22D3EE" opacity="0.05" filter="url(#blurC)"/>
+
+          <!-- ===== 顶部赛道信息 ===== -->
+          <text x="400" y="62" text-anchor="middle" font-size="11" letter-spacing="4" fill="#4A6584">贵州黑客松 · 赛道二 · 电力负荷预测</text>
+
+          <!-- ===== 烛龙之眼（唯一光源） ===== -->
+          <g>
+            <!-- 上眼睑：雕塑感重弧，向两侧沉入黑暗 -->
+            <path d="M 185 292 Q 400 168 615 292" fill="none" stroke="url(#lidG)" stroke-width="5.5" stroke-linecap="round" filter="url(#glowM)"/>
+            <path d="M 195 300 Q 400 186 605 300" fill="none" stroke="#020810" stroke-width="10" stroke-linecap="round" opacity="0.85"/>
+            <!-- 下眼睑：微光，被瞳孔照亮 -->
+            <path d="M 210 298 Q 400 392 590 298" fill="none" stroke="#22D3EE" stroke-width="2.2" stroke-linecap="round" opacity="0.35" filter="url(#glowS)"/>
+
+            <!-- 睫毛：短而锐利，暗示力量而非可爱 -->
+            <g stroke="#22D3EE" stroke-width="2.4" stroke-linecap="round" opacity="0.5">
+              <line x1="400" y1="176" x2="400" y2="192"/>
+              <line x1="318" y1="188" x2="326" y2="202"/>
+              <line x1="482" y1="188" x2="474" y2="202"/>
+              <line x1="252" y1="220" x2="264" y2="230"/>
+              <line x1="548" y1="220" x2="536" y2="230"/>
+            </g>
+
+            <!-- 虹膜：多层同心，带阴影 -->
+            <circle cx="400" cy="292" r="90" fill="url(#irisG)" stroke="#22D3EE" stroke-width="1.4" opacity="0.95"/>
+            <circle cx="400" cy="292" r="64" fill="none" stroke="#22D3EE" stroke-width="1.2" opacity="0.35" filter="url(#glowS)"/>
+            <circle cx="400" cy="292" r="40" fill="none" stroke="#7DEBFA" stroke-width="0.8" opacity="0.25"/>
+            <!-- 暗夜侧（右下）沉入阴影 -->
+            <path d="M 400 202 A 90 90 0 0 1 400 382 Z" fill="#020810" opacity="0.22"/>
+
+            <!-- 瞳孔：狭缝，强光，向下方泄漏 -->
+            <ellipse cx="400" cy="292" rx="14" ry="52" fill="url(#pupilG)" filter="url(#glowL)"/>
+            <ellipse cx="400" cy="292" rx="8" ry="30" fill="#FFFFFF" opacity="0.65" filter="url(#glowS)"/>
+            <circle cx="400" cy="292" r="36" fill="#7DEBFA" opacity="0.18" filter="url(#blurC)"/>
+
+            <!-- 光束从瞳孔内部向下溢出 -->
+            <g stroke="#7DEBFA" stroke-width="1.2" stroke-linecap="round" opacity="0.45">
+              <line x1="400" y1="340" x2="386" y2="382"/>
+              <line x1="400" y1="342" x2="400" y2="388"/>
+              <line x1="400" y1="340" x2="414" y2="382"/>
+            </g>
+          </g>
+
+          <!-- ===== 品牌 ===== -->
+          <text x="418" y="680" text-anchor="middle" font-size="175" font-weight="800" letter-spacing="36" fill="url(#brandG)">烛龙</text>
+          <text x="408" y="732" text-anchor="middle" font-size="21" font-weight="500" letter-spacing="17" fill="#22D3EE" opacity="0.9"
+            font-family="Space Grotesk, DIN Alternate, Bahnschrift, Arial Narrow, sans-serif">ZHULONG</text>
+          <text x="402" y="778" text-anchor="middle" font-size="13.5" letter-spacing="4" fill="#5E7FA0">睁眼为昼 · 闭眼为夜</text>
+
+          <!-- ===== 主张：文字节奏，强调「区间」 ===== -->
+          <text x="404" y="884" text-anchor="middle" font-size="32" letter-spacing="8" fill="#7E9CBB">预测是</text>
+          <text x="411" y="1050" text-anchor="middle" font-size="140" font-weight="900" letter-spacing="22" fill="url(#kWordG)"
+            filter="url(#glowM)" font-family="Songti SC, STSong, SimSun, serif">区间</text>
+          <text x="404" y="1118" text-anchor="middle" font-size="32" letter-spacing="8" fill="#7E9CBB">不是线</text>
+          <line x1="424" y1="1106" x2="457" y2="1106" stroke="#22D3EE" stroke-width="2" filter="url(#glowS)"/>
+
+          <!-- ===== 唯一数字：悬浮于光锥口中 ===== -->
+          <text x="400" y="1300" text-anchor="middle" font-size="138" font-weight="800" fill="#F4FBFF" filter="url(#glowS)"
+            font-family="DIN Alternate, Bahnschrift, Arial Narrow, sans-serif">3.39<tspan font-size="66" fill="#7DEBFA">%</tspan></text>
+
+          <!-- ===== 真实地平线（光锥恰在 P10/P90 处触线） ===== -->
+          <line x1="20" y1="1330" x2="780" y2="1330" stroke="url(#horizonG)" stroke-width="1.6" filter="url(#glowS)"/>
+          <line x1="240" y1="1330" x2="560" y2="1330" stroke="#A5F3FC" stroke-width="2.2" opacity="0.85" filter="url(#glowM)"/>
+          <!-- 分位刻度：远处隐形，近看的彩蛋 -->
+          <g stroke="#22D3EE" stroke-width="1.2" opacity="0.75">
+            <line x1="100" y1="1330" x2="100" y2="1342"/>
+            <line x1="400" y1="1330" x2="400" y2="1342"/>
+            <line x1="700" y1="1330" x2="700" y2="1342"/>
+          </g>
+          <g fill="#58A6C9" font-size="11" letter-spacing="2" text-anchor="middle" opacity="0.9">
+            <text x="100" y="1364">P10</text>
+            <text x="400" y="1364">P50</text>
+            <text x="700" y="1364">P90</text>
+          </g>
+
+          <!-- ===== 镜像世界 ===== -->
+          <g mask="url(#reflM)" opacity="0.14">
+            <g transform="translate(0, 2660) scale(1, -1)">
+              <text x="400" y="1300" text-anchor="middle" font-size="138" font-weight="800" fill="#7DEBFA"
+                font-family="DIN Alternate, Bahnschrift, Arial Narrow, sans-serif">3.39<tspan font-size="66">%</tspan></text>
+            </g>
+          </g>
+          <path d="M 400 1330 L 250 1520 L 550 1520 Z" fill="#22D3EE" opacity="0.04" filter="url(#blurC)"/>
+
+          <text x="400" y="1562" text-anchor="middle" font-size="15" letter-spacing="3" fill="#94A3B8">日前 24 小时预测误差 · <tspan fill="#D3E7F6">35.8 万小时</tspan>真值回测</text>
+        </svg>
+      </div>
+
+      <!-- 行动区 -->
+      <div class="action">
+        <div class="qr-box" id="qrBox"></div>
+        <div class="go">扫码 · 亲眼<span>见证</span></div>
+        <div class="url">zhulong-seven.vercel.app</div>
+      </div>
+
+      <div class="credit">PROBABILISTIC LOAD FORECASTING · 24H AHEAD</div>
+
+      <div class="guides">
+        <div class="gline" style="top:40mm; left:0; right:0; height:0.6mm;"></div>
+        <div class="glabel" style="top:32mm; left:60mm;">顶部安全区 40mm</div>
+        <div class="gline" style="top:1880mm; left:0; right:0; height:0.6mm;"></div>
+        <div class="glabel" style="top:1888mm; left:60mm;">底部 120mm 卷轴收纳区（页脚在其内，仅次要信息）</div>
+        <div class="gline" style="top:0; bottom:0; left:30mm; width:0.6mm;"></div>
+        <div class="gline" style="top:0; bottom:0; right:30mm; width:0.6mm;"></div>
+      </div>
+
+      <div class="vignette"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+  function setScale(s) {
+    document.documentElement.style.setProperty('--s', s);
+    localStorage.setItem('zl-banner-scale', s);
+  }
+  const saved = localStorage.getItem('zl-banner-scale') || '0.25';
+  document.documentElement.style.setProperty('--s', saved);
+
+  function drawQR() {
+    const box = document.getElementById('qrBox');
+    if (box && window.QRCode && !box.hasChildNodes()) {
+      new QRCode(box, {
+        text: 'https://zhulong-seven.vercel.app',
+        width: 460, height: 460,
+        colorDark: '#0A1D37', colorLight: '#F8FAFC',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    }
+  }
+  if (window.QRCode) drawQR(); else window.addEventListener('load', drawQR);
+</script>
+
+</body>
+</html>
